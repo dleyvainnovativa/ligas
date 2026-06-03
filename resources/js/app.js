@@ -28,7 +28,9 @@ import { mountCanchas } from './components/canchas.js';
 import { mountScheduleGrid } from './components/schedule-grid.js';
 import { mountMatchResult } from './components/match-result.js';
 import { initTheme } from './modules/theme.js';
+import { mountAds } from './components/ads.js';
 
+mountAds();
 
 window.bootstrap = bootstrap;
 window.app = { toast, api, loading, modal, serializeForm };

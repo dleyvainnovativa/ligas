@@ -21,6 +21,7 @@ class PublicLeagueController extends Controller
                 'groups' => fn($q) => $q->orderBy('position'),
                 'groups.jornadas',
                 'sedes.pistas',
+                'activeAds',
             ])
             ->firstOrFail();
 
@@ -49,7 +50,7 @@ class PublicLeagueController extends Controller
                     ->join('groups',  'groups.id',  '=', 'jornadas.group_id')
                     ->where('groups.league_id', $league->id);
             })
-            ->with(['cancha.jornada.group', 'pista.sede'])
+            ->with(['cancha.jornada.group', 'pista.sede', 'pendingProposal'])
             ->whereNotNull('date')
             ->orderBy('date')
             ->orderBy('time_slot')
@@ -109,6 +110,12 @@ class PublicLeagueController extends Controller
     {
         $tally = $m->status === GameMatch::STATUS_COMPLETED ? $m->tally() : null;
 
+        // Load relation if not eager (it should be, but defensively)
+        if (!$m->relationLoaded('pendingProposal')) {
+            $m->load('pendingProposal');
+        }
+        $p = $m->pendingProposal;
+
         return [
             'id'             => $m->id,
             'date'           => $m->date?->toDateString(),
@@ -126,6 +133,11 @@ class PublicLeagueController extends Controller
             'winner'         => $m->winner,
             'sets_a'         => $tally['sets_a'] ?? null,
             'sets_b'         => $tally['sets_b'] ?? null,
+            'pending_proposal' => $p ? [
+                'proposer_name' => $p->proposer_name,
+                'sets'          => $p->sets,
+                'created_at'    => $p->created_at->diffForHumans(),
+            ] : null,
         ];
     }
 

@@ -102,4 +102,13 @@ class League extends Model
     {
         return $this->hasMany(Pair::class);
     }
+    public function ads(): HasMany
+    {
+        return $this->hasMany(Ad::class)->orderBy('position');
+    }
+
+    public function activeAds(): HasMany
+    {
+        return $this->hasMany(Ad::class)->where('is_active', true)->orderBy('position');
+    }
 }

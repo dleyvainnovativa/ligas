@@ -4,10 +4,17 @@ $tabs = [
 ['key' => 'players', 'route' => route('leagues.players.index', $league), 'label' => 'Jugadores', 'icon' => 'fa-users'],
 ['key' => 'groups', 'route' => route('leagues.groups.index', $league), 'label' => 'Grupos', 'icon' => 'fa-layer-group'],
 ['key' => 'standings', 'route' => route('leagues.standings.index', $league), 'label' => 'Standings', 'icon' => 'fa-ranking-star'],
+['key' => 'ads', 'route' => route('leagues.ads.index', $league), 'label' => 'Anuncios', 'icon' => 'fa-rectangle-ad'],
 ['key' => 'settings', 'route' => route('leagues.edit', $league), 'label' => 'Configuración', 'icon' => 'fa-gear'],
 ];
 $active = $active ?? 'overview';
 @endphp
+<div class="d-flex align-items-center gap-3 mb-3">
+
+    <a href="{{ route('leagues.index') }}" class="btn btn-sm" title="Volver a ligas">
+        <i class="fa-solid fa-arrow-left"></i> Regresar
+    </a>
+</div>
 <div class="league-panel-header">
     <div class="panel-thumb {{ $league->banner_url ? 'has-image' : '' }}"
         @if($league->banner_url) style="background-image: url('{{ $league->banner_url }}');" @endif>
@@ -26,6 +33,12 @@ $active = $active ?? 'overview';
             <span class="badge text-bg-{{ $league->status === 'active' ? 'success' : ($league->status === 'completed' ? 'info' : 'secondary') }}">
                 {{ ucfirst($league->status) }}
             </span>
+            @if (($pendingProposalsCount ?? 0) > 0)
+            <span class="badge text-bg-warning d-inline-flex align-items-center gap-1">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                {{ $pendingProposalsCount }} {{ Str::plural('propuesta', $pendingProposalsCount) }}
+            </span>
+            @endif
         </div>
         <div class="panel-meta">
             {{ $league->num_jornadas }} jornadas · ${{ number_format($league->cost, 0) }}
@@ -34,9 +47,9 @@ $active = $active ?? 'overview';
             </a>
         </div>
     </div>
-    <a href="{{ route('leagues.index') }}" class="btn btn-icon btn-sm" title="Volver a ligas">
+    <!-- <a href="{{ route('leagues.index') }}" class="btn btn-icon btn-sm" title="Volver a ligas">
         <i class="fa-solid fa-arrow-left"></i>
-    </a>
+    </a> -->
 </div>
 
 <ul class="nav nav-tabs panel-tabs mb-4" role="tablist">

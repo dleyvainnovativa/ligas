@@ -86,6 +86,10 @@ $totals = $payload['totals'];
     </div>
 </section>
 
+@if ($league->activeAds->isNotEmpty())
+@include('public.league._ads-carousel', ['ads' => $league->activeAds])
+@endif
+
 {{-- ===== Current jornada hero ===== --}}
 @if ($currentJornada)
 <div class="current-jornada">
@@ -140,4 +144,29 @@ $totals = $payload['totals'];
     </div>
 </div>
 @endif
+
+<div class="modal fade" id="propose-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Proponer marcador</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="propose-modal-body">
+                {{-- filled by JS --}}
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" id="propose-submit-btn">
+                    <i class="fa-solid fa-paper-plane me-1"></i> Enviar propuesta
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.__publicLeagueSlug = @json($league->slug);
+    window.__publicMatches = @json(collect($payload['groups'])->flatMap(fn($g) => array_merge($g['upcoming'], $g['recent']))->keyBy('id'));
+</script>
 @endsection

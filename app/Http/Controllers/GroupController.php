@@ -17,9 +17,7 @@ class GroupController extends Controller
     public function index(League $league)
     {
         $this->authorize('view', $league);
-
         $league->load(['groups.players', 'groups.pairs.playerA', 'groups.pairs.playerB', 'players', 'pairs.playerA', 'pairs.playerB']);
-
         return view('leagues.groups.index', compact('league'));
     }
 

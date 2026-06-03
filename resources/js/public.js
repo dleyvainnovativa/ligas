@@ -1,9 +1,9 @@
 // Lean: only what the public page actually needs.
 // Bootstrap Tab + Collapse plugins for the group tabs and any disclosures.
-import { Tab, Collapse } from 'bootstrap';
+import { Tab, Collapse, Carousel, Modal } from 'bootstrap';
 
 // Make them globally accessible for data-bs-toggle to work
-window.bootstrap = { Tab, Collapse };
+window.bootstrap = { Tab, Collapse, Carousel, Modal };
 
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
@@ -13,6 +13,151 @@ import '@fontsource/inter-tight/700.css';
 import '@fontsource/inter-tight/800.css';
 import '@fontsource/jetbrains-mono/500.css';
 
+// ---- Match proposal flow ----
+(function () {
+    const slug = window.__publicLeagueSlug;
+    const matches = window.__publicMatches || {};
+    if (!slug) return;
+
+    const modalEl = document.getElementById('propose-modal');
+    if (!modalEl) return;
+    const modal = new Modal(modalEl);
+    const body = document.getElementById('propose-modal-body');
+    const submitBtn = document.getElementById('propose-submit-btn');
+
+    let currentMatchId = null;
+    let currentSets = [[0, 0]];
+
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.propose-btn');
+        if (!btn) return;
+        currentMatchId = btn.dataset.matchId;
+        const m = matches[currentMatchId];
+        if (!m) return;
+
+        // If we proposed before, prefill the name from cookie
+        const lastName = localStorage.getItem('pl_proposer_name') || '';
+
+        currentSets = [[0, 0]];
+
+        body.innerHTML = `
+            <div class="propose-match-summary mb-3">
+                <div class="propose-teams">
+                    <div class="t-name">${m.team_a.map(escape).join(' / ')}</div>
+                    <div class="t-vs">vs</div>
+                    <div class="t-name text-end">${m.team_b.map(escape).join(' / ')}</div>
+                </div>
+                <div class="text-muted small mt-1">
+                    ${m.date_display ? escape(m.date_display) : ''}
+                    ${m.time_slot ? ' · ' + escape(m.time_slot) : ''}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Tu nombre</label>
+                <input type="text" class="form-control" id="proposer-name" maxlength="120"
+                       value="${escape(lastName)}" placeholder="Para que el manager sepa quién propuso">
+            </div>
+
+            <label class="form-label">Marcador</label>
+            <div id="propose-sets" class="propose-sets"></div>
+            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="propose-add-set">
+                <i class="fa-solid fa-plus me-1"></i> Agregar set
+            </button>
+
+            <small class="text-muted d-block mt-3">
+                <i class="fa-solid fa-circle-info"></i>
+                El manager revisará y aprobará el marcador. Cualquier jugador puede proponer.
+            </small>
+        `;
+        renderSets();
+        modal.show();
+    });
+
+    function renderSets() {
+        const c = document.getElementById('propose-sets');
+        c.innerHTML = currentSets.map((s, i) => `
+            <div class="propose-set-row" data-i="${i}">
+                <span class="set-label">Set ${i + 1}</span>
+                <input type="number" min="0" max="99" class="form-control form-control-sm set-a" inputmode="numeric" value="${s[0]}">
+                <span class="text-muted">—</span>
+                <input type="number" min="0" max="99" class="form-control form-control-sm set-b" inputmode="numeric" value="${s[1]}">
+                <button type="button" class="btn-icon btn-sm remove-set" ${currentSets.length === 1 ? 'disabled' : ''}>
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    body?.addEventListener('input', (e) => {
+        const row = e.target.closest('.propose-set-row');
+        if (!row) return;
+        const i = parseInt(row.dataset.i, 10);
+        if (e.target.classList.contains('set-a')) currentSets[i][0] = parseInt(e.target.value || '0', 10);
+        if (e.target.classList.contains('set-b')) currentSets[i][1] = parseInt(e.target.value || '0', 10);
+    });
+
+    body?.addEventListener('click', (e) => {
+        if (e.target.closest('#propose-add-set')) {
+            currentSets.push([0, 0]);
+            renderSets();
+        }
+        const rm = e.target.closest('.remove-set');
+        if (rm && !rm.disabled) {
+            const row = rm.closest('.propose-set-row');
+            const i = parseInt(row.dataset.i, 10);
+            currentSets.splice(i, 1);
+            renderSets();
+        }
+    });
+
+    submitBtn?.addEventListener('click', async () => {
+        const name = document.getElementById('proposer-name').value.trim();
+        if (name.length < 2) {
+            alert('Por favor ingresa tu nombre.');
+            return;
+        }
+        const sets = currentSets.filter(s => s[0] > 0 || s[1] > 0);
+        if (sets.length === 0) {
+            alert('Ingresa al menos un set con marcador.');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        const original = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando…';
+
+        try {
+            const res = await fetch(`/${slug}/matches/${currentMatchId}/propose`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                },
+                body: JSON.stringify({ name, sets }),
+                credentials: 'same-origin',
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ message: res.statusText }));
+                throw new Error(err.message || 'No se pudo enviar la propuesta.');
+            }
+            localStorage.setItem('pl_proposer_name', name);
+            modal.hide();
+            // Soft refresh to show the new proposal banner
+            window.location.reload();
+        } catch (err) {
+            alert(err.message);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = original;
+        }
+    });
+
+    function escape(s) {
+        return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+})();
 
 function initThemeMinimal() {
     document.addEventListener('click', (e) => {

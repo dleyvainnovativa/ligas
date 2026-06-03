@@ -18,15 +18,23 @@ export function mountMatchResult() {
     });
 
     async function openResultModal(matchId) {
-        const url = buildUrl(matchId, 'result'); // GET .../matches/:id/result
+        const url = buildUrl(matchId, 'result');
         const body = document.getElementById('result-modal-body');
         body.innerHTML = `<div class="text-center py-4 text-secondary"><span class="spinner-border spinner-border-sm me-2"></span>Cargando…</div>`;
         window.app.modal.open('result-modal');
         try {
             const data = await window.app.api.get(url);
             currentMatch = data.match;
-            body.innerHTML = renderForm(data.match);
+            const proposal = data.proposal;
+
+            // Pre-fill modal with proposal if pending and no official sets yet
+            if (proposal && (!currentMatch.sets || currentMatch.sets.length === 0)) {
+                currentMatch.sets = proposal.sets;
+            }
+
+            body.innerHTML = renderForm(currentMatch, proposal);
             wireRowControls();
+            wireProposalActions(matchId, proposal);
         } catch (err) {
             body.innerHTML = `<div class="alert alert-danger mb-0">${err.message}</div>`;
         }
@@ -38,65 +46,87 @@ export function mountMatchResult() {
         return tpl.replace('/schedule', `/${suffix}`).replace('__ID__', matchId);
     }
 
-    function renderForm(m) {
-        const sets = (m.sets && m.sets.length) ? m.sets : [[0,0]];
-        const setsHtml = sets.map((s, i) => setRow(i, s[0], s[1])).join('');
+    function renderForm(m, proposal) {
+    const sets = (m.sets && m.sets.length) ? m.sets : [[0, 0]];
+    const setsHtml = sets.map((s, i) => setRow(i, s[0], s[1])).join('');
 
-        const teamRow = (label, team) => `
-            <div class="team-block">
-                <div class="team-label">${label}</div>
-                <ul class="list-unstyled mb-0">
-                    ${team.map(p => `
-                        <li class="player-line" data-player-id="${p.id}">
-                            <span class="player-line-name">${escape(p.name)}</span>
-                            <div class="player-line-flags">
-                                <label class="form-check form-check-inline m-0">
-                                    <input type="checkbox" class="form-check-input flag-noshow"
-                                           ${m.no_show.includes(p.id) ? 'checked' : ''}>
-                                    <span class="form-check-label small">No show</span>
-                                </label>
-                                <label class="form-check form-check-inline m-0">
-                                    <input type="checkbox" class="form-check-input flag-suplente"
-                                           ${m.suplente.includes(p.id) ? 'checked' : ''}>
-                                    <span class="form-check-label small">Suplente</span>
-                                </label>
-                            </div>
-                        </li>
-                    `).join('')}
-                </ul>
-            </div>`;
+    const teamRow = (label, team) => `
+        <div class="team-block">
+            <div class="team-label">${label}</div>
+            <ul class="list-unstyled mb-0">
+                ${team.map(p => `
+                    <li class="player-line" data-player-id="${p.id}">
+                        <span class="player-line-name">${escape(p.name)}</span>
+                        <div class="player-line-flags">
+                            <label class="form-check form-check-inline m-0">
+                                <input type="checkbox" class="form-check-input flag-noshow"
+                                       ${m.no_show.includes(p.id) ? 'checked' : ''}>
+                                <span class="form-check-label small">No show</span>
+                            </label>
+                            <label class="form-check form-check-inline m-0">
+                                <input type="checkbox" class="form-check-input flag-suplente"
+                                       ${m.suplente.includes(p.id) ? 'checked' : ''}>
+                                <span class="form-check-label small">Suplente</span>
+                            </label>
+                        </div>
+                    </li>
+                `).join('')}
+            </ul>
+        </div>`;
 
-        return `
-            <div class="d-flex justify-content-between align-items-start mb-3 small text-secondary">
-                <div>
-                    Rotación <strong>R${m.rotation_index}</strong>
-                    ${m.date ? ` · ${m.date} ${m.time_slot ?? ''}` : ''}
-                    ${m.pista ? ` · ${escape(m.pista)}` : ''}
+    const proposalBanner = proposal ? `
+        <div class="alert alert-warning d-flex align-items-start gap-2 mb-3" role="alert">
+            <i class="fa-solid fa-clock-rotate-left mt-1"></i>
+            <div class="flex-grow-1">
+                <strong>Propuesta pendiente</strong> de
+                <strong>${escape(proposal.proposer_name)}</strong>
+                · ${escape(proposal.created_at)}
+                <div class="small mt-1">
+                    Sets propuestos:
+                    ${proposal.sets.map(s => `<span class="font-mono">${s[0]}–${s[1]}</span>`).join(', ')}
                 </div>
-                <div>
-                    Estado: <strong>${escape(m.status)}</strong>
+                <div class="small mt-2 text-muted">
+                    Se preseleccionaron los marcadores en este formulario.
+                    Al guardar, la propuesta se marcará como <em>aceptada</em> (si coinciden) o <em>modificada</em>.
                 </div>
             </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" id="reject-proposal-btn"
+                    data-proposal-id="${proposal.id}">
+                Rechazar
+            </button>
+        </div>` : '';
 
-            <div class="row g-3 mb-3">
-                <div class="col-md-6">${teamRow('Equipo A', m.team_a)}</div>
-                <div class="col-md-6">${teamRow('Equipo B', m.team_b)}</div>
-            </div>
+    return `
+        ${proposalBanner}
 
-            <div class="result-sets">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <strong>Sets</strong>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="add-set-btn">
-                        <i class="fa-solid fa-plus me-1"></i> Agregar set
-                    </button>
-                </div>
-                <div id="sets-list">${setsHtml}</div>
-                <small class="text-secondary d-block mt-2">
-                    Si dejas todos los sets en 0, se elimina el resultado.
-                </small>
+        <div class="d-flex justify-content-between align-items-start mb-3 small text-secondary">
+            <div>
+                Rotación <strong>R${m.rotation_index}</strong>
+                ${m.date ? ` · ${m.date} ${m.time_slot ?? ''}` : ''}
+                ${m.pista ? ` · ${escape(m.pista)}` : ''}
             </div>
-        `;
-    }
+            <div>Estado: <strong>${escape(m.status)}</strong></div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">${teamRow('Equipo A', m.team_a)}</div>
+            <div class="col-md-6">${teamRow('Equipo B', m.team_b)}</div>
+        </div>
+
+        <div class="result-sets">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong>Sets</strong>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="add-set-btn">
+                    <i class="fa-solid fa-plus me-1"></i> Agregar set
+                </button>
+            </div>
+            <div id="sets-list">${setsHtml}</div>
+            <small class="text-secondary d-block mt-2">
+                Si dejas todos los sets en 0, se elimina el resultado.
+            </small>
+        </div>
+    `;
+}
 
     function setRow(idx, a, b) {
         return `
@@ -110,6 +140,33 @@ export function mountMatchResult() {
             </button>
         </div>`;
     }
+
+    function wireProposalActions(matchId, proposal) {
+    if (!proposal) return;
+    const btn = document.getElementById('reject-proposal-btn');
+    if (!btn) return;
+
+    btn.addEventListener('click', async () => {
+        if (!confirm(`¿Rechazar la propuesta de ${proposal.proposer_name}? No se guardará ningún marcador.`)) return;
+        try {
+            const url = buildUrl(matchId, 'result').replace('/result', `/proposal/${proposal.id}`);
+            const res = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'Accept': 'application/json',
+                },
+                credentials: 'same-origin',
+            });
+            if (!res.ok) throw new Error('No se pudo rechazar la propuesta.');
+            window.app.toast.success('Propuesta rechazada');
+            window.app.modal.close('result-modal');
+            window.location.reload();
+        } catch (err) {
+            window.app.toast.error(err.message);
+        }
+    });
+}
 
     function wireRowControls() {
         document.getElementById('add-set-btn')?.addEventListener('click', () => {

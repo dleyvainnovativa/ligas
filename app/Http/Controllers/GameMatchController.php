@@ -104,9 +104,10 @@ class GameMatchController extends Controller
         $this->authorize('view', $match);
         abort_unless($match->cancha->jornada_id === $jornada->id, 404);
 
-        $match->load(['cancha.jornada.group.league', 'pista']);
-
+        $match->load(['cancha.jornada.group.league', 'pista', 'pendingProposal']);
         $playerNames = $league->players()->pluck('full_name', 'id');
+
+        $proposal = $match->pendingProposal;
 
         return response()->json([
             'match' => [
@@ -125,11 +126,24 @@ class GameMatchController extends Controller
                 'no_show'        => $match->no_show_player_ids ?? [],
                 'suplente'       => $match->suplente_player_ids ?? [],
             ],
+            'proposal' => $proposal ? [
+                'id'             => $proposal->id,
+                'proposer_name'  => $proposal->proposer_name,
+                'sets'           => $proposal->sets,
+                'created_at'     => $proposal->created_at->diffForHumans(),
+            ] : null,
         ]);
     }
 
-    public function saveResult(Request $request, League $league, Group $group, Jornada $jornada, GameMatch $match, \App\Services\MatchResultService $results)
-    {
+    public function saveResult(
+        Request $request,
+        League $league,
+        Group $group,
+        Jornada $jornada,
+        GameMatch $match,
+        \App\Services\MatchResultService $results,
+        \App\Services\MatchProposalService $proposals
+    ) {
         $this->authorize('update', $match);
         abort_unless($match->cancha->jornada_id === $jornada->id, 404);
 
@@ -144,12 +158,29 @@ class GameMatchController extends Controller
             'suplente_ids.*'    => ['integer'],
         ]);
 
+        $sets = $data['sets'] ?? [];
+
+        // Capture pending proposal before saving (the save itself doesn't touch proposals)
+        $pending = $match->pendingProposal()->first();
+
         $updated = $results->save(
             $match,
-            $data['sets']         ?? [],
+            $sets,
             $data['no_show_ids']  ?? [],
             $data['suplente_ids'] ?? [],
         );
+
+        // Resolve the pending proposal, if any
+        if ($pending && count($sets) > 0) {
+            if ($this->setsMatch($sets, $pending->sets ?? [])) {
+                $proposals->markAccepted($pending);
+            } else {
+                $proposals->markModified($pending);
+            }
+        }
+
+        // Bust public cache so spectators see fresh data
+        \Illuminate\Support\Facades\Cache::forget("public_league:{$league->id}:v2");
 
         return response()->json([
             'match' => [
@@ -159,5 +190,38 @@ class GameMatchController extends Controller
                 'status' => $updated->status,
             ],
         ]);
+    }
+
+    private function setsMatch(array $a, array $b): bool
+    {
+        if (count($a) !== count($b)) return false;
+        foreach ($a as $i => $set) {
+            if (!isset($b[$i])) return false;
+            if ((int) $set[0] !== (int) $b[$i][0]) return false;
+            if ((int) $set[1] !== (int) $b[$i][1]) return false;
+        }
+        return true;
+    }
+
+    public function rejectProposal(
+        League $league,
+        Group $group,
+        Jornada $jornada,
+        GameMatch $match,
+        \App\Models\MatchScoreProposal $proposal,
+        \App\Services\MatchProposalService $proposals
+    ) {
+        $this->authorize('update', $match);
+        abort_unless(
+            $match->cancha->jornada_id === $jornada->id &&
+                $proposal->match_id === $match->id,
+            404
+        );
+
+        $proposals->reject($proposal);
+
+        \Illuminate\Support\Facades\Cache::forget("public_league:{$league->id}:v2");
+
+        return response()->json(['ok' => true]);
     }
 }

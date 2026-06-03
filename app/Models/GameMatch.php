@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class GameMatch extends Model
 {
@@ -81,5 +82,17 @@ class GameMatch extends Model
         if ($t['sets_a'] > $t['sets_b']) return 'a';
         if ($t['sets_b'] > $t['sets_a']) return 'b';
         return 'draw';
+    }
+
+    public function proposals(): HasMany
+    {
+        return $this->hasMany(MatchScoreProposal::class, 'match_id');
+    }
+
+    public function pendingProposal()
+    {
+        return $this->hasOne(MatchScoreProposal::class, 'match_id')
+            ->where('status', MatchScoreProposal::STATUS_PENDING)
+            ->latest('id');
     }
 }

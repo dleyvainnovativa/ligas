@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CanchaController;
 use App\Http\Controllers\DashboardController;
@@ -93,15 +94,30 @@ Route::middleware('auth')->group(function () {
             'groups/{group}/jornadas/{jornada}/matches/{match}/result',
             [GameMatchController::class, 'saveResult']
         )->name('matches.save-result');
+        Route::delete(
+            'groups/{group}/jornadas/{jornada}/matches/{match}/proposal/{proposal}',
+            [GameMatchController::class, 'rejectProposal']
+        )->name('matches.reject-proposal');
 
         // Standings
         Route::get('standings', [StandingsController::class, 'index'])->name('standings.index');
         Route::get('groups/{group}/standings', [StandingsController::class, 'group'])->name('standings.group');
+
+        // Ads
+        Route::get('ads',              [AdController::class, 'index'])->name('ads.index');
+        Route::post('ads',             [AdController::class, 'store'])->name('ads.store');
+        Route::post('ads/{ad}',        [AdController::class, 'update'])->name('ads.update'); // POST because of file upload
+        Route::delete('ads/{ad}',      [AdController::class, 'destroy'])->name('ads.destroy');
+        Route::post('ads/reorder',     [AdController::class, 'reorder'])->name('ads.reorder');
     });
 });
 
+// PUBLIC: propose a score
+Route::post('/{slug}/matches/{match}/propose', [\App\Http\Controllers\PublicMatchProposalController::class, 'store'])
+    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->name('public.match.propose');
 
-// Public league page — MUST be last so other routes resolve first
+// Public league page — MUST be last among the slug routes
 Route::get('/{slug}', [\App\Http\Controllers\PublicLeagueController::class, 'show'])
     ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
     ->name('public.league');
