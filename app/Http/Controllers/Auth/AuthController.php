@@ -26,14 +26,14 @@ class AuthController extends Controller
         $request->validate(['id_token' => 'required|string']);
 
         try {
-            // $verified = $this->firebaseAuth->verifyIdToken($request->id_token);
-            $verified = $this->firebaseAuth->verifyIdToken(
-                $request->id_token,
-                true,
-                300
-            );
-        } catch (FailedToVerifyToken $e) {
-            return response()->json(['error' => 'Invalid token', "message" => $e->getMessage()], 401);
+            $verified = $this->firebaseAuth->verifyIdToken($request->id_token, false, 5);
+        } catch (\Kreait\Firebase\Exception\Auth\RevokedIdToken $e) {
+            return response()->json([
+                'error' => 'Token recién emitido. Por favor reintenta.',
+                'code'  => 'TOKEN_STALE',
+            ], 401);
+        } catch (\Kreait\Firebase\Exception\Auth\FailedToVerifyToken $e) {
+            return response()->json(['error' => 'Token inválido.'], 401);
         }
 
         $manager = Manager::updateOrCreate(

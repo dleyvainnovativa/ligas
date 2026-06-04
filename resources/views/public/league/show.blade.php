@@ -45,7 +45,7 @@ $totals = $payload['totals'];
             </span>
         </div>
 
-        <h1 class="public-banner-title">{{ $league->name }}</h1>
+        <h1 class="public-banner-title text-light">{{ $league->name }}</h1>
 
         @if ($league->description)
         <p class="public-banner-desc">{{ \Illuminate\Support\Str::limit($league->description, 200) }}</p>

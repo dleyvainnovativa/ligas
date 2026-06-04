@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Kreait\Firebase\Contract\Auth as FirebaseAuth;
 use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
+use Kreait\Firebase\Exception\Auth\RevokedIdToken;
 use Symfony\Component\HttpFoundation\Response;
 
 class VerifyFirebaseToken
@@ -23,7 +24,12 @@ class VerifyFirebaseToken
         }
 
         try {
-            $verified = $this->firebaseAuth->verifyIdToken($idToken);
+            // checkIfRevoked = false (default); leeway = 5 seconds for clock skew
+            $verified = $this->firebaseAuth->verifyIdToken($idToken, false, 5);
+        } catch (RevokedIdToken $e) {
+            // Token's iat is before the user's tokensValidAfterTime — usually
+            // a freshly-created user race condition. Ask the client to refresh.
+            return $this->tokenStale($request);
         } catch (FailedToVerifyToken $e) {
             return $this->unauthorized($request, 'Invalid Firebase token.');
         }
@@ -61,6 +67,18 @@ class VerifyFirebaseToken
     {
         if ($request->expectsJson()) {
             return response()->json(['error' => $message], 401);
+        }
+        return redirect()->route('login')->withErrors(['auth' => $message]);
+    }
+
+    private function tokenStale(Request $request): Response
+    {
+        $message = 'Token expirado o recién emitido. Reintentando…';
+        if ($request->expectsJson()) {
+            return response()->json([
+                'error' => $message,
+                'code'  => 'TOKEN_STALE',  // signals the client to force-refresh
+            ], 401);
         }
         return redirect()->route('login')->withErrors(['auth' => $message]);
     }
