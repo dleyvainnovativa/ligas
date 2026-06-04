@@ -148,5 +148,37 @@ export function mountScheduleGrid() {
         }
     });
 
+    // Auto-generate
+const agBtn = document.getElementById('auto-generate-btn');
+agBtn?.addEventListener('click', () => {
+    document.getElementById('ag-clear-existing').checked = false;
+    window.app.modal.open('auto-generate-modal');
+});
+
+const agConfirmBtn = document.getElementById('ag-confirm-btn');
+agConfirmBtn?.addEventListener('click', async () => {
+    const clearExisting = document.getElementById('ag-clear-existing').checked;
+    window.app.loading.on(agConfirmBtn);
+    try {
+        const data = await window.app.api.post(agBtn.dataset.url, {
+            clear_existing: clearExisting,
+        });
+
+        if (data.ok) {
+            window.app.toast.success(data.message);
+        } else if (data.placed > 0) {
+            window.app.toast.warn(data.message);
+        } else {
+            window.app.toast.error(data.message || 'No se pudo generar el calendario.');
+        }
+
+        window.app.modal.close('auto-generate-modal');
+        setTimeout(() => window.location.reload(), 600);
+    } catch (err) {
+        window.app.toast.error(err.message);
+        window.app.loading.off(agConfirmBtn);
+    }
+});
+
     wireDraggables();
 }

@@ -98,6 +98,10 @@ Route::middleware('auth')->group(function () {
             'groups/{group}/jornadas/{jornada}/matches/{match}/proposal/{proposal}',
             [GameMatchController::class, 'rejectProposal']
         )->name('matches.reject-proposal');
+        Route::post(
+            'groups/{group}/jornadas/{jornada}/auto-generate',
+            [GameMatchController::class, 'autoGenerate']
+        )->name('matches.auto-generate');
 
         // Standings
         Route::get('standings', [StandingsController::class, 'index'])->name('standings.index');

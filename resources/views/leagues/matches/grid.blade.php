@@ -52,6 +52,10 @@ return ['a' => $a, 'b' => $b];
             data-url="{{ route('leagues.matches.conflicts', [$league, $group, $jornada]) }}">
             <i class="fa-solid fa-triangle-exclamation me-1"></i> Verificar conflictos
         </button>
+        <button class="btn btn-outline-primary btn-sm" id="auto-generate-btn"
+            data-url="{{ route('leagues.matches.auto-generate', [$league, $group, $jornada]) }}">
+            <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Auto-generar
+        </button>
     </div>
 </div>
 
@@ -303,3 +307,47 @@ return ['a' => $a, 'b' => $b];
     </div>
 </div>
 @endsection
+
+<div class="modal fade" id="auto-generate-modal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Auto-generar calendario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Se asignarán automáticamente todos los partidos pendientes a horarios
+                    disponibles, evitando conflictos de jugadores y respetando que cada cancha
+                    juegue sus rotaciones en horarios consecutivos en la misma pista
+                    (modo individual).
+                </p>
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="ag-clear-existing">
+                    <label class="form-check-label" for="ag-clear-existing">
+                        Borrar la programación actual antes de generar
+                    </label>
+                    <div class="form-text">
+                        Si lo dejas sin marcar, los partidos ya programados manualmente
+                        se mantienen y solo se asignan los pendientes.
+                    </div>
+                </div>
+
+                <div class="alert alert-info mb-0 small d-flex gap-2">
+                    <i class="fa-solid fa-circle-info mt-1"></i>
+                    <div>
+                        El algoritmo es aleatorio. Si el resultado no te gusta, puedes
+                        correrlo de nuevo o ajustar manualmente después.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" id="ag-confirm-btn">
+                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Generar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

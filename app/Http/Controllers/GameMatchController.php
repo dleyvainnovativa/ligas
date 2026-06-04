@@ -224,4 +224,22 @@ class GameMatchController extends Controller
 
         return response()->json(['ok' => true]);
     }
+    public function autoGenerate(
+        Request $request,
+        League $league,
+        Group $group,
+        Jornada $jornada,
+        \App\Services\MatchAutoGenerateService $generator
+    ) {
+        $this->authorize('update', $jornada);
+        abort_unless($jornada->group_id === $group->id && $group->league_id === $league->id, 404);
+
+        $data = $request->validate([
+            'clear_existing' => ['nullable', 'boolean'],
+        ]);
+
+        $result = $generator->generate($jornada, (bool) ($data['clear_existing'] ?? false));
+
+        return response()->json($result);
+    }
 }
