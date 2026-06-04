@@ -18,7 +18,8 @@ $unassignedPairs = $isPairs ? $league->pairs->filter(fn ($pr) => !$pairGroupId->
 
 <div class="groups-app"
     data-league-id="{{ $league->id }}"
-    data-mode="{{ $mode }}">
+    data-mode="{{ $mode }}"
+    data-unassigned-count="{{ $isPairs ? $unassignedPairs->count() : $unassignedPlayers->count() }}">
 
     <div class="row g-3">
         {{-- Sidebar: unassigned --}}
@@ -80,5 +81,22 @@ $unassignedPairs = $isPairs ? $league->pairs->filter(fn ($pr) => !$pairGroupId->
                 @endforelse
             </div>
         </div>
+    </div>
+</div>
+{{-- Chip-to-group picker --}}
+<div id="chip-picker" class="cell-picker" role="dialog" aria-hidden="true" aria-modal="false">
+    <div class="cell-picker-backdrop" data-action="close-chip-picker"></div>
+    <div class="cell-picker-panel">
+        <div class="cell-picker-handle" aria-hidden="true"></div>
+        <header class="cell-picker-header">
+            <div class="flex-grow-1 min-w-0">
+                <div class="cell-picker-eyebrow" id="chip-picker-eyebrow">—</div>
+                <h6 class="cell-picker-title mb-0" id="chip-picker-title">—</h6>
+            </div>
+            <button type="button" class="btn-icon btn-sm" data-action="close-chip-picker" aria-label="Cerrar">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </header>
+        <div class="cell-picker-body" id="chip-picker-body"></div>
     </div>
 </div>

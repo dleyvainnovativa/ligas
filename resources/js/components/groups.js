@@ -20,15 +20,17 @@ export function mountGroups() {
             if (list.dataset.sortableMounted) return;
             list.dataset.sortableMounted = '1';
             Sortable.create(list, {
-                group: 'roster',
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                chosenClass: 'sortable-chosen',
-                dragClass:   'sortable-drag',
-                handle: '.roster-chip',
-                onAdd:    (evt) => handleMove(evt),
-                onSort:   () => updateAllCounts(),
-            });
+    group: 'roster',
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    dragClass:   'sortable-drag',
+    handle: '.roster-chip',
+    onChoose:   () => document.body.classList.add('sortable-dragging'),
+    onUnchoose: () => document.body.classList.remove('sortable-dragging'),
+    onAdd:      (evt) => handleMove(evt),
+    onSort:     () => updateAllCounts(),
+});
             updateEmptyHint(list);
         });
     }

@@ -29,8 +29,9 @@ import { mountScheduleGrid } from './components/schedule-grid.js';
 import { mountMatchResult } from './components/match-result.js';
 import { initTheme } from './modules/theme.js';
 import { mountAds } from './components/ads.js';
+import { mountCellPicker } from './components/cell-picker.js';
+import { mountGroupPicker } from './components/group-picker.js';
 
-mountAds();
 
 window.bootstrap = bootstrap;
 window.app = { toast, api, loading, modal, serializeForm };
@@ -39,6 +40,7 @@ window.firebase = { auth, signInWithEmailAndPassword, signOut };
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     mountTagInputs();
+    mountAds();
     mountLeagueForm();
     mountSedes();
     mountPlayers();
@@ -48,6 +50,10 @@ document.addEventListener('DOMContentLoaded', () => {
     mountCanchas();
     mountScheduleGrid();
     mountMatchResult();
+    mountCellPicker();
+    mountGroupPicker();
+
+
 });
 
 document.addEventListener('click', (e) => {

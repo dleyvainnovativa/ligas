@@ -46,7 +46,13 @@ export function mountPlayers() {
                 await savePlayer(pid, row);
             }
             if (e.target.closest('.delete-player')) {
-                if (!confirm('¿Eliminar este jugador?')) return;
+                const ok = await window.app.modal.confirm({
+    title: 'Eliminar jugador',
+    body: '¿Estás seguro? Esta acción no se puede deshacer.',
+    confirmText: 'Eliminar',
+    danger: true,
+});
+if (!ok) return;
                 try {
                     await window.app.api.delete(url.one(pid));
                     // Remove from both layouts

@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 
 class AdController extends Controller
 {
+    public function __construct(private \App\Services\ImageProcessor $images) {}
+
     public function index(League $league)
     {
         $this->authorize('view', $league);
@@ -22,7 +24,8 @@ class AdController extends Controller
         $this->authorize('update', $league);
 
         $data = $request->validated();
-        $data['image_path'] = $request->file('image')->store('ads', 'public');
+        $data['image_path'] = $this->images->storeResized($request->file('image'), 'ads', 1600, 533);
+
         $data['position']   = ($league->ads()->max('position') ?? 0) + 1;
         $data['is_active']  = $data['is_active'] ?? true;
         unset($data['image']);
@@ -40,7 +43,7 @@ class AdController extends Controller
 
         if ($request->hasFile('image')) {
             if ($ad->image_path) Storage::disk('public')->delete($ad->image_path);
-            $data['image_path'] = $request->file('image')->store('ads', 'public');
+            $data['image_path'] = $this->images->storeResized($request->file('image'), 'ads', 1600, 533);
         }
         unset($data['image']);
 

@@ -22,6 +22,21 @@ class League extends Model
 
     public const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
+    protected static function booted()
+    {
+        static::deleting(function (League $league) {
+            if ($league->banner_path) {
+                Storage::disk('public')->delete($league->banner_path);
+            }
+            // Ads deleted via cascade; clean their files
+            foreach ($league->ads as $ad) {
+                if ($ad->image_path) {
+                    Storage::disk('public')->delete($ad->image_path);
+                }
+            }
+        });
+    }
+
     protected $fillable = [
         'manager_id',
         'name',

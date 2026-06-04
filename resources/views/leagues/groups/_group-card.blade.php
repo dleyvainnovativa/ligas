@@ -10,6 +10,10 @@ $count = $isPairs ? $group->pairs->count() : $group->players->count();
             <input type="text" class="form-control form-control-sm group-name" value="{{ $group->name }}">
         </div>
         <span class="badge text-bg-secondary group-count">{{ $count }}</span>
+        <button class="btn btn-sm btn-outline-primary auto-fill-group" title="Auto-asignar pendientes a este grupo"
+            data-url="{{ route('leagues.groups.auto-fill', [$league, $group]) }}">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+        </button>
         <button class="btn btn-sm btn-outline-secondary save-group" title="Guardar nombre">
             <i class="fa-solid fa-floppy-disk"></i>
         </button>

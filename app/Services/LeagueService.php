@@ -10,13 +10,15 @@ use Illuminate\Support\Str;
 
 class LeagueService
 {
+    public function __construct(private \App\Services\ImageProcessor $images) {}
+
     public function create(Manager $manager, array $data, ?UploadedFile $banner): League
     {
         $data['manager_id'] = $manager->id;
         $data['slug']       = $this->ensureUniqueSlug($data['slug'] ?? Str::slug($data['name']));
 
         if ($banner) {
-            $data['banner_path'] = $banner->store('banners', 'public');
+            $data['banner_path'] = $this->images->storeResized($banner, 'banners', 1600, 600);
         }
 
         return League::create($data);
@@ -32,7 +34,7 @@ class LeagueService
             if ($league->banner_path) {
                 Storage::disk('public')->delete($league->banner_path);
             }
-            $data['banner_path'] = $banner->store('banners', 'public');
+            $data['banner_path'] = $this->images->storeResized($banner, 'banners', 1600, 600);
         }
 
         $league->update($data);

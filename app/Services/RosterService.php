@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Group;
+use App\Models\League;
 use App\Models\Pair;
 use App\Models\Player;
 use Illuminate\Support\Facades\DB;
@@ -58,5 +59,77 @@ class RosterService
                 ]);
             }
         });
+    }
+    /**
+     * Auto-assign up to $count unassigned players to the given group.
+     * Shuffles to avoid alphabetical bias. Returns number actually assigned.
+     */
+    public function autoFillPlayers(Group $group, int $count): int
+    {
+        $league = $group->league;
+
+        // Collect player IDs currently in any group of this league
+        $assignedIds = \Illuminate\Support\Facades\DB::table('group_player')
+            ->whereIn('group_id', $league->groups()->pluck('id'))
+            ->whereNull('left_at')
+            ->pluck('player_id')
+            ->all();
+
+        $unassigned = $league->players()
+            ->whereNotIn('id', $assignedIds)
+            ->get()
+            ->shuffle()
+            ->take($count);
+
+        foreach ($unassigned as $player) {
+            $this->movePlayer($player, $group);
+        }
+
+        return $unassigned->count();
+    }
+
+    public function autoFillPairs(Group $group, int $count): int
+    {
+        $league = $group->league;
+
+        $assignedIds = \Illuminate\Support\Facades\DB::table('group_pair')
+            ->whereIn('group_id', $league->groups()->pluck('id'))
+            ->whereNull('left_at')
+            ->pluck('pair_id')
+            ->all();
+
+        $unassigned = $league->pairs()
+            ->whereNotIn('id', $assignedIds)
+            ->get()
+            ->shuffle()
+            ->take($count);
+
+        foreach ($unassigned as $pair) {
+            $this->movePair($pair, $group);
+        }
+
+        return $unassigned->count();
+    }
+
+    /**
+     * Count of unassigned players (or pairs in pairs mode) for a league.
+     */
+    public function unassignedCount(League $league): int
+    {
+        if ($league->format === League::FORMAT_PAIRS) {
+            $assignedIds = \Illuminate\Support\Facades\DB::table('group_pair')
+                ->whereIn('group_id', $league->groups()->pluck('id'))
+                ->whereNull('left_at')
+                ->pluck('pair_id')
+                ->all();
+            return $league->pairs()->whereNotIn('id', $assignedIds)->count();
+        }
+
+        $assignedIds = \Illuminate\Support\Facades\DB::table('group_player')
+            ->whereIn('group_id', $league->groups()->pluck('id'))
+            ->whereNull('left_at')
+            ->pluck('player_id')
+            ->all();
+        return $league->players()->whereNotIn('id', $assignedIds)->count();
     }
 }

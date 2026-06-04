@@ -55,7 +55,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('groups/{group}',            [GroupController::class, 'destroy'])->name('groups.destroy');
         Route::post('groups/move-player',          [GroupController::class, 'movePlayer'])->name('groups.move-player');
         Route::post('groups/move-pair',            [GroupController::class, 'movePair'])->name('groups.move-pair');
-
+        Route::post('groups/{group}/auto-fill', [GroupController::class, 'autoFill'])->name('groups.auto-fill');
         // Pairs
         Route::post('pairs',          [PairController::class, 'store'])->name('pairs.store');
         Route::put('pairs/{pair}',    [PairController::class, 'update'])->name('pairs.update');
@@ -121,3 +121,29 @@ Route::post('/{slug}/matches/{match}/propose', [\App\Http\Controllers\PublicMatc
 Route::get('/{slug}', [\App\Http\Controllers\PublicLeagueController::class, 'show'])
     ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
     ->name('public.league');
+
+Route::get('/health', function () {
+    $checks = [
+        'app' => true,
+        'db'  => false,
+        'storage' => false,
+    ];
+
+    try {
+        \Illuminate\Support\Facades\DB::select('SELECT 1');
+        $checks['db'] = true;
+    } catch (\Throwable $e) {
+    }
+
+    try {
+        $checks['storage'] = is_writable(storage_path('logs'));
+    } catch (\Throwable $e) {
+    }
+
+    $ok = !in_array(false, $checks, true);
+    return response()->json([
+        'status' => $ok ? 'ok' : 'degraded',
+        'checks' => $checks,
+        'time'   => now()->toIso8601String(),
+    ], $ok ? 200 : 503);
+});

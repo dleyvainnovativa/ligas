@@ -159,6 +159,16 @@ class MatchSchedulingService
             ->whereNotNull('time_slot')
             ->get();
 
+        // Collect every player id that appears in any match, then fetch their names in one query
+        $allPlayerIds = $matches->flatMap(fn($m) => array_merge(
+            $m->team_a_player_ids ?? [],
+            $m->team_b_player_ids ?? []
+        ))->unique()->values();
+
+        $playerNames = \App\Models\Player::query()
+            ->whereIn('id', $allPlayerIds)
+            ->pluck('full_name', 'id');
+
         $buckets = []; // key: "playerId|date|slot" => match_ids[]
         foreach ($matches as $m) {
             $playerIds = array_merge($m->team_a_player_ids ?? [], $m->team_b_player_ids ?? []);
@@ -172,11 +182,13 @@ class MatchSchedulingService
         foreach ($buckets as $key => $matchIds) {
             if (count($matchIds) < 2) continue;
             [$pid, $date, $slot] = explode('|', $key);
+            $pid = (int) $pid;
             $conflicts[] = [
-                'player_id' => (int) $pid,
-                'date'      => $date,
-                'time_slot' => $slot,
-                'match_ids' => $matchIds,
+                'player_id'   => $pid,
+                'player_name' => $playerNames[$pid] ?? 'Jugador desconocido',
+                'date'        => $date,
+                'time_slot'   => $slot,
+                'match_ids'   => $matchIds,
             ];
         }
         return $conflicts;

@@ -79,63 +79,71 @@ return ['a' => $a, 'b' => $b];
 
     <div class="row g-3 h-100">
         {{-- Sidebar: unscheduled canchas --}}
-        <div class="col-lg-3 overflow-auto h-100">
-            <div class="card-soft p-3" style="top:80px;">
-                <h6 class="mb-3">
+        <div class="col-lg-3">
+            <div class="card-soft p-3 grid-sidebar">
+                {{-- Mobile-only summary header to toggle --}}
+                <button type="button"
+                    class="grid-sidebar-toggle d-lg-none"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#grid-sidebar-body"
+                    aria-expanded="false">
+                    <span>
+                        <i class="fa-solid fa-table-cells text-secondary me-1"></i>
+                        Canchas por programar
+                    </span>
+                    <i class="fa-solid fa-chevron-down toggle-chevron"></i>
+                </button>
+
+                <h6 class="mb-3 d-none d-lg-block">
                     <i class="fa-solid fa-table-cells text-secondary me-1"></i>
                     Canchas por programar
                 </h6>
 
-                <div id="unscheduled-canchas" class="d-flex flex-column gap-2">
-                    @foreach ($jornada->canchas as $cancha)
-                    @php
-                    $matchesInCancha = $cancha->matches;
-                    $unscheduledCount = $matchesInCancha->filter(fn ($m) => !$m->date)->count();
-                    @endphp
-                    @if ($matchesInCancha->isNotEmpty())
-                    <div class="cancha-chip @if($unscheduledCount === 0) is-done @endif"
-                        data-cancha-id="{{ $cancha->id }}"
-                        data-match-count="{{ $matchesInCancha->count() }}">
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <i class="fa-solid fa-table-cells text-secondary"></i>
-                            <strong class="small">{{ $cancha->label }}</strong>
-                            <span class="badge text-bg-secondary ms-auto">
-                                {{ $matchesInCancha->count() - $unscheduledCount }}/{{ $matchesInCancha->count() }}
-                            </span>
-                        </div>
-                        @foreach ($matchesInCancha as $m)
-                        @php $labels = matchLabel($m, $playerNames); @endphp
-                        <div class="match-pill @if($m->date) is-scheduled @endif"
-                            draggable="true"
-                            data-match-id="{{ $m->id }}"
+                <div class="collapse d-lg-block" id="grid-sidebar-body">
+                    <div id="unscheduled-canchas" class="d-flex flex-column gap-2">
+                        {{-- existing cancha-chip foreach loop unchanged --}}
+                        @foreach ($jornada->canchas as $cancha)
+                        @php
+                        $matchesInCancha = $cancha->matches;
+                        $unscheduledCount = $matchesInCancha->filter(fn ($m) => !$m->date)->count();
+                        @endphp
+                        @if ($matchesInCancha->isNotEmpty())
+                        <div class="cancha-chip @if($unscheduledCount === 0) is-done @endif"
                             data-cancha-id="{{ $cancha->id }}"
-                            data-rotation="{{ $m->rotation_index }}">
-                            <div class="match-pill-rot">R{{ $m->rotation_index }}</div>
-                            <div class="match-pill-teams">
-                                <div>{{ $labels['a'] }}</div>
-                                <div class="text-muted small">vs</div>
-                                <div>{{ $labels['b'] }}</div>
+                            data-match-count="{{ $matchesInCancha->count() }}">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="fa-solid fa-table-cells text-secondary"></i>
+                                <strong class="small">{{ $cancha->label }}</strong>
+                                <span class="badge text-bg-secondary ms-auto">
+                                    {{ $matchesInCancha->count() - $unscheduledCount }}/{{ $matchesInCancha->count() }}
+                                </span>
                             </div>
+                            @foreach ($matchesInCancha as $m)
+                            @php $labels = matchLabel($m, $playerNames); @endphp
+                            <div class="match-pill @if($m->date) is-scheduled @endif"
+                                draggable="true"
+                                data-match-id="{{ $m->id }}"
+                                data-cancha-id="{{ $cancha->id }}"
+                                data-rotation="{{ $m->rotation_index }}">
+                                <div class="match-pill-rot">R{{ $m->rotation_index }}</div>
+                                <div class="match-pill-teams">
+                                    <div>{{ $labels['a'] }}</div>
+                                    <div class="text-muted small">vs</div>
+                                    <div>{{ $labels['b'] }}</div>
+                                </div>
+                            </div>
+                            @endforeach
                         </div>
+                        @endif
                         @endforeach
-                        @if ($league->format !== 'pairs' && $unscheduledCount > 0)
-                        <small class="text-secondary d-block mt-1">
-                            <i class="fa-solid fa-circle-info me-1"></i>
-                            Arrastra una rotación al primer slot — se autocompletan 3 horarios.
-                        </small>
+
+                        @if ($jornada->canchas->flatMap->matches->isEmpty())
+                        <div class="empty-state py-3">
+                            <div class="empty-state-icon"><i class="fa-solid fa-circle-info"></i></div>
+                            <p class="small mb-0">Forma canchas en la jornada primero. Cada cancha llena genera sus partidos.</p>
+                        </div>
                         @endif
                     </div>
-                    @endif
-                    @endforeach
-
-                    @if ($jornada->canchas->flatMap->matches->isEmpty())
-                    <div class="empty-state py-3">
-                        <div class="empty-state-icon">
-                            <i class="fa-solid fa-circle-info"></i>
-                        </div>
-                        <p class="small mb-0">Forma canchas en la jornada primero. Cada cancha llena genera sus partidos.</p>
-                    </div>
-                    @endif
                 </div>
             </div>
         </div>
@@ -220,6 +228,36 @@ return ['a' => $a, 'b' => $b];
             </div>
         </div>
     </div>
+</div>
+
+{{-- Tap-to-place picker (rendered as bottom sheet on mobile, popover on desktop) --}}
+<div id="cell-picker" class="cell-picker" role="dialog" aria-hidden="true" aria-modal="false">
+    <div class="cell-picker-backdrop" data-action="close-picker"></div>
+    <div class="cell-picker-panel">
+        <div class="cell-picker-handle" aria-hidden="true"></div>
+        <header class="cell-picker-header">
+            <div class="flex-grow-1 min-w-0">
+                <div class="cell-picker-eyebrow" id="picker-eyebrow">—</div>
+                <h6 class="cell-picker-title mb-0" id="picker-title">Asignar partido</h6>
+            </div>
+            <button type="button" class="btn-icon btn-sm" data-action="close-picker" aria-label="Cerrar">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </header>
+
+        <div class="cell-picker-body" id="picker-body">
+            {{-- filled by JS --}}
+        </div>
+    </div>
+</div>
+
+{{-- First-time hint --}}
+<div id="picker-hint" class="picker-hint" hidden>
+    <i class="fa-solid fa-hand-pointer"></i>
+    <span>Toca cualquier celda para asignar un partido.</span>
+    <button type="button" class="btn-icon btn-sm" data-action="dismiss-hint" aria-label="Entendido">
+        <i class="fa-solid fa-xmark"></i>
+    </button>
 </div>
 @endif
 

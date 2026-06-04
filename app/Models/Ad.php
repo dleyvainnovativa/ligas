@@ -17,6 +17,15 @@ class Ad extends Model
         'position',
     ];
 
+    protected static function booted()
+    {
+        static::deleting(function (Ad $ad) {
+            if ($ad->image_path) {
+                Storage::disk('public')->delete($ad->image_path);
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [

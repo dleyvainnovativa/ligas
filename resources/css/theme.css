@@ -927,6 +927,13 @@ textarea.form-control { line-height: 1.5; }
     cursor: grab;
     user-select: none;
     transition: all var(--transition-fast);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.roster-chip:focus-visible {
+    outline: 2px solid var(--brand-500);
+    outline-offset: 2px;
 }
 .roster-chip:hover {
     border-color: var(--border-default);
@@ -2019,4 +2026,618 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     font-size: 12px;
     color: var(--text-muted);
     font-weight: 600;
+}
+
+/* ---------- ERROR PAGES ---------- */
+.error-body {
+    background: var(--surface-page);
+    min-height: 100vh;
+}
+.error-shell {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6);
+}
+.error-content {
+    max-width: 480px;
+    text-align: center;
+}
+.error-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: var(--space-8);
+    color: var(--text-secondary);
+}
+.error-brand .brand-mark {
+    width: 32px; height: 32px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--brand-500), var(--brand-600));
+    display: grid; place-items: center;
+    color: var(--neutral-900);
+}
+.error-brand .brand-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 15px;
+}
+.error-code {
+    font-family: var(--font-display);
+    font-size: 96px;
+    font-weight: 800;
+    line-height: 1;
+    background: linear-gradient(180deg, var(--brand-500), var(--brand-700));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: var(--space-3);
+}
+.error-content h1 {
+    font-size: 24px;
+    margin-bottom: var(--space-2);
+}
+.error-content p {
+    color: var(--text-secondary);
+    font-size: 15px;
+    margin-bottom: var(--space-6);
+}
+.error-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-danger {
+    background: var(--danger-500);
+    border-color: var(--danger-500);
+    color: #fff;
+    font-weight: 600;
+}
+.btn-danger:hover, .btn-danger:focus-visible {
+    background: var(--danger-700);
+    border-color: var(--danger-700);
+    color: #fff;
+}
+
+/* ---------- ONBOARDING ---------- */
+.onboarding-card {
+    background:
+        radial-gradient(ellipse 60% 50% at top right, color-mix(in srgb, var(--brand-500) 8%, transparent), transparent),
+        var(--surface-card);
+    border: 1px solid var(--border-subtle);
+}
+.onboarding-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--brand-500);
+    color: var(--neutral-900);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: var(--space-3);
+}
+.onboarding-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+}
+.onboarding-step {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: var(--space-3);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+}
+.step-number {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border-radius: var(--radius-pill);
+    background: var(--brand-500);
+    color: var(--neutral-900);
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 13px;
+    font-family: var(--font-mono);
+}
+
+/* ============================================================
+   TAP-TO-PLACE CELL PICKER
+   Bottom sheet on mobile, anchored popover on desktop.
+   ============================================================ */
+
+/* Cell affordance — invisible on hover (desktop has drag) but visible on touch tap-in-progress */
+.grid-cell {
+    position: relative;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.grid-cell:empty::after,
+.grid-cell:not(:has(.cell-match))::after {
+    content: "+";
+    position: absolute;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    width: 22px; height: 22px;
+    border-radius: var(--radius-pill);
+    background: var(--surface-sunken);
+    border: 1px dashed var(--border-default);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+}
+@media (hover: hover) {
+    .grid-cell:not(:has(.cell-match)):hover::after {
+        opacity: 0.7;
+    }
+}
+@media (hover: none) {
+    /* Touch devices: gentle ambient hint so cells look tappable */
+    .grid-cell:not(:has(.cell-match))::after {
+        opacity: 0.35;
+    }
+}
+.grid-cell.picker-active::after {
+    opacity: 1 !important;
+    background: var(--brand-500);
+    color: var(--neutral-900);
+    border-style: solid;
+    border-color: var(--brand-500);
+}
+
+/* Cell with content — make tap target obvious by adding a subtle pointer cursor */
+.cell-match { cursor: pointer; }
+
+/* ---------- Picker shell ---------- */
+.cell-picker {
+    position: fixed;
+    inset: 0;
+    z-index: 1070;
+    pointer-events: none;
+    visibility: hidden;
+}
+.cell-picker.is-open {
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.cell-picker-backdrop {
+    position: absolute;
+    inset: 0;
+    background: var(--surface-overlay);
+    opacity: 0;
+    transition: opacity var(--transition-base);
+}
+.cell-picker.is-open .cell-picker-backdrop {
+    opacity: 1;
+}
+
+/* ---------- Mobile: bottom sheet ---------- */
+.cell-picker-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 85vh;
+    background: var(--surface-card);
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(100%);
+    transition: transform 240ms cubic-bezier(0.32, 0.72, 0, 1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.cell-picker.is-open .cell-picker-panel {
+    transform: translateY(0);
+}
+
+.cell-picker-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--border-default);
+    border-radius: var(--radius-pill);
+    margin: 8px auto 4px;
+    flex-shrink: 0;
+}
+
+.cell-picker-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 8px var(--space-4) var(--space-3);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+}
+.cell-picker-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+    font-family: var(--font-mono);
+}
+.cell-picker-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cell-picker-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: var(--space-3) var(--space-4) var(--space-4);
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ---------- Desktop: anchored popover ---------- */
+@media (min-width: 992px) {
+    .cell-picker { background: transparent; }
+    .cell-picker-backdrop {
+        background: transparent;          /* no dim on desktop popover */
+        pointer-events: none;             /* but still close-on-outside-click via JS */
+    }
+    .cell-picker.is-open .cell-picker-backdrop { opacity: 0; }
+
+    .cell-picker-panel {
+        position: absolute;
+        left: auto; right: auto; bottom: auto;
+        top: 0; /* JS positions */
+        width: 360px;
+        max-height: 480px;
+        border-radius: var(--radius-lg);
+        transform: translateY(-4px) scale(0.98);
+        opacity: 0;
+        transition: transform 160ms ease, opacity 160ms ease;
+        border: 1px solid var(--border-subtle);
+    }
+    .cell-picker.is-open .cell-picker-panel {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    .cell-picker-handle { display: none; }
+    .cell-picker-header { padding: var(--space-3) var(--space-4); }
+}
+
+/* ---------- Picker content: match list ---------- */
+.picker-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin: var(--space-3) 0 var(--space-2);
+}
+.picker-section-label:first-child { margin-top: 0; }
+
+.picker-search {
+    margin-bottom: var(--space-3);
+}
+
+.picker-cancha-group {
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    padding: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+.picker-cancha-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.picker-cancha-label .count {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 11px;
+}
+
+.picker-match {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 10px;
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    margin-top: 4px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    width: 100%;
+    text-align: left;
+}
+.picker-match:hover, .picker-match:focus-visible {
+    border-color: var(--brand-500);
+    box-shadow: var(--shadow-xs);
+}
+.picker-match[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.picker-match-rot {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border-radius: var(--radius-pill);
+    background: var(--text-primary);
+    color: var(--text-inverse);
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+}
+.picker-match-rot.is-completed { background: var(--success-700); }
+.picker-match-rot.is-scheduled { background: var(--info-700); }
+.picker-match-info { flex: 1 1 auto; min-width: 0; }
+.picker-match-teams {
+    font-size: 12.5px;
+    line-height: 1.35;
+    color: var(--text-primary);
+}
+.picker-match-teams .vs {
+    color: var(--text-muted);
+    font-size: 11px;
+    margin: 0 4px;
+}
+.picker-match-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    margin-top: 2px;
+}
+.picker-match-arrow {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+/* Auto-fit option (rotation 1 in individual mode) */
+.picker-autofit {
+    background: color-mix(in srgb, var(--brand-500) 8%, transparent);
+    border-color: color-mix(in srgb, var(--brand-500) 30%, transparent);
+    margin-top: var(--space-2);
+    padding: 12px;
+}
+.picker-autofit:hover {
+    background: color-mix(in srgb, var(--brand-500) 14%, transparent);
+    border-color: var(--brand-500);
+}
+.picker-autofit-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--text-brand);
+    font-size: 13px;
+}
+.picker-autofit-desc {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+/* Picker actions list (occupied cell) */
+.picker-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    margin-top: 6px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: all var(--transition-fast);
+}
+.picker-action:first-of-type { margin-top: 0; }
+.picker-action:hover, .picker-action:focus-visible {
+    border-color: var(--border-default);
+    background: var(--surface-hover);
+}
+.picker-action.is-danger:hover {
+    border-color: var(--danger-500);
+    background: var(--danger-50);
+    color: var(--danger-700);
+}
+.picker-action-icon {
+    width: 32px; height: 32px;
+    border-radius: var(--radius-md);
+    background: var(--surface-sunken);
+    display: grid;
+    place-items: center;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+.picker-action.is-danger .picker-action-icon {
+    background: var(--danger-50);
+    color: var(--danger-700);
+}
+.picker-action-text { flex: 1 1 auto; }
+.picker-action-text strong { display: block; font-size: 13.5px; font-weight: 600; }
+.picker-action-text small { color: var(--text-muted); font-size: 12px; }
+
+.picker-current-match {
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    margin-bottom: var(--space-3);
+}
+.picker-current-teams {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 8px;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 500;
+}
+.picker-current-teams .vs {
+    color: var(--text-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* Empty state inside picker */
+.picker-empty {
+    text-align: center;
+    padding: var(--space-6) var(--space-3);
+    color: var(--text-muted);
+    font-size: 13px;
+}
+.picker-empty i {
+    font-size: 24px;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 8px;
+}
+
+/* ---------- First-time hint ---------- */
+.picker-hint {
+    position: fixed;
+    bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1060;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px 10px 16px;
+    background: var(--neutral-900);
+    color: var(--neutral-50);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-lg);
+    font-size: 13px;
+    font-weight: 500;
+    max-width: calc(100vw - var(--space-6));
+    animation: hint-rise 240ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+[data-bs-theme="dark"] .picker-hint {
+    background: var(--neutral-200);
+    color: var(--neutral-900);
+}
+.picker-hint i { color: var(--brand-500); }
+.picker-hint .btn-icon {
+    background: transparent;
+    border-color: rgba(255,255,255,0.15);
+    color: inherit;
+}
+[data-bs-theme="dark"] .picker-hint .btn-icon {
+    border-color: rgba(0,0,0,0.15);
+}
+@keyframes hint-rise {
+    from { transform: translate(-50%, 100%); opacity: 0; }
+    to   { transform: translate(-50%, 0);    opacity: 1; }
+}
+
+@media (max-width: 767.98px) {
+    .schedule-grid {
+        font-size: 12px;
+    }
+    .schedule-grid thead th { padding: 8px 6px; font-size: 11px; }
+    .row-header-cell {
+        min-width: 90px;
+        padding: 8px;
+    }
+    .row-header-cell .pista-name { font-size: 12px; }
+    .row-header-cell .slot-time { font-size: 11px; }
+    .date-header-cell { min-width: 110px; }
+    .grid-cell {
+        min-width: 110px;
+        min-height: 56px;
+        padding: 3px;
+    }
+    .cell-match { padding: 5px 6px; font-size: 11px; }
+    .cell-match-teams { font-size: 10.5px; line-height: 1.3; }
+    .cell-match-rot { padding: 0 5px; font-size: 9px; }
+    .cell-match-clear, .cell-match-result { display: none; } /* picker handles these */
+}
+
+.grid-sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: transparent;
+    border: 0;
+    padding: 8px 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+.grid-sidebar-toggle .toggle-chevron {
+    transition: transform var(--transition-fast);
+    color: var(--text-muted);
+    font-size: 12px;
+}
+.grid-sidebar-toggle[aria-expanded="true"] .toggle-chevron {
+    transform: rotate(180deg);
+}
+
+@media (max-width: 991.98px) {
+    .grid-sidebar {
+        position: sticky;
+        top: var(--topbar-h);
+        z-index: 30;
+        margin-bottom: var(--space-3);
+    }
+}
+
+@media (min-width: 992px) {
+    .grid-sidebar {
+        position: sticky;
+        top: 80px;
+    }
+}
+
+/* Tighten group card header on narrow screens */
+@media (max-width: 575.98px) {
+    .group-card-header {
+        padding: 8px 10px;
+    }
+    .group-card-header .btn-sm {
+        padding: 4px 7px;
+    }
+    .group-card-header .group-name {
+        font-size: 13px;
+    }
+}
+
+/* Make the auto-fill button feel like a brand action */
+.auto-fill-group {
+    color: var(--brand-700) !important;
+    border-color: var(--brand-500) !important;
+}
+.auto-fill-group:hover, .auto-fill-group:focus-visible {
+    background: var(--brand-500) !important;
+    border-color: var(--brand-500) !important;
+    color: var(--neutral-900) !important;
 }

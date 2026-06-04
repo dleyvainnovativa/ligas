@@ -1,4 +1,4 @@
-<div class="roster-chip" data-player-id="{{ $player->id }}">
+<div class="roster-chip" data-player-id="{{ $player->id }}" role="button" tabindex="0">
     <div class="chip-avatar">{{ mb_substr($player->full_name ?: '?', 0, 1) }}</div>
     <div class="chip-info">
         <div class="chip-name">{{ $player->full_name }}</div>

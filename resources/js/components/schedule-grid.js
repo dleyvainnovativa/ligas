@@ -127,6 +127,7 @@ export function mountScheduleGrid() {
         try {
             const data = await window.app.api.get(cBtn.dataset.url);
             const body = document.getElementById('conflicts-body');
+            console.log(data);
             if (!data.conflicts.length) {
                 body.innerHTML = `<div class="text-success"><i class="fa-solid fa-circle-check me-1"></i> Sin conflictos. </div>`;
             } else {
@@ -135,7 +136,7 @@ export function mountScheduleGrid() {
                     <ul class="mb-0">
                         ${data.conflicts.map(c => `
                             <li>
-                                <strong>Jugador #${c.player_id}</strong> el ${c.date} a las ${c.time_slot}
+                                <strong>${c.player_name} #${c.player_id}</strong> el ${c.date} a las ${c.time_slot}
                                 — partidos: ${c.match_ids.join(', ')}
                             </li>
                         `).join('')}

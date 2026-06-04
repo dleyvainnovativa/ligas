@@ -15,6 +15,57 @@
     $activeCount = $manager->leagues()->where('status', 'active')->count();
     @endphp
 
+    @if ($leagueCount === 0)
+    {{-- First-run state --}}
+    <div class="col-12">
+        <div class="card-soft p-4 p-md-5 onboarding-card">
+            <div class="onboarding-badge">
+                <i class="fa-solid fa-sparkles"></i> Empezar
+            </div>
+            <h2 class="mb-2">Crea tu primera liga</h2>
+            <p class="text-secondary mb-4" style="max-width: 56ch;">
+                En cuatro pasos tienes todo listo: crea la liga con sus reglas y horarios,
+                agrega jugadores (o impórtalos desde CSV), forma grupos y arma el calendario.
+            </p>
+            <div class="onboarding-steps">
+                <div class="onboarding-step">
+                    <div class="step-number">1</div>
+                    <div>
+                        <strong>Configura la liga</strong>
+                        <small class="d-block text-muted">Nombre, formato, jornadas, horarios, sedes y pistas.</small>
+                    </div>
+                </div>
+                <div class="onboarding-step">
+                    <div class="step-number">2</div>
+                    <div>
+                        <strong>Agrega jugadores</strong>
+                        <small class="d-block text-muted">Manualmente o importando un CSV.</small>
+                    </div>
+                </div>
+                <div class="onboarding-step">
+                    <div class="step-number">3</div>
+                    <div>
+                        <strong>Forma grupos y canchas</strong>
+                        <small class="d-block text-muted">Arrastra jugadores a grupos y canchas por jornada.</small>
+                    </div>
+                </div>
+                <div class="onboarding-step">
+                    <div class="step-number">4</div>
+                    <div>
+                        <strong>Programa y comparte</strong>
+                        <small class="d-block text-muted">Acomoda los partidos en el calendario y comparte el link público.</small>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{{ route('leagues.create') }}" class="btn btn-primary btn-lg">
+                    <i class="fa-solid fa-plus me-1"></i> Crear mi primera liga
+                </a>
+            </div>
+        </div>
+    </div>
+    @else
+    {{-- Regular dashboard cards (existing) --}}
     <div class="col-md-4">
         <a href="{{ route('leagues.index') }}" class="card-soft card-interactive p-4 d-block text-decoration-none h-100">
             <div class="d-flex align-items-center gap-3 mb-3">
@@ -40,41 +91,7 @@
         </a>
     </div>
 
-    <div class="col-md-4">
-        <div class="card-soft p-4 h-100">
-            <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="rounded-3 d-flex align-items-center justify-content-center"
-                    style="width:40px;height:40px;background:var(--surface-sunken);color:var(--brand-700);">
-                    <i class="fa-solid fa-circle-info"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <div class="text-muted small text-uppercase fw-semibold" style="letter-spacing:0.06em;">Inicio rápido</div>
-                </div>
-            </div>
-            <p class="text-secondary small mb-3">
-                Crea una liga, agrega jugadores, forma canchas y arma el calendario en minutos.
-            </p>
-            <a href="{{ route('leagues.create') }}" class="btn btn-primary btn-sm">
-                <i class="fa-solid fa-plus me-1"></i> Nueva liga
-            </a>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card-soft p-4 h-100">
-            <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="rounded-3 d-flex align-items-center justify-content-center"
-                    style="width:40px;height:40px;background:var(--surface-sunken);color:var(--brand-700);">
-                    <i class="fa-regular fa-lightbulb"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <div class="text-muted small text-uppercase fw-semibold" style="letter-spacing:0.06em;">Tip</div>
-                </div>
-            </div>
-            <p class="text-secondary small mb-0">
-                Cada liga tiene una <strong>URL pública</strong> para compartir con tus jugadores. Cámbiala en Configuración.
-            </p>
-        </div>
-    </div>
+    {{-- ...rest as before... --}}
+    @endif
 </div>
 @endsection

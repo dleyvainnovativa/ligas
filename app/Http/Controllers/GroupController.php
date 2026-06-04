@@ -32,6 +32,23 @@ class GroupController extends Controller
 
         return response()->json(['group' => $this->serialize($group)]);
     }
+    public function autoFill(Request $request, League $league, Group $group)
+    {
+        $this->authorize('update', $group);
+        abort_unless($group->league_id === $league->id, 404);
+
+        $data = $request->validate([
+            'count' => ['required', 'integer', 'min:1', 'max:200'],
+        ]);
+
+        $assigned = $league->format === League::FORMAT_PAIRS
+            ? $this->roster->autoFillPairs($group, $data['count'])
+            : $this->roster->autoFillPlayers($group, $data['count']);
+
+        return response()->json([
+            'assigned' => $assigned,
+        ]);
+    }
 
     public function update(GroupRequest $request, League $league, Group $group)
     {
