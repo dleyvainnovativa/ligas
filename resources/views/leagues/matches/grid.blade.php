@@ -83,7 +83,7 @@ return ['a' => $a, 'b' => $b];
 
     <div class="row g-3 h-100">
         {{-- Sidebar: unscheduled canchas --}}
-        <div class="col-lg-3">
+        <div class="col-lg-3" style="max-height: 100vh !important;overflow-y: auto;">
             <div class="card-soft p-3 grid-sidebar">
                 {{-- Mobile-only summary header to toggle --}}
                 <button type="button"
