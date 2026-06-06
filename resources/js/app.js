@@ -31,7 +31,7 @@ import { initTheme } from './modules/theme.js';
 import { mountAds } from './components/ads.js';
 import { mountCellPicker } from './components/cell-picker.js';
 import { mountGroupPicker } from './components/group-picker.js';
-
+import { mountCanchaPicker } from './components/cancha-picker.js';
 
 window.bootstrap = bootstrap;
 window.app = { toast, api, loading, modal, serializeForm };
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     mountMatchResult();
     mountCellPicker();
     mountGroupPicker();
-
+ mountCanchaPicker();
 
 });
 

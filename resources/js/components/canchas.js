@@ -4,35 +4,33 @@ export function mountCanchas() {
     const app = document.querySelector('.canchas-app');
     if (!app) return;
 
-    const leagueId    = app.dataset.leagueId;
-    const groupId     = app.dataset.groupId;
-    const jornadaId   = app.dataset.jornadaId;
-    const mode        = app.dataset.mode; // 'individual' | 'pairs'
-    const assignUrl   = app.dataset.assignUrl;
-    const canchaUrlBase = app.dataset.canchaUrlTemplate; // .../canchas
-    const max         = mode === 'pairs' ? 2 : 4;
+    const leagueId      = app.dataset.leagueId;
+    const groupId       = app.dataset.groupId;
+    const jornadaId     = app.dataset.jornadaId;
+    const mode          = app.dataset.mode; // 'individual' | 'pairs'
+    const assignUrl     = app.dataset.assignUrl;
+    const swapUrl       = app.dataset.swapUrl;
+    const canchaUrlBase = app.dataset.canchaUrlTemplate;
+    const max           = mode === 'pairs' ? 2 : 4;
 
     function mountSortables() {
         document.querySelectorAll('.canchas-app .roster-list').forEach((list) => {
             if (list.dataset.sortableMounted) return;
             list.dataset.sortableMounted = '1';
+
             Sortable.create(list, {
-                group: 'cancha-roster',
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                chosenClass: 'sortable-chosen',
-                dragClass: 'sortable-drag',
-                handle: '.roster-chip',
-                // Reject drops into a full cancha
-                onMove: (evt) => {
-                    const target = evt.to;
-                    if (!target.classList.contains('cancha-roster')) return true;
-                    const count = target.querySelectorAll('.roster-chip').length;
-                    return count < max;
-                },
-                onAdd: (evt) => handleMove(evt),
-                onSort: () => updateAllStates(),
-            });
+    group: 'cancha-roster',
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    dragClass: 'sortable-drag',
+    handle: '.roster-chip',
+    emptyInsertThreshold: 20,
+    onChoose:   () => document.body.classList.add('sortable-dragging'),
+    onUnchoose: () => document.body.classList.remove('sortable-dragging'),
+    onAdd:      (evt) => handleMove(evt),
+    onSort:     () => updateAllStates(),
+});
             updateOneState(list);
         });
     }
@@ -43,6 +41,27 @@ export function mountCanchas() {
         const fromList = evt.from;
         const targetCanchaId = parseInt(toList.dataset.canchaId || '0', 10);
 
+        const targetChips = toList.querySelectorAll('.roster-chip');
+        const isTargetCancha = targetCanchaId !== 0;
+        const isOverCapacity = isTargetCancha && targetChips.length > max;
+
+        if (isOverCapacity) {
+            // Find a victim — the chip we displaced, or last one if we landed at the end
+            const ourIndex = Array.from(targetChips).indexOf(chip);
+            let victim = targetChips[ourIndex + 1] || targetChips[ourIndex - 1];
+
+            if (!victim) {
+                window.app.toast.error('No se pudo intercambiar.');
+                fromList.insertBefore(chip, fromList.children[evt.oldIndex] || null);
+                [toList, fromList].forEach(updateOneState);
+                return;
+            }
+
+            await doSwap(chip, victim, fromList, toList, evt);
+            return;
+        }
+
+        // Normal assign / unassign
         const payload = (mode === 'pairs')
             ? { pair_id: parseInt(chip.dataset.pairId, 10),     cancha_id: targetCanchaId || null }
             : { player_id: parseInt(chip.dataset.playerId, 10), cancha_id: targetCanchaId || null };
@@ -57,10 +76,35 @@ export function mountCanchas() {
         }
     }
 
+    async function doSwap(droppedChip, victimChip, fromList, toList, evt) {
+        const payload = (mode === 'pairs')
+            ? {
+                source_pair_id: parseInt(droppedChip.dataset.pairId, 10),
+                target_pair_id: parseInt(victimChip.dataset.pairId, 10),
+            }
+            : {
+                source_player_id: parseInt(droppedChip.dataset.playerId, 10),
+                target_player_id: parseInt(victimChip.dataset.playerId, 10),
+            };
+
+        try {
+            await window.app.api.post(swapUrl, payload);
+            // Move victim chip to source list (the swap mirror)
+            fromList.appendChild(victimChip);
+            window.app.toast.success('Intercambio realizado');
+        } catch (err) {
+            // Roll back: dropped chip back to source, victim stays in target
+            window.app.toast.error(err.message);
+            fromList.insertBefore(droppedChip, fromList.children[evt.oldIndex] || null);
+        } finally {
+            [toList, fromList].forEach(updateOneState);
+        }
+    }
+
     function updateOneState(list) {
         if (list.classList.contains('cancha-pool')) {
-            document.querySelector('.pool-count').textContent =
-                list.querySelectorAll('.roster-chip').length;
+            const el = document.querySelector('.pool-count');
+            if (el) el.textContent = list.querySelectorAll('.roster-chip').length;
             return;
         }
         const card = list.closest('.cancha-card');
@@ -110,9 +154,15 @@ export function mountCanchas() {
             const msg = chipsInside > 0
                 ? `Esta cancha tiene ${chipsInside} ${mode === 'pairs' ? 'pareja(s)' : 'jugador(es)'}. ¿Eliminar de todas formas? Volverán al pool.`
                 : '¿Eliminar esta cancha?';
-            if (!confirm(msg)) return;
+            const ok = await window.app.modal.confirm({
+                title: 'Eliminar cancha',
+                body: msg,
+                confirmText: 'Eliminar',
+                danger: true,
+            });
+            if (!ok) return;
+
             try {
-                // Move occupants back to the pool client-side first
                 const pool = document.querySelector('.cancha-pool');
                 card.querySelectorAll('.roster-chip').forEach(chip => pool.appendChild(chip));
                 await window.app.api.delete(`${canchaUrlBase}/${cid}`);
@@ -125,7 +175,12 @@ export function mountCanchas() {
     // ---- Auto-fill ----
     const autoBtn = document.getElementById('auto-fill-btn');
     autoBtn?.addEventListener('click', async () => {
-        if (!confirm('¿Auto-asignar redistribuye TODOS los miembros del grupo en canchas. ¿Continuar?')) return;
+        const ok = await window.app.modal.confirm({
+            title: 'Auto-asignar',
+            body: '¿Auto-asignar redistribuye TODOS los miembros del grupo en canchas. ¿Continuar?',
+            confirmText: 'Auto-asignar',
+        });
+        if (!ok) return;
         window.app.loading.on(autoBtn);
         try {
             await window.app.api.post(autoBtn.dataset.url, {});

@@ -87,6 +87,32 @@ class CanchaController extends Controller
         return response()->json(['ok' => true, 'slot' => $slot]);
     }
 
+    public function swap(Request $request, League $league, Group $group, Jornada $jornada)
+    {
+        $this->authorize('update', $jornada);
+        abort_unless($jornada->group_id === $group->id && $group->league_id === $league->id, 404);
+
+        if ($league->format === League::FORMAT_PAIRS) {
+            $data = $request->validate([
+                'source_pair_id' => ['required', 'integer'],
+                'target_pair_id' => ['required', 'integer', 'different:source_pair_id'],
+            ]);
+            $source = $league->pairs()->findOrFail($data['source_pair_id']);
+            $target = $league->pairs()->findOrFail($data['target_pair_id']);
+            $this->canchas->swapPairs($jornada, $source, $target);
+            return response()->json(['ok' => true]);
+        }
+
+        $data = $request->validate([
+            'source_player_id' => ['required', 'integer'],
+            'target_player_id' => ['required', 'integer', 'different:source_player_id'],
+        ]);
+        $source = $league->players()->findOrFail($data['source_player_id']);
+        $target = $league->players()->findOrFail($data['target_player_id']);
+        $this->canchas->swapPlayers($jornada, $source, $target);
+        return response()->json(['ok' => true]);
+    }
+
     private function serialize(Cancha $c): array
     {
         return [

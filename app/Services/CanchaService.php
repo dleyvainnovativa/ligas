@@ -173,4 +173,120 @@ class CanchaService
             });
         }
     }
+    /**
+     * Swap two players between canchas (or between a cancha and the pool).
+     * If targetCanchaId is null, the source player moves to the pool — single side move.
+     * Returns the new slots assigned.
+     */
+    public function swapPlayers(Jornada $jornada, Player $sourcePlayer, Player $targetPlayer): void
+    {
+        DB::transaction(function () use ($jornada, $sourcePlayer, $targetPlayer) {
+            // Find current cancha + slot for each player in this jornada
+            $sourceRow = DB::table('cancha_player')
+                ->whereIn('cancha_id', $jornada->canchas()->pluck('id'))
+                ->where('player_id', $sourcePlayer->id)
+                ->first();
+
+            $targetRow = DB::table('cancha_player')
+                ->whereIn('cancha_id', $jornada->canchas()->pluck('id'))
+                ->where('player_id', $targetPlayer->id)
+                ->first();
+
+            // Detach both (so the unique constraints don't fire mid-swap)
+            DB::table('cancha_player')
+                ->where('player_id', $sourcePlayer->id)
+                ->whereIn('cancha_id', $jornada->canchas()->pluck('id'))
+                ->delete();
+
+            DB::table('cancha_player')
+                ->where('player_id', $targetPlayer->id)
+                ->whereIn('cancha_id', $jornada->canchas()->pluck('id'))
+                ->delete();
+
+            // Re-insert each at the OTHER's previous slot
+            if ($sourceRow && $targetRow) {
+                DB::table('cancha_player')->insert([
+                    'cancha_id'  => $targetRow->cancha_id,
+                    'player_id'  => $sourcePlayer->id,
+                    'slot'       => $targetRow->slot,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                DB::table('cancha_player')->insert([
+                    'cancha_id'  => $targetRow->cancha_id === $sourceRow->cancha_id
+                        ? $sourceRow->cancha_id   // same cancha, just slot swap
+                        : $sourceRow->cancha_id,
+                    'player_id'  => $targetPlayer->id,
+                    'slot'       => $sourceRow->slot,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } else if ($sourceRow && !$targetRow) {
+                // Target was in the pool, source was in a cancha → they trade places
+                DB::table('cancha_player')->insert([
+                    'cancha_id'  => $sourceRow->cancha_id,
+                    'player_id'  => $targetPlayer->id,
+                    'slot'       => $sourceRow->slot,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                // Source is now in the pool (no insert needed)
+            } else if (!$sourceRow && $targetRow) {
+                // Source was in the pool, target was in a cancha → they trade places
+                DB::table('cancha_player')->insert([
+                    'cancha_id'  => $targetRow->cancha_id,
+                    'player_id'  => $sourcePlayer->id,
+                    'slot'       => $targetRow->slot,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                // Target is now in the pool
+            }
+            // Both in pool → nothing to do
+        });
+    }
+
+    public function swapPairs(Jornada $jornada, Pair $sourcePair, Pair $targetPair): void
+    {
+        DB::transaction(function () use ($jornada, $sourcePair, $targetPair) {
+            $canchaIds = $jornada->canchas()->pluck('id');
+
+            $sourceRow = DB::table('cancha_pair')
+                ->whereIn('cancha_id', $canchaIds)
+                ->where('pair_id', $sourcePair->id)
+                ->first();
+            $targetRow = DB::table('cancha_pair')
+                ->whereIn('cancha_id', $canchaIds)
+                ->where('pair_id', $targetPair->id)
+                ->first();
+
+            DB::table('cancha_pair')
+                ->whereIn('cancha_id', $canchaIds)
+                ->whereIn('pair_id', [$sourcePair->id, $targetPair->id])
+                ->delete();
+
+            if ($sourceRow && $targetRow) {
+                DB::table('cancha_pair')->insert([
+                    ['cancha_id' => $targetRow->cancha_id, 'pair_id' => $sourcePair->id, 'slot' => $targetRow->slot, 'created_at' => now(), 'updated_at' => now()],
+                    ['cancha_id' => $sourceRow->cancha_id, 'pair_id' => $targetPair->id, 'slot' => $sourceRow->slot, 'created_at' => now(), 'updated_at' => now()],
+                ]);
+            } else if ($sourceRow) {
+                DB::table('cancha_pair')->insert([
+                    'cancha_id'  => $sourceRow->cancha_id,
+                    'pair_id'    => $targetPair->id,
+                    'slot'       => $sourceRow->slot,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } else if ($targetRow) {
+                DB::table('cancha_pair')->insert([
+                    'cancha_id'  => $targetRow->cancha_id,
+                    'pair_id'    => $sourcePair->id,
+                    'slot'       => $targetRow->slot,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        });
+    }
 }

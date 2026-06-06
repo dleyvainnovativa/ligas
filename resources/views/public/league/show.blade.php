@@ -165,8 +165,24 @@ $totals = $payload['totals'];
     </div>
 </div>
 
+@php
+$publicMatches = collect($payload['groups'])
+    ->flatMap(fn ($g) => array_merge($g['upcoming'], $g['recent']))
+    ->flatMap(fn ($cancha) => collect($cancha['rounds'])->map(fn ($round) => array_merge(
+        $round,
+        [
+            'date_display' => $cancha['date_display'] ?? null,
+            'time_slot'    => $cancha['time_slot'] ?? null,
+        ]
+    )))
+    ->keyBy('id');
+@endphp
+
+<script>
+</script>
+
 <script>
     window.__publicLeagueSlug = @json($league->slug);
-    window.__publicMatches = @json(collect($payload['groups'])->flatMap(fn($g) => array_merge($g['upcoming'], $g['recent']))->keyBy('id'));
+    window.__publicMatches = @json($publicMatches);
 </script>
 @endsection

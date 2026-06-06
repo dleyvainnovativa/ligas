@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CanchaController;
+use App\Http\Controllers\CanchaScheduleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GameMatchController;
 use App\Http\Controllers\GroupController;
@@ -22,14 +23,14 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/auth/session', [AuthController::class, 'sessionLogin'])->name('auth.session');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// ... all your existing routes ...
-
 
 // Manager area
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('leagues', LeagueController::class);
+
     Route::prefix('leagues/{league}')->name('leagues.')->group(function () {
+
         // Sedes
         Route::post('sedes',               [SedeController::class, 'store'])->name('sedes.store');
         Route::put('sedes/{sede}',         [SedeController::class, 'update'])->name('sedes.update');
@@ -55,7 +56,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('groups/{group}',            [GroupController::class, 'destroy'])->name('groups.destroy');
         Route::post('groups/move-player',          [GroupController::class, 'movePlayer'])->name('groups.move-player');
         Route::post('groups/move-pair',            [GroupController::class, 'movePair'])->name('groups.move-pair');
-        Route::post('groups/{group}/auto-fill', [GroupController::class, 'autoFill'])->name('groups.auto-fill');
+        Route::post('groups/{group}/auto-fill',    [GroupController::class, 'autoFill'])->name('groups.auto-fill');
+
         // Pairs
         Route::post('pairs',          [PairController::class, 'store'])->name('pairs.store');
         Route::put('pairs/{pair}',    [PairController::class, 'update'])->name('pairs.update');
@@ -69,39 +71,52 @@ Route::middleware('auth')->group(function () {
         Route::delete('groups/{group}/jornadas/{jornada}',          [JornadaController::class, 'destroy'])->name('jornadas.destroy');
         Route::post('groups/{group}/jornadas/{jornada}/auto-fill',  [JornadaController::class, 'autoFill'])->name('jornadas.auto-fill');
 
-        // Canchas (within a jornada)
-        Route::post('groups/{group}/jornadas/{jornada}/canchas',                  [CanchaController::class, 'store'])->name('canchas.store');
-        Route::put('groups/{group}/jornadas/{jornada}/canchas/{cancha}',          [CanchaController::class, 'update'])->name('canchas.update');
-        Route::delete('groups/{group}/jornadas/{jornada}/canchas/{cancha}',       [CanchaController::class, 'destroy'])->name('canchas.destroy');
-        Route::post('groups/{group}/jornadas/{jornada}/canchas/assign',           [CanchaController::class, 'assign'])->name('canchas.assign');
-
-        // Scheduling grid
+        // Canchas (roster: assigning players/pairs into a cancha)
+        Route::post('groups/{group}/jornadas/{jornada}/canchas',                [CanchaController::class, 'store'])->name('canchas.store');
+        Route::put('groups/{group}/jornadas/{jornada}/canchas/{cancha}',        [CanchaController::class, 'update'])->name('canchas.update');
+        Route::delete('groups/{group}/jornadas/{jornada}/canchas/{cancha}',     [CanchaController::class, 'destroy'])->name('canchas.destroy');
+        Route::post('groups/{group}/jornadas/{jornada}/canchas/assign',         [CanchaController::class, 'assign'])->name('canchas.assign');
+        Route::post(
+            'groups/{group}/jornadas/{jornada}/canchas/swap',
+            [CanchaController::class, 'swap']
+        )->name('canchas.swap');
+        // Scheduling grid (read-only view)
         Route::get('groups/{group}/jornadas/{jornada}/grid', [GameMatchController::class, 'gridIndex'])
             ->name('matches.grid');
-        Route::put('groups/{group}/jornadas/{jornada}/matches/{match}/schedule', [GameMatchController::class, 'schedule'])
-            ->name('matches.schedule');
-        Route::post('groups/{group}/jornadas/{jornada}/canchas/{cancha}/auto-fit', [GameMatchController::class, 'autoFit'])
-            ->name('matches.auto-fit');
-        Route::get('groups/{group}/jornadas/{jornada}/conflicts', [GameMatchController::class, 'conflicts'])
-            ->name('matches.conflicts');
 
-        // Match results
-        Route::get(
-            'groups/{group}/jornadas/{jornada}/matches/{match}/result',
-            [GameMatchController::class, 'showResult']
-        )->name('matches.show-result');
+        // Cancha-level scheduling (date + time + pista per cancha)
         Route::put(
-            'groups/{group}/jornadas/{jornada}/matches/{match}/result',
+            'groups/{group}/jornadas/{jornada}/canchas/{cancha}/schedule',
+            [CanchaScheduleController::class, 'schedule']
+        )->name('canchas.schedule');
+
+        // Cancha-level result entry (records all rounds together)
+        Route::get(
+            'groups/{group}/jornadas/{jornada}/canchas/{cancha}/result',
+            [GameMatchController::class, 'showResult']
+        )->name('canchas.show-result');
+        Route::put(
+            'groups/{group}/jornadas/{jornada}/canchas/{cancha}/result',
             [GameMatchController::class, 'saveResult']
-        )->name('matches.save-result');
-        Route::delete(
-            'groups/{group}/jornadas/{jornada}/matches/{match}/proposal/{proposal}',
-            [GameMatchController::class, 'rejectProposal']
-        )->name('matches.reject-proposal');
+        )->name('canchas.save-result');
+
+        // Conflicts (still per jornada)
+        Route::get(
+            'groups/{group}/jornadas/{jornada}/conflicts',
+            [GameMatchController::class, 'conflicts']
+        )->name('matches.conflicts');
+
+        // Auto-generate calendar (places all canchas randomly without conflicts)
         Route::post(
             'groups/{group}/jornadas/{jornada}/auto-generate',
             [GameMatchController::class, 'autoGenerate']
         )->name('matches.auto-generate');
+
+        // Per-round proposal rejection (proposals still attach to individual rounds/matches)
+        Route::delete(
+            'groups/{group}/jornadas/{jornada}/matches/{match}/proposal/{proposal}',
+            [GameMatchController::class, 'rejectProposal']
+        )->name('matches.reject-proposal');
 
         // Standings
         Route::get('standings', [StandingsController::class, 'index'])->name('standings.index');
@@ -116,7 +131,7 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-// PUBLIC: propose a score
+// PUBLIC: propose a score (still operates on a single round/match)
 Route::post('/{slug}/matches/{match}/propose', [\App\Http\Controllers\PublicMatchProposalController::class, 'store'])
     ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
     ->name('public.match.propose');

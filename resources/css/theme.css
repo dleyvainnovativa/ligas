@@ -2558,26 +2558,16 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
 }
 
 @media (max-width: 767.98px) {
-    .schedule-grid {
-        font-size: 12px;
-    }
+    .schedule-grid { font-size: 12px; }
     .schedule-grid thead th { padding: 8px 6px; font-size: 11px; }
-    .row-header-cell {
-        min-width: 90px;
-        padding: 8px;
-    }
+    .row-header-cell { min-width: 90px; padding: 8px; }
     .row-header-cell .pista-name { font-size: 12px; }
     .row-header-cell .slot-time { font-size: 11px; }
-    .date-header-cell { min-width: 110px; }
-    .grid-cell {
-        min-width: 110px;
-        min-height: 56px;
-        padding: 3px;
-    }
-    .cell-match { padding: 5px 6px; font-size: 11px; }
-    .cell-match-teams { font-size: 10.5px; line-height: 1.3; }
-    .cell-match-rot { padding: 0 5px; font-size: 9px; }
-    .cell-match-clear, .cell-match-result { display: none; } /* picker handles these */
+    .date-header-cell { min-width: 120px; }
+    .grid-cell { min-width: 120px; min-height: 70px; padding: 3px; }
+    .cell-cancha { padding: 4px 6px 6px; font-size: 10.5px; }
+    .cell-cancha-players > div { font-size: 10.5px; }
+    .cell-cancha-result, .cell-cancha-clear { display: none; }  /* picker handles these */
 }
 
 .grid-sidebar-toggle {
@@ -2641,3 +2631,289 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     border-color: var(--brand-500) !important;
     color: var(--neutral-900) !important;
 }
+
+.round-section {
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    margin-bottom: var(--space-3);
+}
+.round-section-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: var(--space-3);
+}
+.round-section-badge {
+    background: var(--brand-500);
+    color: var(--neutral-900);
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: var(--font-mono);
+}
+
+.cancha-players-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: var(--space-2) 0;
+    padding: 6px 8px;
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+}
+.cancha-player {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+.cancha-player::after { content: " · "; color: var(--text-muted); }
+.cancha-player:last-child::after { content: ""; }
+
+.public-round {
+    padding: 8px 0;
+    border-top: 1px dashed var(--border-subtle);
+    font-size: 12.5px;
+}
+.public-round:first-of-type { border-top: 0; }
+.public-round-label {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 2px;
+}
+.public-round-teams {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 8px;
+    align-items: center;
+}
+.public-round-teams .is-winner { color: var(--text-brand); font-weight: 700; }
+.public-round-score {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    text-align: center;
+    color: var(--text-primary);
+}
+.public-round-sets {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    margin-top: 4px;
+}
+.public-round-sets .set-tag {
+    background: var(--surface-sunken);
+    border-radius: var(--radius-xs);
+    padding: 1px 6px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--text-secondary);
+}
+
+/* Cell cancha (replaces cell-match) */
+.cell-cancha {
+    background: var(--text-primary);
+    color: var(--text-inverse);
+    border-radius: var(--radius-sm);
+    padding: 6px 8px 8px;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: var(--shadow-xs);
+    font-size: 11.5px;
+    line-height: 1.3;
+}
+.cell-cancha:hover { box-shadow: var(--shadow-sm); }
+.cell-cancha.is-completed { background: var(--success-700); }
+.cell-cancha.dragging { opacity: 0.4; }
+
+.cell-cancha-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 2px;
+    font-family: var(--font-mono);
+}
+.cell-cancha-players { line-height: 1.35; margin-bottom: 4px; }
+.cell-cancha-players > div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11.5px;
+}
+
+.cell-cancha-rounds {
+    display: flex;
+    gap: 3px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+.round-pill {
+    background: rgba(255,255,255,0.15);
+    padding: 1px 6px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.round-pill.completed {
+    background: rgba(255,255,255,0.3);
+}
+.round-pill-score { opacity: 0.85; }
+
+.cell-cancha-result, .cell-cancha-clear {
+    position: absolute;
+    top: 4px;
+    border: 0;
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    width: 18px; height: 18px;
+    border-radius: var(--radius-pill);
+    font-size: 10px;
+    line-height: 1;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+}
+.cell-cancha-clear { right: 4px; }
+.cell-cancha-result { right: 26px; }
+.cell-cancha-clear:hover, .cell-cancha-result:hover { background: rgba(0,0,0,0.35); }
+
+/* Sidebar cancha pill (replaces match-pill) */
+.cancha-pill {
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 6px 8px;
+    cursor: grab;
+    user-select: none;
+    margin-top: 6px;
+    font-size: 12px;
+}
+.cancha-pill.is-scheduled {
+    opacity: 0.55;
+    cursor: default;
+}
+.cancha-pill-players {
+    line-height: 1.4;
+    color: var(--text-primary);
+}
+.cancha-pill-players > div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.cancha-pill-meta {
+    margin-top: 2px;
+    font-size: 11px;
+}
+
+/* Hide old match-pill / cell-match if any are still rendered somewhere */
+.match-pill, .cell-match { display: none !important; }
+
+.canchas-app .cancha-pool {
+    min-height: 240px;
+}
+.canchas-app .cancha-pool.is-empty::after {
+    /* Override the generic "Suelta aquí" hint with a larger drop zone */
+    padding: 3rem 1.5rem;
+}
+
+/* Mobile: bigger chip touch targets, drag affordance hidden (we use tap) */
+@media (max-width: 991.98px), (hover: none) {
+    .canchas-app .roster-chip {
+        padding: 12px 14px;
+        font-size: 14px;
+        cursor: pointer;
+    }
+    .canchas-app .roster-chip .chip-grip {
+        display: none;
+    }
+    .canchas-app .roster-chip .chip-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+    .canchas-app .cancha-card {
+        padding: 12px;
+    }
+    .canchas-app .cancha-pool {
+        min-height: 120px;     /* less critical on mobile; tap doesn't need height */
+    }
+    /* Stack canchas vertically full-width on small screens */
+    .canchas-app .cancha-card-wrapper {
+        flex-basis: 100%;
+        max-width: 100%;
+    }
+}
+
+/* The picker tap target for cancha members during swap */
+.cancha-picker-member {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-card);
+    border-radius: var(--radius-md);
+    margin-top: 6px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    width: 100%;
+    text-align: left;
+}
+.cancha-picker-member:hover, .cancha-picker-member:focus-visible {
+    border-color: var(--brand-500);
+    box-shadow: var(--shadow-xs);
+}
+.cancha-picker-member-avatar {
+    width: 36px; height: 36px;
+    background: var(--surface-sunken);
+    color: var(--text-secondary);
+    border-radius: var(--radius-pill);
+    display: grid;
+    place-items: center;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+.cancha-picker-member-info {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.cancha-picker-member-name {
+    font-size: 14px;
+    color: var(--text-primary);
+}
+.cancha-picker-member-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.cancha-picker-back-btn {
+    background: transparent;
+    border: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    padding: 4px 0;
+    cursor: pointer;
+    margin-bottom: var(--space-2);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.cancha-picker-back-btn:hover { color: var(--text-primary); }

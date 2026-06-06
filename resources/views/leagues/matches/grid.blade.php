@@ -8,27 +8,33 @@ $scheduler = app(\App\Services\MatchSchedulingService::class);
 $dates = $scheduler->enumerateDates($jornada);
 $timeSlots = collect($league->time_slots ?? [])->sort()->values()->all();
 $sedes = $league->sedes()->with('pistas')->orderBy('position')->get();
-
-// Build maps of all matches keyed by (date|slot|pista_id)
-$matchesByCell = [];
-$unscheduledMatches = [];
 $playerNames = $league->players()->pluck('full_name', 'id');
 
+// Map canchas by cell
+$canchasByCell = [];
+$unscheduledCanchas = [];
 foreach ($jornada->canchas as $cancha) {
-foreach ($cancha->matches as $match) {
-if ($match->date && $match->time_slot && $match->pista_id) {
-$key = $match->date->toDateString()."|".$match->time_slot."|".$match->pista_id;
-$matchesByCell[$key][] = $match;
+if ($cancha->date && $cancha->time_slot && $cancha->pista_id) {
+$key = $cancha->date->toDateString()."|".$cancha->time_slot."|".$cancha->pista_id;
+$canchasByCell[$key] = $cancha;
 } else {
-$unscheduledMatches[] = $match;
-}
+$unscheduledCanchas[] = $cancha;
 }
 }
 
-function matchLabel($match, $playerNames) {
-$a = collect($match->team_a_player_ids)->map(fn ($id) => $playerNames[$id] ?? '?')->implode(' / ');
-$b = collect($match->team_b_player_ids)->map(fn ($id) => $playerNames[$id] ?? '?')->implode(' / ');
-return ['a' => $a, 'b' => $b];
+function canchaLabel($cancha, $playerNames) {
+$cancha->loadMissing(['players', 'pairs.playerA', 'pairs.playerB']);
+if ($cancha->players->isNotEmpty()) {
+return $cancha->players->map(fn ($p) => $playerNames[$p->id] ?? '?')->all();
+}
+return $cancha->pairs->flatMap(fn ($pair) => [
+$pair->playerA?->full_name ?? '?',
+$pair->playerB?->full_name ?? '?',
+])->all();
+}
+
+function canchaCompletedCount($cancha) {
+return $cancha->rounds->where('status', \App\Models\GameMatch::STATUS_COMPLETED)->count();
 }
 @endphp
 
@@ -78,7 +84,7 @@ return ['a' => $a, 'b' => $b];
     data-group-id="{{ $group->id }}"
     data-jornada-id="{{ $jornada->id }}"
     data-mode="{{ $league->format }}"
-    data-schedule-url-template="{{ url("/leagues/{$league->id}/groups/{$group->id}/jornadas/{$jornada->id}/matches/__ID__/schedule") }}"
+    data-schedule-url-template="{{ url("/leagues/{$league->id}/groups/{$group->id}/jornadas/{$jornada->id}/canchas/__ID__/schedule") }}"
     data-autofit-url-template="{{ url("/leagues/{$league->id}/groups/{$group->id}/jornadas/{$jornada->id}/canchas/__ID__/auto-fit") }}">
 
     <div class="row g-3 h-100">
@@ -105,46 +111,47 @@ return ['a' => $a, 'b' => $b];
 
                 <div class="collapse d-lg-block" id="grid-sidebar-body">
                     <div id="unscheduled-canchas" class="d-flex flex-column gap-2">
-                        {{-- existing cancha-chip foreach loop unchanged --}}
                         @foreach ($jornada->canchas as $cancha)
                         @php
-                        $matchesInCancha = $cancha->matches;
-                        $unscheduledCount = $matchesInCancha->filter(fn ($m) => !$m->date)->count();
+                        $isScheduled = $cancha->date && $cancha->time_slot && $cancha->pista_id;
+                        $players = canchaLabel($cancha, $playerNames);
                         @endphp
-                        @if ($matchesInCancha->isNotEmpty())
-                        <div class="cancha-chip @if($unscheduledCount === 0) is-done @endif"
-                            data-cancha-id="{{ $cancha->id }}"
-                            data-match-count="{{ $matchesInCancha->count() }}">
+                        <div class="cancha-chip @if($isScheduled) is-done @endif"
+                            data-cancha-id="{{ $cancha->id }}">
                             <div class="d-flex align-items-center gap-2 mb-1">
                                 <i class="fa-solid fa-table-cells text-secondary"></i>
                                 <strong class="small">{{ $cancha->label }}</strong>
-                                <span class="badge text-bg-secondary ms-auto">
-                                    {{ $matchesInCancha->count() - $unscheduledCount }}/{{ $matchesInCancha->count() }}
+                                <span class="badge text-bg-{{ $isScheduled ? 'success' : 'secondary' }} ms-auto">
+                                    @if ($isScheduled)
+                                    Programada
+                                    @else
+                                    Pendiente
+                                    @endif
                                 </span>
                             </div>
-                            @foreach ($matchesInCancha as $m)
-                            @php $labels = matchLabel($m, $playerNames); @endphp
-                            <div class="match-pill @if($m->date) is-scheduled @endif"
+
+                            <div class="cancha-pill @if($isScheduled) is-scheduled @endif"
                                 draggable="true"
-                                data-match-id="{{ $m->id }}"
-                                data-cancha-id="{{ $cancha->id }}"
-                                data-rotation="{{ $m->rotation_index }}">
-                                <div class="match-pill-rot">R{{ $m->rotation_index }}</div>
-                                <div class="match-pill-teams">
-                                    <div>{{ $labels['a'] }}</div>
-                                    <div class="text-muted small">vs</div>
-                                    <div>{{ $labels['b'] }}</div>
+                                data-cancha-id="{{ $cancha->id }}">
+                                <div class="cancha-pill-players">
+                                    @foreach ($players as $name)
+                                    <div>{{ $name }}</div>
+                                    @endforeach
+                                </div>
+                                <div class="cancha-pill-meta text-muted small">
+                                    {{ $cancha->rounds->count() }} {{ $cancha->rounds->count() === 1 ? 'ronda' : 'rondas' }}
+                                    @if ($cancha->rounds->count() > 0)
+                                    · {{ canchaCompletedCount($cancha) }} completadas
+                                    @endif
                                 </div>
                             </div>
-                            @endforeach
                         </div>
-                        @endif
                         @endforeach
 
-                        @if ($jornada->canchas->flatMap->matches->isEmpty())
+                        @if ($jornada->canchas->isEmpty())
                         <div class="empty-state py-3">
                             <div class="empty-state-icon"><i class="fa-solid fa-circle-info"></i></div>
-                            <p class="small mb-0">Forma canchas en la jornada primero. Cada cancha llena genera sus partidos.</p>
+                            <p class="small mb-0">Forma canchas en la jornada primero.</p>
                         </div>
                         @endif
                     </div>
@@ -191,35 +198,46 @@ return ['a' => $a, 'b' => $b];
                                     data-date="{{ $d->toDateString() }}"
                                     data-slot="{{ $slot }}"
                                     data-pista-id="{{ $pista->id }}">
-                                    @foreach ($cellMatches as $m)
-                                    @php $labels = matchLabel($m, $playerNames); @endphp
-                                    <div class="cell-match @if($m->status === 'completed') is-completed @endif"
+                                    @php
+                                    $key = $d->toDateString()."|{$slot}|{$pista->id}";
+                                    $cellCancha = $canchasByCell[$key] ?? null;
+                                    @endphp
+                                    @if ($cellCancha)
+                                    @php
+                                    $players = canchaLabel($cellCancha, $playerNames);
+                                    $completedCount = canchaCompletedCount($cellCancha);
+                                    $totalRounds = $cellCancha->rounds->count();
+                                    $allDone = $totalRounds > 0 && $completedCount === $totalRounds;
+                                    @endphp
+                                    <div class="cell-cancha @if($allDone) is-completed @endif"
                                         draggable="true"
-                                        data-match-id="{{ $m->id }}"
-                                        data-cancha-id="{{ $m->cancha_id }}"
-                                        data-rotation="{{ $m->rotation_index }}">
-                                        <div class="cell-match-rot">R{{ $m->rotation_index }}</div>
-                                        <div class="cell-match-teams">
-                                            <div>{{ $labels['a'] }}</div>
-                                            <div class="text-muted small">vs</div>
-                                            <div>{{ $labels['b'] }}</div>
+                                        data-cancha-id="{{ $cellCancha->id }}">
+                                        <div class="cell-cancha-label">{{ $cellCancha->label }}</div>
+                                        <div class="cell-cancha-players">
+                                            @foreach ($players as $name)
+                                            <div>{{ $name }}</div>
+                                            @endforeach
                                         </div>
-                                        @if ($m->status === 'completed')
-                                        @php $tally = $m->tally(); @endphp
-                                        <div class="cell-match-score">
-                                            <span class="@if($m->winner === 'a') fw-bold @endif">{{ $tally['sets_a'] }}</span>
-                                            <span class="text-muted mx-1">·</span>
-                                            <span class="@if($m->winner === 'b') fw-bold @endif">{{ $tally['sets_b'] }}</span>
+                                        <div class="cell-cancha-rounds">
+                                            @foreach ($cellCancha->rounds as $round)
+                                            @php $t = $round->status === 'completed' ? $round->tally() : null; @endphp
+                                            <span class="round-pill {{ $round->status }}"
+                                                @if($t) title="R{{ $round->rotation_index }}: {{ $t['games_a'] }}–{{ $t['games_b'] }}" @endif>
+                                                R{{ $round->rotation_index }}
+                                                @if ($t)
+                                                <span class="round-pill-score">{{ $t['sets_a'] }}-{{ $t['sets_b'] }}</span>
+                                                @endif
+                                            </span>
+                                            @endforeach
                                         </div>
-                                        @endif
-                                        <button class="cell-match-result" title="Resultado" data-match-id="{{ $m->id }}">
+                                        <button class="cell-cancha-result" title="Resultado" data-cancha-id="{{ $cellCancha->id }}">
                                             <i class="fa-solid fa-pencil"></i>
                                         </button>
-                                        <button class="cell-match-clear" title="Quitar de la programación">
+                                        <button class="cell-cancha-clear" title="Quitar de la programación">
                                             <i class="fa-solid fa-xmark"></i>
                                         </button>
                                     </div>
-                                    @endforeach
+                                    @endif
                                 </td>
                                 @endforeach
                             </tr>

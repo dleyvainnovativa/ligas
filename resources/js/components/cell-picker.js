@@ -41,25 +41,22 @@ export function mountCellPicker() {
 
     // ---- Cell tap handler ----
     document.addEventListener('click', (e) => {
-        // Skip if clicking on the small icon buttons on a scheduled match
-        // (the ✕ and ✎ shortcuts) — they have their own handlers.
-        if (e.target.closest('.cell-match-clear, .cell-match-result')) return;
+    // Skip if clicking on the small icon buttons on a scheduled cancha
+    if (e.target.closest('.cell-cancha-clear, .cell-cancha-result')) return;
 
-        const cell = e.target.closest('.grid-cell');
-        if (!cell || !grid.contains(cell)) return;
+    const cell = e.target.closest('.grid-cell');
+    if (!cell || !grid.contains(cell)) return;
 
-        // Skip if we're mid-drag
-        if (document.querySelector('.dragging')) return;
+    if (document.querySelector('.dragging')) return;
 
-        // If we're in reschedule mode, route to target handling and stop here
-        if (rescheduleMatchId) {
-            e.stopImmediatePropagation();
-            handleRescheduleTarget(cell);
-            return;
-        }
+    if (rescheduleMatchId) {
+        e.stopImmediatePropagation();
+        handleRescheduleTarget(cell);
+        return;
+    }
 
-        openPicker(cell);
-    });
+    openPicker(cell);
+});
 
     // ---- Close / dismiss handlers (use closest so clicks on inner <i> also work) ----
     document.addEventListener('click', (e) => {
@@ -88,39 +85,38 @@ export function mountCellPicker() {
 
     // ---- Main entry point ----
     function openPicker(cell) {
-        if (activeCell) activeCell.classList.remove('picker-active');
-        activeCell = cell;
-        cell.classList.add('picker-active');
+    if (activeCell) activeCell.classList.remove('picker-active');
+    activeCell = cell;
+    cell.classList.add('picker-active');
 
-        // On mobile, scroll the cell up so it's not behind the bottom sheet
-        if (!isDesktop) {
-            const rect = cell.getBoundingClientRect();
-            const viewport = window.innerHeight;
-            const sheetHeight = viewport * 0.85;
-            const cellBottom = rect.bottom;
-            const visibleArea = viewport - sheetHeight;
-            if (cellBottom > visibleArea - 20) {
-                window.scrollBy({
-                    top: cellBottom - visibleArea + 40,
-                    behavior: 'smooth',
-                });
-            }
+    if (!isDesktop) {
+        const rect = cell.getBoundingClientRect();
+        const viewport = window.innerHeight;
+        const sheetHeight = viewport * 0.85;
+        const cellBottom = rect.bottom;
+        const visibleArea = viewport - sheetHeight;
+        if (cellBottom > visibleArea - 20) {
+            window.scrollBy({
+                top: cellBottom - visibleArea + 40,
+                behavior: 'smooth',
+            });
         }
-
-        const existing = cell.querySelector('.cell-match');
-        renderHeader(cell);
-
-        if (existing) {
-            renderOccupiedActions(cell, existing);
-        } else {
-            renderEmptyPicker(cell);
-        }
-
-        picker.classList.add('is-open');
-        positionPanel();
-        maybeShowHint();
-        trapFocus();
     }
+
+    const existing = cell.querySelector('.cell-cancha');   // ← was .cell-match
+    renderHeader(cell);
+
+    if (existing) {
+        renderOccupiedActions(cell, existing);
+    } else {
+        renderEmptyPicker(cell);
+    }
+
+    picker.classList.add('is-open');
+    positionPanel();
+    maybeShowHint();
+    trapFocus();
+}
 
     function closePicker() {
         picker.classList.remove('is-open');
@@ -198,21 +194,19 @@ export function mountCellPicker() {
     }
 
     function matchRowHtml(m) {
-        const showAutofit = (mode === 'individual' && m.rotationIndex === 1 && m.canchaHasMultipleMatches);
-        return `
-            <button type="button" class="picker-match" data-match-id="${m.id}" data-cancha-id="${m.canchaId}">
-                <span class="picker-match-rot">R${m.rotationIndex}</span>
-                <span class="picker-match-info">
-                    <span class="picker-match-teams">
-                        ${escape(m.teamAText)} <span class="vs">vs</span> ${escape(m.teamBText)}
-                    </span>
-                    <span class="picker-match-meta">${escape(m.canchaLabel)}</span>
+    return `
+        <button type="button" class="picker-match" data-cancha-id="${m.canchaId}">
+            <span class="picker-match-rot"><i class="fa-solid fa-table-cells" style="font-size:10px;"></i></span>
+            <span class="picker-match-info">
+                <span class="picker-match-teams">
+                    ${m.playerNames.map(n => escape(n)).join(' · ')}
                 </span>
-                <i class="fa-solid fa-chevron-right picker-match-arrow"></i>
-            </button>
-            ${showAutofit ? autofitRowHtml(m) : ''}
-        `;
-    }
+                <span class="picker-match-meta">${escape(m.canchaLabel)}</span>
+            </span>
+            <i class="fa-solid fa-chevron-right picker-match-arrow"></i>
+        </button>
+    `;
+}
 
     function autofitRowHtml(m) {
         return `
@@ -234,40 +228,33 @@ export function mountCellPicker() {
     }
 
     function wireMatchRows(cell) {
-        body.querySelectorAll('.picker-match').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const matchId  = btn.dataset.matchId;
-                const canchaId = btn.dataset.canchaId;
-                const isAutofit = btn.dataset.action === 'autofit';
+    body.querySelectorAll('.picker-match').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const canchaId = btn.dataset.canchaId;
+            if (!canchaId) {
+                window.app.toast.error('No se pudo identificar la cancha.');
+                return;
+            }
 
-                btn.disabled = true;
-                btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Asignando…`;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Asignando…`;
 
-                try {
-                    if (isAutofit) {
-                        const url = autofitUrlTpl.replace('__ID__', canchaId);
-                        await window.app.api.post(url, {
-                            date:      cell.dataset.date,
-                            time_slot: cell.dataset.slot,
-                            pista_id:  parseInt(cell.dataset.pistaId, 10),
-                        });
-                    } else {
-                        const url = scheduleUrlTpl.replace('__ID__', matchId);
-                        await window.app.api.put(url, {
-                            date:      cell.dataset.date,
-                            time_slot: cell.dataset.slot,
-                            pista_id:  parseInt(cell.dataset.pistaId, 10),
-                        });
-                    }
-                    closePicker();
-                    window.location.reload();
-                } catch (err) {
-                    window.app.toast.error(err.message);
-                    btn.disabled = false;
-                }
-            });
+            try {
+                const url = scheduleUrlTpl.replace('__ID__', canchaId);
+                await window.app.api.put(url, {
+                    date:      cell.dataset.date,
+                    time_slot: cell.dataset.slot,
+                    pista_id:  parseInt(cell.dataset.pistaId, 10),
+                });
+                closePicker();
+                window.location.reload();
+            } catch (err) {
+                window.app.toast.error(err.message);
+                btn.disabled = false;
+            }
         });
-    }
+    });
+}
 
     function wireSearch() {
         const input = document.getElementById('picker-search-input');
@@ -288,82 +275,75 @@ export function mountCellPicker() {
     }
 
     // ---- Occupied cell: action list ----
-    function renderOccupiedActions(cell, matchEl) {
-        const matchId = matchEl.dataset.matchId;
-        const m = allMatchData.find(x => String(x.id) === String(matchId));
-        if (!m) { closePicker(); return; }
+    function renderOccupiedActions(cell, canchaEl) {
+    const canchaId = canchaEl.dataset.canchaId;
+    const c = allMatchData.find(x => String(x.id) === String(canchaId));
+    if (!c) { closePicker(); return; }
 
-        const completedHtml = m.completed
-            ? `<small class="text-success"><i class="fa-solid fa-check-circle me-1"></i>Resultado guardado</small>`
-            : '';
+    const completedHtml = c.completed
+        ? `<small class="text-success"><i class="fa-solid fa-check-circle me-1"></i>Resultados guardados</small>`
+        : '';
 
-        body.innerHTML = `
-            <div class="picker-current-match">
-                <div class="picker-current-teams">
-                    <span>${escape(m.teamAText)}</span>
-                    <span class="vs">vs</span>
-                    <span class="text-end">${escape(m.teamBText)}</span>
-                </div>
-                <div class="text-muted small mt-2 font-mono">
-                    R${m.rotationIndex} · ${escape(m.canchaLabel)}
-                </div>
-                ${completedHtml}
+    body.innerHTML = `
+        <div class="picker-current-match">
+            <div class="picker-current-teams">
+                <span style="grid-column: 1 / -1;">${c.playerNames.map(n => escape(n)).join(' · ')}</span>
             </div>
+            <div class="text-muted small mt-2 font-mono">
+                ${escape(c.canchaLabel)}
+            </div>
+            ${completedHtml}
+        </div>
 
-            <button type="button" class="picker-action" data-action="edit-result">
-                <span class="picker-action-icon"><i class="fa-solid fa-pencil"></i></span>
-                <span class="picker-action-text">
-                    <strong>${m.completed ? 'Editar resultado' : 'Ingresar resultado'}</strong>
-                    <small>${m.completed ? 'Modificar el marcador' : 'Anotar sets jugados'}</small>
-                </span>
-                <i class="fa-solid fa-chevron-right text-muted"></i>
-            </button>
+        <button type="button" class="picker-action" data-action="edit-result">
+            <span class="picker-action-icon"><i class="fa-solid fa-pencil"></i></span>
+            <span class="picker-action-text">
+                <strong>${c.completed ? 'Editar resultados' : 'Ingresar resultados'}</strong>
+                <small>${c.completed ? 'Modificar los marcadores' : 'Anotar los sets jugados'}</small>
+            </span>
+            <i class="fa-solid fa-chevron-right text-muted"></i>
+        </button>
 
-            <button type="button" class="picker-action is-danger" data-action="clear">
-                <span class="picker-action-icon"><i class="fa-solid fa-eraser"></i></span>
-                <span class="picker-action-text">
-                    <strong>Quitar de la programación</strong>
-                    <small>El partido vuelve a la lista de pendientes</small>
-                </span>
-                <i class="fa-solid fa-chevron-right text-muted"></i>
-            </button>
-        `;
+        <button type="button" class="picker-action is-danger" data-action="clear">
+            <span class="picker-action-icon"><i class="fa-solid fa-eraser"></i></span>
+            <span class="picker-action-text">
+                <strong>Quitar de la programación</strong>
+                <small>La cancha vuelve a la lista de pendientes</small>
+            </span>
+            <i class="fa-solid fa-chevron-right text-muted"></i>
+        </button>
+    `;
 
-        wireOccupiedActions(matchEl, matchId);
-    }
+    wireOccupiedActions(canchaEl, canchaId);
+}
 
-    function wireOccupiedActions(matchEl, matchId) {
-        
-        body.querySelector('[data-action="edit-result"]')?.addEventListener('click', () => {
-            closePicker();
-            // Trigger the existing result modal handler
-            matchEl.querySelector('.cell-match-result')?.click();
-        });
-
-        body.querySelector('[data-action="reschedule"]')?.addEventListener('click', () => {
-            renderRescheduleMode(matchId);
-        });
-
-        body.querySelector('[data-action="clear"]')?.addEventListener('click', async () => {
-    closePicker();   // ← close picker first so the confirm modal stands alone
-
-    const ok = await window.app.modal.confirm({
-        title: 'Quitar partido',
-        body: '¿Quitar este partido de la programación? Quedará pendiente de asignar.',
-        confirmText: 'Quitar',
-        danger: true,
+    function wireOccupiedActions(canchaEl, canchaId) {
+    body.querySelector('[data-action="edit-result"]')?.addEventListener('click', () => {
+        closePicker();
+        // The cell-cancha-result button on the grid is what opens the result modal
+        canchaEl.querySelector('.cell-cancha-result')?.click();
     });
-    if (!ok) return;
 
-    try {
-        const url = scheduleUrlTpl.replace('__ID__', matchId);
-        await window.app.api.put(url, { date: null, time_slot: null, pista_id: null });
-        window.location.reload();
-    } catch (err) {
-        window.app.toast.error(err.message);
-    }
-});
-    }
+    body.querySelector('[data-action="clear"]')?.addEventListener('click', async () => {
+        closePicker();
+
+        const ok = await window.app.modal.confirm({
+            title: 'Quitar cancha',
+            body: '¿Quitar esta cancha de la programación? Quedará pendiente de asignar.',
+            confirmText: 'Quitar',
+            danger: true,
+        });
+        if (!ok) return;
+
+        try {
+            const url = scheduleUrlTpl.replace('__ID__', canchaId);
+            await window.app.api.put(url, { date: null, time_slot: null, pista_id: null });
+            window.location.reload();
+        } catch (err) {
+            window.app.toast.error(err.message);
+        }
+    });
+}
 
     // ---- Reschedule mode ----
     function renderRescheduleMode(matchId) {
@@ -482,46 +462,49 @@ export function mountCellPicker() {
 
     // ---- Collect match data from the DOM (sidebar pills + grid cells) ----
     function collectMatchData() {
-        const matches = [];
-        const seen = new Set();
+    const canchas = [];
+    const seen = new Set();
 
-        // Sidebar canchas: every cancha lists its matches (scheduled + unscheduled)
-        document.querySelectorAll('.cancha-chip').forEach(chip => {
-            const canchaId = chip.dataset.canchaId;
-            const canchaLabel = chip.querySelector('strong')?.textContent.trim() || `Cancha ${canchaId}`;
-            const pills = chip.querySelectorAll('.match-pill');
-            const hasMultiple = pills.length > 1;
-            pills.forEach(pill => {
-                const id = pill.dataset.matchId;
-                if (seen.has(id)) return;
-                seen.add(id);
-                const teamsEls = pill.querySelectorAll('.match-pill-teams > div');
-                matches.push({
-                    id,
-                    canchaId,
-                    canchaLabel,
-                    canchaHasMultipleMatches: hasMultiple,
-                    rotationIndex: parseInt(pill.dataset.rotation, 10),
-                    scheduled: pill.classList.contains('is-scheduled'),
-                    completed: false,
-                    teamAText: (teamsEls[0]?.textContent || '').trim(),
-                    teamBText: (teamsEls[2]?.textContent || '').trim(),
-                });
-            });
+    document.querySelectorAll('.cancha-chip').forEach(chip => {
+        const id = chip.dataset.canchaId;
+        if (!id || seen.has(id)) return;
+        seen.add(id);
+
+        const pill = chip.querySelector('.cancha-pill');
+        const label = chip.querySelector('strong')?.textContent.trim() || `Cancha ${id}`;
+
+        const playerNames = pill
+            ? Array.from(pill.querySelectorAll('.cancha-pill-players > div')).map(el => el.textContent.trim())
+            : [];
+
+        canchas.push({
+            id,
+            canchaId: id,                           // picker reads this
+            canchaLabel: label,
+            scheduled: pill ? pill.classList.contains('is-scheduled') : false,
+            completed: false,                       // refined below from grid
+            playerNames,
+            // Compatibility-shim fields so the picker render functions
+            // (which still reference teamAText/teamBText/rotationIndex) keep working:
+            teamAText: playerNames.slice(0, 2).join(' / ') || 'Equipo A',
+            teamBText: playerNames.slice(2, 4).join(' / ') || 'Equipo B',
+            rotationIndex: 1,
+            canchaHasMultipleMatches: false,        // auto-fit no longer applies
         });
+    });
 
-        // Grid cells: refine scheduled + completion state for any matches placed on the grid
-        document.querySelectorAll('.cell-match').forEach(box => {
-            const id = box.dataset.matchId;
-            const found = matches.find(m => String(m.id) === String(id));
-            if (found) {
-                found.scheduled = true;
-                found.completed = box.classList.contains('is-completed');
-            }
-        });
+    // Refine state from grid cells (which know about completion)
+    document.querySelectorAll('.cell-cancha').forEach(box => {
+        const id = box.dataset.canchaId;
+        const found = canchas.find(m => String(m.id) === String(id));
+        if (found) {
+            found.scheduled = true;
+            found.completed = box.classList.contains('is-completed');
+        }
+    });
 
-        return matches;
-    }
+    return canchas;
+}
 
     function formatDateShort(iso) {
         if (!iso) return '';

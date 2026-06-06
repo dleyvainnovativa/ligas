@@ -44,7 +44,7 @@ class MatchResultService
                 $match->played_at = $match->played_at ?: now();
             } else {
                 // Empty sets means "clear results"; keep schedule if any
-                $match->status    = $match->date ? GameMatch::STATUS_SCHEDULED : GameMatch::STATUS_UNSCHEDULED;
+                // $match->status    = $match->date ? GameMatch::STATUS_SCHEDULED : GameMatch::STATUS_UNSCHEDULED;
                 $match->played_at = null;
             }
 

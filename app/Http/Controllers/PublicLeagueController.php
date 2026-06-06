@@ -36,46 +36,42 @@ class PublicLeagueController extends Controller
             'payload'  => $payload,
         ]);
     }
-
     private function buildPayload(League $league): array
     {
         $playerNames = $league->players()->pluck('full_name', 'id');
 
-        // All scheduled or completed matches in this league, eagerly loaded with relations needed for display
-        $matches = GameMatch::query()
-            ->whereIn('cancha_id', function ($q) use ($league) {
-                $q->select('canchas.id')
-                    ->from('canchas')
-                    ->join('jornadas', 'jornadas.id', '=', 'canchas.jornada_id')
-                    ->join('groups',  'groups.id',  '=', 'jornadas.group_id')
+        $canchas = \App\Models\Cancha::query()
+            ->whereIn('jornada_id', function ($q) use ($league) {
+                $q->select('jornadas.id')
+                    ->from('jornadas')
+                    ->join('groups', 'groups.id', '=', 'jornadas.group_id')
                     ->where('groups.league_id', $league->id);
             })
-            ->with(['cancha.jornada.group', 'pista.sede', 'pendingProposal'])
+            ->with(['jornada.group', 'pista.sede', 'players', 'pairs', 'rounds.pendingProposal'])
             ->whereNotNull('date')
             ->orderBy('date')
             ->orderBy('time_slot')
             ->get();
 
-        // Build per-group structures
         $groupsPayload = [];
         foreach ($league->groups as $group) {
-            $groupMatches = $matches->filter(fn($m) => $m->cancha->jornada->group_id === $group->id);
+            $groupCanchas = $canchas->filter(fn($c) => $c->jornada->group_id === $group->id);
 
-            $upcoming = $groupMatches
-                ->filter(fn($m) => $m->status !== GameMatch::STATUS_COMPLETED && $this->isUpcoming($m))
+            $upcoming = $groupCanchas
+                ->filter(fn($c) => $c->status !== \App\Models\Cancha::STATUS_COMPLETED && $this->isCanchaUpcoming($c))
                 ->sortBy([['date', 'asc'], ['time_slot', 'asc']])
                 ->values();
 
-            $recent = $groupMatches
-                ->filter(fn($m) => $m->status === GameMatch::STATUS_COMPLETED)
-                ->sortByDesc(fn($m) => $m->played_at?->timestamp ?? 0)
+            $recent = $groupCanchas
+                ->filter(fn($c) => $c->status === \App\Models\Cancha::STATUS_COMPLETED)
+                ->sortByDesc(fn($c) => $c->updated_at?->timestamp ?? 0)
                 ->values();
 
             $groupsPayload[] = [
                 'group'     => $group,
                 'standings' => $this->standings->forGroup($group),
-                'upcoming'  => $upcoming->map(fn($m) => $this->serializeMatch($m, $playerNames))->all(),
-                'recent'    => $recent->take(10)->map(fn($m) => $this->serializeMatch($m, $playerNames))->all(),
+                'upcoming'  => $upcoming->map(fn($c) => $this->serializeCancha($c, $playerNames))->all(),
+                'recent'    => $recent->take(10)->map(fn($c) => $this->serializeCancha($c, $playerNames))->all(),
                 'jornadas'  => $group->jornadas->map(fn($j) => [
                     'id'     => $j->id,
                     'number' => $j->number,
@@ -84,8 +80,7 @@ class PublicLeagueController extends Controller
             ];
         }
 
-        // League-wide quick stats
-        $currentJornada = $this->computeCurrentJornada($league, $matches);
+        $currentJornada = $this->computeCurrentJornada($league, $canchas);
 
         return [
             'groups'          => $groupsPayload,
@@ -93,66 +88,74 @@ class PublicLeagueController extends Controller
             'totals'          => [
                 'players'  => $league->players()->count(),
                 'jornadas' => $league->groups->flatMap->jornadas->count(),
-                'matches_played' => $matches->where('status', GameMatch::STATUS_COMPLETED)->count(),
+                'matches_played' => $canchas->where('status', \App\Models\Cancha::STATUS_COMPLETED)->count(),
             ],
         ];
     }
 
-    private function isUpcoming(GameMatch $m): bool
+    private function isCanchaUpcoming(\App\Models\Cancha $c): bool
     {
-        if (!$m->date) return false;
-        // Today and future
-        return Carbon::parse($m->date)->isFuture()
-            || Carbon::parse($m->date)->isToday();
+        if (!$c->date) return false;
+        return \Carbon\Carbon::parse($c->date)->isFuture() || \Carbon\Carbon::parse($c->date)->isToday();
     }
 
-    private function serializeMatch(GameMatch $m, $playerNames): array
+    private function serializeCancha(\App\Models\Cancha $c, $playerNames): array
     {
-        $tally = $m->status === GameMatch::STATUS_COMPLETED ? $m->tally() : null;
+        // Player roster from chips
+        $players = $c->players->isNotEmpty()
+            ? $c->players->map(fn($p) => $playerNames[$p->id] ?? '?')->all()
+            : $c->pairs->flatMap(fn($pair) => [
+                $playerNames[$pair->player_a_id] ?? '?',
+                $playerNames[$pair->player_b_id] ?? '?',
+            ])->all();
 
-        // Load relation if not eager (it should be, but defensively)
-        if (!$m->relationLoaded('pendingProposal')) {
-            $m->load('pendingProposal');
-        }
-        $p = $m->pendingProposal;
+        $roundsPayload = $c->rounds->map(function ($round) use ($playerNames) {
+            $t = $round->status === 'completed' ? $round->tally() : null;
+            $proposal = $round->pendingProposal;
+            return [
+                'id'             => $round->id,
+                'rotation_index' => $round->rotation_index,
+                'status'         => $round->status,
+                'team_a'         => collect($round->team_a_player_ids)->map(fn($id) => $playerNames[$id] ?? '?')->all(),
+                'team_b'         => collect($round->team_b_player_ids)->map(fn($id) => $playerNames[$id] ?? '?')->all(),
+                'sets'           => $round->sets,
+                'sets_a'         => $t['sets_a'] ?? null,
+                'sets_b'         => $t['sets_b'] ?? null,
+                'winner'         => $round->winner,
+                'pending_proposal' => $proposal ? [
+                    'proposer_name' => $proposal->proposer_name,
+                    'sets'          => $proposal->sets,
+                    'created_at'    => $proposal->created_at->diffForHumans(),
+                ] : null,
+            ];
+        })->all();
 
         return [
-            'id'             => $m->id,
-            'date'           => $m->date?->toDateString(),
-            'date_display'   => $m->date?->translatedFormat('D d M'),
-            'time_slot'      => $m->time_slot,
-            'pista'          => $m->pista?->name,
-            'sede'           => $m->pista?->sede?->name,
-            'rotation_index' => $m->rotation_index,
-            'status'         => $m->status,
-            'team_a'         => collect($m->team_a_player_ids)
-                ->map(fn($id) => $playerNames[$id] ?? '?')->all(),
-            'team_b'         => collect($m->team_b_player_ids)
-                ->map(fn($id) => $playerNames[$id] ?? '?')->all(),
-            'sets'           => $m->sets,
-            'winner'         => $m->winner,
-            'sets_a'         => $tally['sets_a'] ?? null,
-            'sets_b'         => $tally['sets_b'] ?? null,
-            'pending_proposal' => $p ? [
-                'proposer_name' => $p->proposer_name,
-                'sets'          => $p->sets,
-                'created_at'    => $p->created_at->diffForHumans(),
-            ] : null,
+            'id'           => $c->id,
+            'label'        => $c->label,
+            'date'         => $c->date?->toDateString(),
+            'date_display' => $c->date?->translatedFormat('D d M'),
+            'time_slot'    => $c->time_slot,
+            'pista'        => $c->pista?->name,
+            'sede'         => $c->pista?->sede?->name,
+            'status'       => $c->status,
+            'players'      => $players,
+            'rounds'       => $roundsPayload,
         ];
     }
 
-    private function computeCurrentJornada(League $league, $matches): ?array
+    private function computeCurrentJornada(League $league, $canchas): ?array
     {
-        // The earliest jornada (lowest number) that has at least one not-yet-completed match across any group.
-        $byJornada = $matches->groupBy(fn($m) => $m->cancha->jornada_id);
+        // Lowest-numbered jornada with at least one not-yet-completed cancha
+        $byJornada = $canchas->groupBy(fn($c) => $c->jornada_id);
 
         $bestNumber = null;
         $bestJornadas = [];
 
         foreach ($league->groups as $group) {
             foreach ($group->jornadas as $j) {
-                $jMatches = $byJornada[$j->id] ?? collect();
-                $hasOpen = $jMatches->isEmpty() || $jMatches->contains(fn($m) => $m->status !== GameMatch::STATUS_COMPLETED);
+                $jCanchas = $byJornada[$j->id] ?? collect();
+                $hasOpen = $jCanchas->isEmpty() || $jCanchas->contains(fn($c) => $c->status !== \App\Models\Cancha::STATUS_COMPLETED);
                 if (!$hasOpen) continue;
 
                 if ($bestNumber === null || $j->number < $bestNumber) {

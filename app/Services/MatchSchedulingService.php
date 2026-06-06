@@ -6,53 +6,54 @@ use App\Models\Cancha;
 use App\Models\GameMatch;
 use App\Models\Jornada;
 use App\Models\League;
-use App\Models\Pista;
 use Illuminate\Support\Facades\DB;
 
 class MatchSchedulingService
 {
-    /**
-     * Ensure a cancha has its match records.
-     * - Individual mode: 3 matches with rotations AB-CD, AC-BD, AD-BC
-     * - Pairs mode: 1 match with the two pairs
-     *
-     * Idempotent: if matches already exist (by rotation_index), we leave them alone.
-     */
-    public function ensureMatches(Cancha $cancha): void
+    /** Ensure a cancha has its round records (1 for pairs, 3 for individual). */
+    public function ensureRounds(Cancha $cancha): void
     {
-        $cancha->load(['jornada.group.league', 'players' => fn($q) => $q->orderBy('cancha_player.slot'), 'pairs' => fn($q) => $q->orderBy('cancha_pair.slot')]);
+        $cancha->load([
+            'jornada.group.league',
+            'players' => fn($q) => $q->orderBy('cancha_player.slot'),
+            'pairs'   => fn($q) => $q->orderBy('cancha_pair.slot'),
+        ]);
         $format = $cancha->jornada->group->league->format;
-
-        $existing = $cancha->matches()->pluck('rotation_index')->all();
+        $existing = $cancha->rounds()->pluck('rotation_index')->all();
 
         if ($format === League::FORMAT_PAIRS) {
-            $this->ensurePairsMatch($cancha, $existing);
+            $this->ensurePairsRound($cancha, $existing);
         } else {
-            $this->ensureIndividualMatches($cancha, $existing);
+            $this->ensureIndividualRounds($cancha, $existing);
         }
     }
 
-    private function ensurePairsMatch(Cancha $cancha, array $existing): void
+    // Backward-compat alias for older code that still calls ensureMatches
+    public function ensureMatches(Cancha $cancha): void
+    {
+        $this->ensureRounds($cancha);
+    }
+
+    private function ensurePairsRound(Cancha $cancha, array $existing): void
     {
         if (in_array(1, $existing, true)) return;
-        if ($cancha->pairs->count() < 2) return; // need two pairs to form a match
+        if ($cancha->pairs->count() < 2) return;
 
         $pairA = $cancha->pairs->firstWhere('pivot.slot', 1) ?? $cancha->pairs[0];
         $pairB = $cancha->pairs->firstWhere('pivot.slot', 2) ?? $cancha->pairs[1];
 
-        $cancha->matches()->create([
+        $cancha->rounds()->create([
             'rotation_index'    => 1,
             'team_a_player_ids' => [$pairA->player_a_id, $pairA->player_b_id],
             'team_b_player_ids' => [$pairB->player_a_id, $pairB->player_b_id],
             'team_a_pair_id'    => $pairA->id,
             'team_b_pair_id'    => $pairB->id,
-            'status'            => GameMatch::STATUS_UNSCHEDULED,
+            'status'            => GameMatch::STATUS_PENDING,
         ]);
     }
 
-    private function ensureIndividualMatches(Cancha $cancha, array $existing): void
+    private function ensureIndividualRounds(Cancha $cancha, array $existing): void
     {
-        // Need 4 players at known slots
         $bySlot = [];
         foreach ($cancha->players as $p) {
             $bySlot[$p->pivot->slot] = $p;
@@ -62,125 +63,96 @@ class MatchSchedulingService
         [$a, $b, $c, $d] = [$bySlot[1], $bySlot[2], $bySlot[3], $bySlot[4]];
 
         $rotations = [
-            1 => [[$a->id, $b->id], [$c->id, $d->id]],   // AB vs CD
-            2 => [[$a->id, $c->id], [$b->id, $d->id]],   // AC vs BD
-            3 => [[$a->id, $d->id], [$b->id, $c->id]],   // AD vs BC
+            1 => [[$a->id, $b->id], [$c->id, $d->id]],
+            2 => [[$a->id, $c->id], [$b->id, $d->id]],
+            3 => [[$a->id, $d->id], [$b->id, $c->id]],
         ];
 
         foreach ($rotations as $index => [$teamA, $teamB]) {
             if (in_array($index, $existing, true)) continue;
-
-            $cancha->matches()->create([
+            $cancha->rounds()->create([
                 'rotation_index'    => $index,
                 'team_a_player_ids' => $teamA,
                 'team_b_player_ids' => $teamB,
-                'status'            => GameMatch::STATUS_UNSCHEDULED,
+                'status'            => GameMatch::STATUS_PENDING,
             ]);
         }
     }
 
     /**
-     * Schedule a match at (date, time_slot, pista). Sets status appropriately.
-     * Passing null for date or pista clears the schedule.
+     * Schedule (or unschedule) a cancha. Passing null for any of date/time/pista clears the schedule.
      */
-    public function scheduleMatch(GameMatch $match, ?string $date, ?string $timeSlot, ?int $pistaId): GameMatch
+    public function scheduleCancha(Cancha $cancha, ?string $date, ?string $timeSlot, ?int $pistaId): Cancha
     {
         if ($date === null || $timeSlot === null || $pistaId === null) {
-            $match->update([
+            $cancha->update([
                 'date'      => null,
                 'time_slot' => null,
                 'pista_id'  => null,
-                'status'    => GameMatch::STATUS_UNSCHEDULED,
+                'status'    => $this->deriveStatus($cancha, scheduled: false),
             ]);
-            return $match->fresh();
+            return $cancha->fresh();
         }
 
-        // Check pista belongs to the league
-        $cancha = $match->cancha()->with('jornada.group.league.sedes.pistas')->first();
         $league = $cancha->jornada->group->league;
-        $allowedPistaIds = $league->sedes->flatMap->pistas->pluck('id')->all();
+        $allowedPistaIds = $league->sedes()->with('pistas')->get()->flatMap->pistas->pluck('id')->all();
         abort_unless(in_array($pistaId, $allowedPistaIds, true), 422, 'La pista no pertenece a esta liga.');
 
-        $match->update([
+        $cancha->update([
             'date'      => $date,
             'time_slot' => $timeSlot,
             'pista_id'  => $pistaId,
-            'status'    => GameMatch::STATUS_SCHEDULED,
+            'status'    => $this->deriveStatus($cancha->fresh(), scheduled: true),
         ]);
-        return $match->fresh();
+        return $cancha->fresh();
     }
 
-    /**
-     * "Auto-fit" a whole cancha onto N consecutive time slots starting at (date, startSlot, pista).
-     * - Individual mode: places 3 matches on consecutive time slots
-     * - Pairs mode: places the 1 match at the given slot
-     *
-     * Returns array of [match_id => [date,time_slot,pista_id]] applied.
-     */
-    public function autoFitCancha(Cancha $cancha, string $date, string $startSlot, int $pistaId): array
+    /** Recompute cancha status based on rounds + schedule. */
+    public function deriveStatus(Cancha $cancha, ?bool $scheduled = null): string
     {
-        $this->ensureMatches($cancha);
+        $isScheduled = $scheduled ?? ($cancha->date && $cancha->time_slot && $cancha->pista_id);
+        if (!$isScheduled) return Cancha::STATUS_UNSCHEDULED;
 
-        $league = $cancha->jornada->group->league;
-        $allSlots = $league->time_slots ?? [];
-        // sort numerically so 9:00 < 18:00 lexicographic still works (HH:MM with zero-padding)
-        sort($allSlots);
-
-        $startIdx = array_search($startSlot, $allSlots, true);
-        if ($startIdx === false) {
-            throw new \DomainException('El horario no está definido en esta liga.');
-        }
-
-        $matches = $cancha->matches()->orderBy('rotation_index')->get();
-        $applied = [];
-
-        return DB::transaction(function () use ($matches, $allSlots, $startIdx, $date, $pistaId, &$applied) {
-            foreach ($matches as $i => $match) {
-                $slot = $allSlots[$startIdx + $i] ?? null;
-                if (!$slot) {
-                    throw new \DomainException('No hay suficientes horarios consecutivos para programar las rotaciones.');
-                }
-                $this->scheduleMatch($match, $date, $slot, $pistaId);
-                $applied[$match->id] = ['date' => $date, 'time_slot' => $slot, 'pista_id' => $pistaId];
-            }
-            return $applied;
-        });
+        $rounds = $cancha->rounds()->get();
+        if ($rounds->isEmpty()) return Cancha::STATUS_SCHEDULED;
+        $allCompleted = $rounds->every(fn($r) => $r->status === GameMatch::STATUS_COMPLETED);
+        return $allCompleted ? Cancha::STATUS_COMPLETED : Cancha::STATUS_SCHEDULED;
     }
 
-    /**
-     * Detect player double-booking across all matches in a jornada.
-     * Returns array of conflicts: [[player_id, date, time_slot, match_ids[]], ...]
-     */
+    /** Detect player double-booking across all canchas in a jornada. */
     public function detectConflicts(Jornada $jornada): array
     {
-        $matches = GameMatch::query()
-            ->whereIn('cancha_id', $jornada->canchas()->pluck('id'))
-            ->whereNotNull('date')
-            ->whereNotNull('time_slot')
-            ->get();
+        $canchas = $jornada->canchas()->with(['players', 'pairs'])->get();
 
-        // Collect every player id that appears in any match, then fetch their names in one query
-        $allPlayerIds = $matches->flatMap(fn($m) => array_merge(
-            $m->team_a_player_ids ?? [],
-            $m->team_b_player_ids ?? []
-        ))->unique()->values();
+        // Build (date|slot) → array of player_ids being busy and which canchas
+        $buckets = []; // key: "playerId|date|slot" => cancha_ids[]
+        foreach ($canchas as $cancha) {
+            if (!$cancha->date || !$cancha->time_slot) continue;
+            $playerIds = $cancha->players->pluck('id')->all();
+            // In pairs mode, players come via pairs
+            if (empty($playerIds)) {
+                foreach ($cancha->pairs as $pair) {
+                    $playerIds[] = $pair->player_a_id;
+                    $playerIds[] = $pair->player_b_id;
+                }
+            }
+            foreach ($playerIds as $pid) {
+                $key = "{$pid}|{$cancha->date->toDateString()}|{$cancha->time_slot}";
+                $buckets[$key][] = $cancha->id;
+            }
+        }
+
+        $allPlayerIds = collect(array_keys($buckets))
+            ->map(fn($k) => (int) explode('|', $k)[0])
+            ->unique()->values();
 
         $playerNames = \App\Models\Player::query()
             ->whereIn('id', $allPlayerIds)
             ->pluck('full_name', 'id');
 
-        $buckets = []; // key: "playerId|date|slot" => match_ids[]
-        foreach ($matches as $m) {
-            $playerIds = array_merge($m->team_a_player_ids ?? [], $m->team_b_player_ids ?? []);
-            foreach ($playerIds as $pid) {
-                $key = "{$pid}|{$m->date->toDateString()}|{$m->time_slot}";
-                $buckets[$key][] = $m->id;
-            }
-        }
-
         $conflicts = [];
-        foreach ($buckets as $key => $matchIds) {
-            if (count($matchIds) < 2) continue;
+        foreach ($buckets as $key => $canchaIds) {
+            if (count($canchaIds) < 2) continue;
             [$pid, $date, $slot] = explode('|', $key);
             $pid = (int) $pid;
             $conflicts[] = [
@@ -188,11 +160,13 @@ class MatchSchedulingService
                 'player_name' => $playerNames[$pid] ?? 'Jugador desconocido',
                 'date'        => $date,
                 'time_slot'   => $slot,
-                'match_ids'   => $matchIds,
+                'cancha_ids'  => $canchaIds,
             ];
         }
         return $conflicts;
     }
+
+    /** Carbon-aware date enumeration for the jornada window. */
     public function enumerateDates(Jornada $jornada): array
     {
         $league = $jornada->group->league;

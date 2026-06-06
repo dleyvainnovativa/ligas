@@ -82,6 +82,7 @@ $availablePairs = $isPairs ? $group->pairs()->get()->reject(fn ($pr) => $assigne
     data-jornada-id="{{ $jornada->id }}"
     data-mode="{{ $isPairs ? 'pairs' : 'individual' }}"
     data-assign-url="{{ route('leagues.canchas.assign', [$league, $group, $jornada]) }}"
+    data-swap-url="{{ route('leagues.canchas.swap', [$league, $group, $jornada]) }}"
     data-cancha-url-template="{{ url("/leagues/{$league->id}/groups/{$group->id}/jornadas/{$jornada->id}/canchas") }}">
 
     <div class="row g-3">
@@ -98,7 +99,7 @@ $availablePairs = $isPairs ? $group->pairs()->get()->reject(fn ($pr) => $assigne
                     </span>
                 </div>
 
-                <div class="roster-list cancha-pool" data-cancha-id="0">
+                <div class="roster-list cancha-pool h-100" data-cancha-id="0">
                     @if ($isPairs)
                     @foreach ($availablePairs as $pair)
                     @include('leagues.groups._pair-chip', ['pair' => $pair])
@@ -134,5 +135,28 @@ $availablePairs = $isPairs ? $group->pairs()->get()->reject(fn ($pr) => $assigne
             </div>
         </div>
     </div>
+    <div id="cancha-picker" class="cell-picker" role="dialog" aria-hidden="true" aria-modal="false">
+        <div class="cell-picker-backdrop" data-action="close-cancha-picker"></div>
+        <div class="cell-picker-panel">
+            <div class="cell-picker-handle" aria-hidden="true"></div>
+            <header class="cell-picker-header">
+                <div class="flex-grow-1 min-w-0">
+                    <div class="cell-picker-eyebrow" id="cancha-picker-eyebrow">—</div>
+                    <h6 class="cell-picker-title mb-0" id="cancha-picker-title">—</h6>
+                </div>
+                <button type="button" class="btn-icon btn-sm" data-action="close-cancha-picker" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </header>
+            <div class="cell-picker-body" id="cancha-picker-body"></div>
+        </div>
+    </div>
+</div>
+<div id="canchas-hint" class="picker-hint d-md-none" hidden>
+    <i class="fa-solid fa-hand-pointer"></i>
+    <span>Toca un jugador para asignarlo a una cancha.</span>
+    <button type="button" class="btn-icon btn-sm" data-action="dismiss-canchas-hint" aria-label="Entendido">
+        <i class="fa-solid fa-xmark"></i>
+    </button>
 </div>
 @endsection

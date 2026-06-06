@@ -20,59 +20,23 @@ class GameMatchController extends Controller
         $this->authorize('view', $jornada);
         abort_unless($jornada->group_id === $group->id && $group->league_id === $league->id, 404);
 
-        // Generate matches for all canchas that have full rosters
         $jornada->load([
             'canchas.players' => fn($q) => $q->orderBy('cancha_player.slot'),
             'canchas.pairs'   => fn($q) => $q->orderBy('cancha_pair.slot'),
-            'canchas.matches',
+            'canchas.rounds',
+            'canchas.pista.sede',
             'group.league.sedes.pistas',
         ]);
         foreach ($jornada->canchas as $cancha) {
-            $this->scheduler->ensureMatches($cancha);
+            $this->scheduler->ensureRounds($cancha);
         }
-        $jornada->load(['canchas.matches']);
+        $jornada->load(['canchas.rounds']);
 
         return view('leagues.matches.grid', [
             'league'  => $league,
             'group'   => $group,
             'jornada' => $jornada,
         ]);
-    }
-
-    public function schedule(Request $request, League $league, Group $group, Jornada $jornada, GameMatch $match)
-    {
-        $this->authorize('update', $match);
-        abort_unless($match->cancha->jornada_id === $jornada->id, 404);
-
-        $data = $request->validate([
-            'date'      => ['nullable', 'date'],
-            'time_slot' => ['nullable', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
-            'pista_id'  => ['nullable', 'integer'],
-        ]);
-
-        $updated = $this->scheduler->scheduleMatch(
-            $match,
-            $data['date'] ?? null,
-            $data['time_slot'] ?? null,
-            $data['pista_id'] ?? null,
-        );
-
-        return response()->json(['match' => $this->serialize($updated)]);
-    }
-
-    public function autoFit(Request $request, League $league, Group $group, Jornada $jornada, Cancha $cancha)
-    {
-        $this->authorize('update', $jornada);
-        abort_unless($cancha->jornada_id === $jornada->id, 404);
-
-        $data = $request->validate([
-            'date'      => ['required', 'date'],
-            'time_slot' => ['required', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
-            'pista_id'  => ['required', 'integer'],
-        ]);
-
-        $applied = $this->scheduler->autoFitCancha($cancha, $data['date'], $data['time_slot'], $data['pista_id']);
-        return response()->json(['applied' => $applied]);
     }
 
     public function conflicts(League $league, Group $group, Jornada $jornada)
@@ -99,39 +63,47 @@ class GameMatchController extends Controller
             'team_b'          => $m->team_b_player_ids,
         ];
     }
-    public function showResult(League $league, Group $group, Jornada $jornada, GameMatch $match)
+    public function showResult(League $league, Group $group, Jornada $jornada, Cancha $cancha)
     {
-        $this->authorize('view', $match);
-        abort_unless($match->cancha->jornada_id === $jornada->id, 404);
+        $this->authorize('view', $cancha);
+        abort_unless($cancha->jornada_id === $jornada->id, 404);
 
-        $match->load(['cancha.jornada.group.league', 'pista', 'pendingProposal']);
+        $cancha->load(['jornada.group.league', 'pista', 'rounds.pendingProposal']);
         $playerNames = $league->players()->pluck('full_name', 'id');
 
-        $proposal = $match->pendingProposal;
+        $rounds = $cancha->rounds->map(function ($round) use ($playerNames) {
+            $proposal = $round->pendingProposal;
+            return [
+                'id'             => $round->id,
+                'rotation_index' => $round->rotation_index,
+                'status'         => $round->status,
+                'sets'           => $round->sets ?? [],
+                'winner'         => $round->winner,
+                'team_a'         => collect($round->team_a_player_ids)
+                    ->map(fn($id) => ['id' => $id, 'name' => $playerNames[$id] ?? '?'])->values(),
+                'team_b'         => collect($round->team_b_player_ids)
+                    ->map(fn($id) => ['id' => $id, 'name' => $playerNames[$id] ?? '?'])->values(),
+                'no_show'        => $round->no_show_player_ids ?? [],
+                'suplente'       => $round->suplente_player_ids ?? [],
+                'proposal' => $proposal ? [
+                    'id'             => $proposal->id,
+                    'proposer_name'  => $proposal->proposer_name,
+                    'sets'           => $proposal->sets,
+                    'created_at'     => $proposal->created_at->diffForHumans(),
+                ] : null,
+            ];
+        });
 
         return response()->json([
-            'match' => [
-                'id'             => $match->id,
-                'rotation_index' => $match->rotation_index,
-                'date'           => $match->date?->toDateString(),
-                'time_slot'      => $match->time_slot,
-                'pista'          => $match->pista?->name,
-                'status'         => $match->status,
-                'sets'           => $match->sets ?? [],
-                'winner'         => $match->winner,
-                'team_a'         => collect($match->team_a_player_ids)
-                    ->map(fn($id) => ['id' => $id, 'name' => $playerNames[$id] ?? '?'])->values(),
-                'team_b'         => collect($match->team_b_player_ids)
-                    ->map(fn($id) => ['id' => $id, 'name' => $playerNames[$id] ?? '?'])->values(),
-                'no_show'        => $match->no_show_player_ids ?? [],
-                'suplente'       => $match->suplente_player_ids ?? [],
+            'cancha' => [
+                'id'        => $cancha->id,
+                'label'     => $cancha->label,
+                'date'      => $cancha->date?->toDateString(),
+                'time_slot' => $cancha->time_slot,
+                'pista'     => $cancha->pista?->name,
+                'status'    => $cancha->status,
             ],
-            'proposal' => $proposal ? [
-                'id'             => $proposal->id,
-                'proposer_name'  => $proposal->proposer_name,
-                'sets'           => $proposal->sets,
-                'created_at'     => $proposal->created_at->diffForHumans(),
-            ] : null,
+            'rounds' => $rounds,
         ]);
     }
 
@@ -140,56 +112,58 @@ class GameMatchController extends Controller
         League $league,
         Group $group,
         Jornada $jornada,
-        GameMatch $match,
+        Cancha $cancha,
         \App\Services\MatchResultService $results,
         \App\Services\MatchProposalService $proposals
     ) {
-        $this->authorize('update', $match);
-        abort_unless($match->cancha->jornada_id === $jornada->id, 404);
+        $this->authorize('update', $cancha);
+        abort_unless($cancha->jornada_id === $jornada->id, 404);
 
         $data = $request->validate([
-            'sets'              => ['nullable', 'array', 'max:5'],
-            'sets.*'            => ['array', 'size:2'],
-            'sets.*.0'          => ['integer', 'min:0', 'max:99'],
-            'sets.*.1'          => ['integer', 'min:0', 'max:99'],
-            'no_show_ids'       => ['nullable', 'array'],
-            'no_show_ids.*'     => ['integer'],
-            'suplente_ids'      => ['nullable', 'array'],
-            'suplente_ids.*'    => ['integer'],
+            'rounds'                       => ['required', 'array', 'min:1'],
+            'rounds.*.round_id'            => ['required', 'integer'],
+            'rounds.*.sets'                => ['nullable', 'array', 'max:5'],
+            'rounds.*.sets.*'              => ['array', 'size:2'],
+            'rounds.*.sets.*.0'            => ['integer', 'min:0', 'max:99'],
+            'rounds.*.sets.*.1'            => ['integer', 'min:0', 'max:99'],
+            'rounds.*.no_show_ids'         => ['nullable', 'array'],
+            'rounds.*.no_show_ids.*'       => ['integer'],
+            'rounds.*.suplente_ids'        => ['nullable', 'array'],
+            'rounds.*.suplente_ids.*'      => ['integer'],
         ]);
 
-        $sets = $data['sets'] ?? [];
+        $rounds = $cancha->rounds()->get()->keyBy('id');
 
-        // Capture pending proposal before saving (the save itself doesn't touch proposals)
-        $pending = $match->pendingProposal()->first();
+        foreach ($data['rounds'] as $r) {
+            $round = $rounds->get($r['round_id']);
+            if (!$round) continue;
 
-        $updated = $results->save(
-            $match,
-            $sets,
-            $data['no_show_ids']  ?? [],
-            $data['suplente_ids'] ?? [],
-        );
+            $pending = $round->pendingProposal()->first();
 
-        // Resolve the pending proposal, if any
-        if ($pending && count($sets) > 0) {
-            if ($this->setsMatch($sets, $pending->sets ?? [])) {
-                $proposals->markAccepted($pending);
-            } else {
-                $proposals->markModified($pending);
+            $updated = $results->save(
+                $round,
+                $r['sets']         ?? [],
+                $r['no_show_ids']  ?? [],
+                $r['suplente_ids'] ?? [],
+            );
+
+            if ($pending && !empty($r['sets'] ?? [])) {
+                if ($this->setsMatch($r['sets'], $pending->sets ?? [])) {
+                    $proposals->markAccepted($pending);
+                } else {
+                    $proposals->markModified($pending);
+                }
             }
         }
 
-        // Bust public cache so spectators see fresh data
+        // Update cancha-level status
+        $cancha->update([
+            'status' => $this->scheduler->deriveStatus($cancha->fresh()),
+        ]);
+
         \Illuminate\Support\Facades\Cache::forget("public_league:{$league->id}:v2");
 
-        return response()->json([
-            'match' => [
-                'id'     => $updated->id,
-                'sets'   => $updated->sets,
-                'winner' => $updated->winner,
-                'status' => $updated->status,
-            ],
-        ]);
+        return response()->json(['ok' => true]);
     }
 
     private function setsMatch(array $a, array $b): bool
@@ -239,7 +213,6 @@ class GameMatchController extends Controller
         ]);
 
         $result = $generator->generate($jornada, (bool) ($data['clear_existing'] ?? false));
-
         return response()->json($result);
     }
 }

@@ -30,8 +30,8 @@ import '@fontsource/jetbrains-mono/500.css';
 
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('.propose-btn');
-        if (!btn) return;
-        currentMatchId = btn.dataset.matchId;
+if (!btn) return;
+currentMatchId = btn.dataset.roundId;  // renamed semantically; URL still uses /matches/{id}/propose
         const m = matches[currentMatchId];
         if (!m) return;
 

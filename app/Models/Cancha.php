@@ -12,16 +12,36 @@ class Cancha extends Model
     public const MAX_PLAYERS = 4;
     public const MAX_PAIRS   = 2;
 
-    protected $fillable = ['jornada_id', 'label', 'position'];
+    public const STATUS_UNSCHEDULED = 'unscheduled';
+    public const STATUS_SCHEDULED   = 'scheduled';
+    public const STATUS_COMPLETED   = 'completed';
+
+    protected $fillable = [
+        'jornada_id',
+        'label',
+        'position',
+        'date',
+        'time_slot',
+        'pista_id',
+        'status',
+    ];
 
     protected function casts(): array
     {
-        return ['position' => 'integer'];
+        return [
+            'position' => 'integer',
+            'date'     => 'date',
+        ];
     }
 
     public function jornada(): BelongsTo
     {
         return $this->belongsTo(Jornada::class);
+    }
+
+    public function pista(): BelongsTo
+    {
+        return $this->belongsTo(Pista::class);
     }
 
     public function players(): BelongsToMany
@@ -38,8 +58,20 @@ class Cancha extends Model
             ->orderBy('cancha_pair.slot');
     }
 
-    public function matches(): HasMany
+    /** "Rounds" of the cancha (was matches). Same DB table, different meaning. */
+    public function rounds(): HasMany
     {
         return $this->hasMany(GameMatch::class)->orderBy('rotation_index');
+    }
+
+    /** Backward-compat alias. Some code still says ->matches. */
+    public function matches(): HasMany
+    {
+        return $this->rounds();
+    }
+
+    public function isScheduled(): bool
+    {
+        return $this->date !== null && $this->time_slot !== null && $this->pista_id !== null;
     }
 }
