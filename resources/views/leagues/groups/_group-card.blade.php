@@ -21,6 +21,12 @@ $count = $isPairs ? $group->pairs->count() : $group->players->count();
             <i class="fa-solid fa-trash"></i>
         </button>
     </div>
+    <div class="p-2">
+        <a href="{{ route('leagues.jornadas.index', [$league, $group]) }}"
+            class="btn btn-sm btn-outline-primary w-100">
+            <i class="fa-solid fa-calendar-day me-1"></i> Jornadas de este grupo
+        </a>
+    </div>
     <div class="roster-list group-roster" data-group-id="{{ $group->id }}">
         @if ($isPairs)
         @foreach ($group->pairs as $pair)
@@ -32,10 +38,10 @@ $count = $isPairs ? $group->pairs->count() : $group->players->count();
         @endforeach
         @endif
     </div>
-    <div class="group-card-footer">
+    <!-- <div class="group-card-footer">
         <a href="{{ route('leagues.jornadas.index', [$league, $group]) }}"
             class="btn btn-sm btn-outline-primary w-100">
             <i class="fa-solid fa-calendar-day me-1"></i> Jornadas de este grupo
         </a>
-    </div>
+    </div> -->
 </div>

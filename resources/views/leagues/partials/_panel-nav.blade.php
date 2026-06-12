@@ -1,11 +1,11 @@
 @php
 $tabs = [
+['key' => 'settings', 'route' => route('leagues.edit', $league), 'label' => 'Configuración', 'icon' => 'fa-gear'],
 ['key' => 'overview', 'route' => route('leagues.show', $league), 'label' => 'Resumen', 'icon' => 'fa-chart-line'],
 ['key' => 'players', 'route' => route('leagues.players.index', $league), 'label' => 'Jugadores', 'icon' => 'fa-users'],
 ['key' => 'groups', 'route' => route('leagues.groups.index', $league), 'label' => 'Grupos', 'icon' => 'fa-layer-group'],
 ['key' => 'standings', 'route' => route('leagues.standings.index', $league), 'label' => 'Standings', 'icon' => 'fa-ranking-star'],
 ['key' => 'ads', 'route' => route('leagues.ads.index', $league), 'label' => 'Anuncios', 'icon' => 'fa-rectangle-ad'],
-['key' => 'settings', 'route' => route('leagues.edit', $league), 'label' => 'Configuración', 'icon' => 'fa-gear'],
 ];
 $active = $active ?? 'overview';
 @endphp
