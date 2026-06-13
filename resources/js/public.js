@@ -13,6 +13,7 @@ import '@fontsource/inter-tight/700.css';
 import '@fontsource/inter-tight/800.css';
 import '@fontsource/jetbrains-mono/500.css';
 
+
 // ---- Match proposal flow ----
 (function () {
     const slug = window.__publicLeagueSlug;
@@ -61,9 +62,7 @@ currentMatchId = btn.dataset.roundId;  // renamed semantically; URL still uses /
 
             <label class="form-label">Marcador</label>
             <div id="propose-sets" class="propose-sets"></div>
-            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="propose-add-set">
-                <i class="fa-solid fa-plus me-1"></i> Agregar set
-            </button>
+            
 
             <small class="text-muted d-block mt-3">
                 <i class="fa-solid fa-circle-info"></i>
@@ -78,7 +77,7 @@ currentMatchId = btn.dataset.roundId;  // renamed semantically; URL still uses /
         const c = document.getElementById('propose-sets');
         c.innerHTML = currentSets.map((s, i) => `
             <div class="propose-set-row" data-i="${i}">
-                <span class="set-label">Set ${i + 1}</span>
+                <span class="set-label">Set</span>
                 <input type="number" min="0" max="99" class="form-control form-control-sm set-a" inputmode="numeric" value="${s[0]}">
                 <span class="text-muted">—</span>
                 <input type="number" min="0" max="99" class="form-control form-control-sm set-b" inputmode="numeric" value="${s[1]}">
@@ -201,3 +200,4 @@ document.querySelectorAll('a[href^="#"]').forEach((a) => {
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
 });
+

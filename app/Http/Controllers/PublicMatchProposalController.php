@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\GameMatch;
 use App\Models\League;
 use App\Services\MatchProposalService;
+use App\Services\PublicCacheService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\RateLimiter;
@@ -56,7 +57,8 @@ class PublicMatchProposalController extends Controller
         );
 
         // Invalidate public payload cache so the page reflects the new proposal
-        \Illuminate\Support\Facades\Cache::forget("public_league:{$league->id}:v2");
+        // \Illuminate\Support\Facades\Cache::forget("public_league:{$league->id}:v2");
+        app(PublicCacheService::class)->bust($league);
 
         return response()
             ->json([

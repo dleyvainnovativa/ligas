@@ -10,7 +10,8 @@ $count = $isPairs ? $group->pairs->count() : $group->players->count();
             <input type="text" class="form-control form-control-sm group-name" value="{{ $group->name }}">
         </div>
         <span class="badge text-bg-secondary group-count">{{ $count }}</span>
-        <button class="btn btn-sm btn-outline-primary auto-fill-group" title="Auto-asignar pendientes a este grupo"
+        <button class="btn btn-sm btn-outline-primary auto-fill-group"
+            title="Auto-asignar pendientes a este grupo"
             data-url="{{ route('leagues.groups.auto-fill', [$league, $group]) }}">
             <i class="fa-solid fa-wand-magic-sparkles"></i>
         </button>
@@ -21,12 +22,15 @@ $count = $isPairs ? $group->pairs->count() : $group->players->count();
             <i class="fa-solid fa-trash"></i>
         </button>
     </div>
-    <div class="p-2">
-        <a href="{{ route('leagues.jornadas.index', [$league, $group]) }}"
-            class="btn btn-sm btn-outline-primary w-100">
-            <i class="fa-solid fa-calendar-day me-1"></i> Jornadas de este grupo
-        </a>
-    </div>
+
+    {{-- Primary action: jornadas, prominent at the top --}}
+    <a href="{{ route('leagues.jornadas.index', [$league, $group]) }}"
+        class="group-card-jornadas-btn">
+        <i class="fa-solid fa-calendar-day"></i>
+        <span class="flex-grow-1">Jornadas de este grupo</span>
+        <i class="fa-solid fa-arrow-right text-muted small"></i>
+    </a>
+
     <div class="roster-list group-roster" data-group-id="{{ $group->id }}">
         @if ($isPairs)
         @foreach ($group->pairs as $pair)
@@ -38,10 +42,4 @@ $count = $isPairs ? $group->pairs->count() : $group->players->count();
         @endforeach
         @endif
     </div>
-    <!-- <div class="group-card-footer">
-        <a href="{{ route('leagues.jornadas.index', [$league, $group]) }}"
-            class="btn btn-sm btn-outline-primary w-100">
-            <i class="fa-solid fa-calendar-day me-1"></i> Jornadas de este grupo
-        </a>
-    </div> -->
 </div>

@@ -11,6 +11,7 @@ $dayLabels = [
 'mon' => 'Lun', 'tue' => 'Mar', 'wed' => 'Mié', 'thu' => 'Jue',
 'fri' => 'Vie', 'sat' => 'Sáb', 'sun' => 'Dom',
 ];
+$isEditing = isset($league) && $league->exists;
 @endphp
 
 <form action="{{ $action }}" method="POST" enctype="multipart/form-data" id="league-form">
@@ -18,16 +19,31 @@ $dayLabels = [
     @method($method)
 
     <ul class="nav nav-tabs mb-4" role="tablist">
+        @if ($isEditing)
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-venues" type="button">
+                Sedes y pistas
+            </button>
+        </li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-basics" type="button">Básicos</button></li>
+        @else
         <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-basics" type="button">Básicos</button></li>
+
+        @endif
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-schedule" type="button">Calendario</button></li>
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rules" type="button">Reglas</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-branding" type="button">Branding</button></li>
+        <!-- <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-branding" type="button">Branding</button></li> -->
     </ul>
 
     <div class="tab-content">
 
+        @if ($isEditing)
+        <div class="tab-pane fade show active" id="tab-venues" role="tabpanel">
+            @include('leagues.partials._sedes', ['league' => $league->load('sedes.pistas')])
+        </div>
+        @endif
         {{-- TAB: Básicos --}}
-        <div class="tab-pane fade show active" id="tab-basics">
+        <div class="tab-pane fade {{ $isEditing == true ? '':'show active'}}" id="tab-basics">
             <div class="card-soft p-4 mb-3">
                 <div class="row g-3">
                     <div class="col-md-8">
@@ -208,8 +224,9 @@ $dayLabels = [
             <i class="fa-solid fa-floppy-disk me-1"></i>
             {{ $isEdit ? 'Guardar cambios' : 'Crear liga' }}
         </button>
+        @if (!$isEditing)
         <a href="{{ route('leagues.index') }}" class="btn btn-outline-secondary">Cancelar</a>
-
+        @endif
         @if ($isEdit)
         <button type="button" class="btn btn-outline-danger ms-auto" id="delete-league-btn"
             data-action="{{ route('leagues.destroy', $league) }}">

@@ -1468,8 +1468,8 @@ textarea.form-control { line-height: 1.5; }
 
 /* ---------- PUBLIC LEAGUE PAGE — gold accents ---------- */
 .public-body { background: var(--surface-page); }
-.public-shell { max-width: 920px; margin: 0 auto; padding: 0 0 var(--space-12); }
-@media (min-width: 768px) { .public-shell { padding-top: var(--space-6); } }
+.public-shell { margin: 0 auto; }
+@media (min-width: 768px) {  }
 
 .public-banner {
     position: relative;
@@ -2740,7 +2740,7 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-weight: 700;
-    color: rgba(255,255,255,0.7);
+    /* color: rgba(255,255,255,0.7); */
     margin-bottom: 2px;
     font-family: var(--font-mono);
 }
@@ -2778,7 +2778,7 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     position: absolute;
     top: 4px;
     border: 0;
-    background: rgba(255,255,255,0.18);
+    background: rgb(114 114 114 / 49%);
     color: #fff;
     width: 18px; height: 18px;
     border-radius: var(--radius-pill);
@@ -2917,3 +2917,1056 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     gap: 6px;
 }
 .cancha-picker-back-btn:hover { color: var(--text-primary); }
+
+/* ============================================================
+   GROUP CARD — JORNADAS BUTTON AT TOP
+   ============================================================ */
+
+.group-card-jornadas-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    margin: var(--space-3) 0;
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 13.5px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+.group-card-jornadas-btn:hover,
+.group-card-jornadas-btn:focus-visible {
+    border-color: var(--brand-500);
+    background: color-mix(in srgb, var(--brand-500) 6%, var(--surface-sunken));
+    color: var(--text-primary);
+    text-decoration: none;
+}
+.group-card-jornadas-btn > i:first-child {
+    color: var(--brand-700);
+    font-size: 14px;
+}
+.group-card-jornadas-btn:hover > i:first-child {
+    color: var(--brand-500);
+}
+
+/* Tighten group-card-header on small screens (since action button moved up) */
+@media (max-width: 575.98px) {
+    .group-card-header {
+        padding: 10px 12px;
+    }
+    .group-card-header .btn-sm {
+        padding: 4px 7px;
+    }
+    .group-card-jornadas-btn {
+        padding: 12px 14px;
+        font-size: 14px;
+    }
+}
+
+/* ============================================================
+   SEDE / PISTA CARDS
+   ============================================================ */
+
+.sede-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.sede-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    background: var(--surface-sunken);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.sede-card-body {
+    padding: 12px 14px 14px;
+}
+
+.pistas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pista-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+}
+
+.pista-row .pista-name {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.pista-empty {
+    background: var(--surface-sunken);
+    border: 1px dashed var(--border-subtle);
+    border-radius: var(--radius-sm);
+    text-align: center;
+}
+
+@media (max-width: 575.98px) {
+    .sede-card-header {
+        flex-wrap: wrap;
+    }
+    .sede-card-header .sede-address {
+        flex-basis: 100%;
+        max-width: none !important;
+        order: 3;
+    }
+    .sede-card-header .save-sede,
+    .sede-card-header .delete-sede {
+        margin-left: auto;
+    }
+    .pista-row {
+        flex-wrap: wrap;
+    }
+    .pista-row .pista-surface {
+        max-width: none !important;
+        flex-basis: 100%;
+        order: 3;
+    }
+}
+
+/* ============================================================
+   LEAGUE PANEL NAV — mobile-scrollable, brand-coloured active
+   ============================================================ */
+
+.league-panel-nav {
+    /* Horizontal scroll on mobile/narrow viewports */
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;          /* Firefox */
+    padding-bottom: 2px;             /* space for any focus ring */
+    /* Subtle fade on the right edge as a "more →" affordance */
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+}
+
+/* Hide scrollbar on WebKit */
+.league-panel-nav::-webkit-scrollbar {
+    display: none;
+}
+
+/* No mask when fully visible (desktop or fully scrolled) */
+@media (min-width: 992px) {
+    .league-panel-nav {
+        mask-image: none;
+        -webkit-mask-image: none;
+    }
+}
+
+/* Each item should never shrink — keeps the natural width and forces scroll */
+.league-panel-nav .nav-item {
+    flex: 0 0 auto;
+}
+
+.league-panel-nav .nav-link {
+    color: var(--text-secondary);
+    background: transparent;
+    border-radius: var(--radius-md);
+    padding: 8px 14px;
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+.league-panel-nav .nav-link:hover {
+    color: var(--text-primary);
+    background: var(--surface-sunken);
+}
+
+/* Active tab — brand gold, not Bootstrap blue */
+.league-panel-nav .nav-link.active {
+    background: var(--brand-500);
+    color: var(--neutral-900);
+    font-weight: 600;
+}
+
+.league-panel-nav .nav-link.active:hover {
+    background: var(--brand-600);
+    color: var(--neutral-900);
+}
+
+.league-panel-nav .nav-link i {
+    width: 14px;
+    text-align: center;
+}
+
+/* On very narrow viewports, hide the label text and show only icons.
+   Saves horizontal space without losing access to all tabs. */
+@media (max-width: 480px) {
+    .league-panel-nav .nav-link {
+        padding: 8px 10px;
+    }
+    .league-panel-nav .nav-link span {
+        display: none;
+    }
+    .league-panel-nav .nav-link.active span {
+        display: inline;            /* Keep label visible on the active tab */
+        margin-left: 4px;
+    }
+}
+/* ============================================================
+   RESULT MODAL — session-level player flags
+   ============================================================ */
+
+.session-flags-block {
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.session-flags-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: var(--space-3);
+}
+
+.session-flags-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+}
+
+.session-player-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 8px 10px;
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    margin-bottom: 6px;
+}
+.session-player-row:last-child { margin-bottom: 0; }
+
+.session-player-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.session-player-flags {
+    display: flex;
+    gap: 14px;
+    flex-shrink: 0;
+}
+
+/* On mobile, stack the row contents vertically so checkboxes have breathing room */
+@media (max-width: 575.98px) {
+    .session-player-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+    .session-player-flags {
+        gap: 12px;
+    }
+}
+
+/* ---- Compact round sections (the rounds below only show teams + sets) ---- */
+.round-teams {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+    flex-wrap: wrap;
+}
+.round-team { flex: 1 1 0; min-width: 0; }
+.round-team-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    margin-bottom: 2px;
+}
+.round-team-players {
+    font-size: 13px;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.round-vs {
+    color: var(--text-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.cell-cancha-result i, .cell-cancha-clear i{
+    position: relative;
+    left: -2.5px;
+}
+
+/* ============================================================
+   PUBLIC PAGES — shared layout & nav
+   ============================================================ */
+
+.public-body {
+    background: var(--surface-page);
+    min-height: 100vh;
+    /* display: flex; */
+    flex-direction: column;
+}
+
+.public-hero {
+    position: relative;
+    /* background: linear-gradient(135deg, var(--brand-500), var(--brand-700)); */
+    color: var(--neutral-900);
+    padding: var(--space-8) var(--space-6);
+    overflow: hidden;
+}
+.public-hero-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0.25;
+}
+.public-hero-content {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.public-hero-title {
+    text-decoration: none;
+    color: inherit;
+}
+.public-hero-title h1 {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 800;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+.public-hero-meta {
+    margin-top: 8px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.public-nav {
+    background: var(--surface-card);
+    border-bottom: 1px solid var(--border-subtle);
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.public-nav::-webkit-scrollbar { display: none; }
+.public-nav-inner {
+    justify-self: center;
+    display: flex;
+    gap: 4px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--space-4);
+}
+.public-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    font-size: 13.5px;
+    transition: all var(--transition-fast);
+}
+.public-nav-link:hover { color: var(--text-primary); }
+.public-nav-link.is-active {
+    color: var(--text-brand);
+    border-bottom-color: var(--brand-500);
+}
+.public-nav-link i { font-size: 12px; }
+
+@media (max-width: 575.98px) {
+    .public-nav-link span { display: none; }
+    .public-nav-link i { font-size: 16px; }
+    .public-nav-link { padding: 14px 16px; }
+    .public-nav-link.is-active span { display: inline; margin-left: 4px; }
+}
+
+.public-main {
+    flex: 1 1 auto;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    padding: var(--space-5) 0px var(--space-8);
+}
+
+.public-section {
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-xs);
+    margin-bottom: var(--space-4);
+}
+.public-section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-3);
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.public-section h2 {
+    font-size: 20px;
+    margin: 0;
+}
+.public-section-link {
+    font-size: 13px;
+    color: var(--text-brand);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.public-footer {
+    border-top: 1px solid var(--border-subtle);
+    padding: var(--space-4);
+    background: var(--surface-card);
+}
+.public-footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+/* ---- Stats strip ---- */
+.public-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+.public-stat {
+    background: var(--surface-card);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    text-align: center;
+    box-shadow: var(--shadow-xs);
+}
+.public-stat-value {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-brand);
+    line-height: 1;
+}
+.public-stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+@media (max-width: 575.98px) {
+    .public-stats { grid-template-columns: repeat(2, 1fr); }
+    .public-stat-value { font-size: 22px; }
+}
+
+/* ---- Group blocks (used in inicio + jornada detail) ---- */
+.public-group-block {
+    margin-bottom: var(--space-4);
+}
+.public-group-name {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.public-empty {
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    color: var(--text-muted);
+    text-align: center;
+    font-size: 13px;
+}
+.public-empty-big {
+    text-align: center;
+    padding: var(--space-8) var(--space-3);
+    color: var(--text-muted);
+}
+.public-empty-big i {
+    font-size: 36px;
+    opacity: 0.4;
+    display: block;
+    margin-bottom: 12px;
+}
+
+/* ---- Cancha card (replaces match card on public) ---- */
+.public-cancha {
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    margin-bottom: var(--space-2);
+}
+.public-cancha-head {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.cancha-when { font-weight: 500; }
+.public-cancha-players {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--surface-card);
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+    font-size: 12px;
+    font-weight: 500;
+}
+.cancha-player::after { content: " · "; color: var(--text-muted); font-weight: 400; }
+.cancha-player:last-child::after { content: ""; }
+
+.public-round {
+    padding: 8px 0;
+    border-top: 1px dashed var(--border-subtle);
+}
+.public-round:first-of-type { border-top: 0; padding-top: 4px; }
+.public-round-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+.public-round-teams {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 8px;
+    align-items: center;
+    font-size: 12.5px;
+}
+.public-round-teams .is-winner {
+    color: var(--text-brand);
+    font-weight: 700;
+}
+.public-round-teams .vs {
+    color: var(--text-muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    text-align: center;
+}
+.public-round-score {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 14px;
+    text-align: center;
+}
+.public-round-sets {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    margin-top: 4px;
+}
+.public-round-sets .set-tag {
+    background: var(--surface-card);
+    border-radius: var(--radius-xs);
+    padding: 1px 6px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--text-secondary);
+}
+
+/* ---- Leaderboard preview ---- */
+.public-leaderboard-card {
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+}
+.public-podium {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.public-podium li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+}
+.public-podium-rank {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--text-brand);
+    font-size: 14px;
+    width: 20px;
+}
+.public-podium-name {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.public-podium-pts {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* ---- Calendario rows ---- */
+.public-jornada-row {
+    display: grid;
+    grid-template-columns: 60px 1fr auto;
+    gap: var(--space-3);
+    align-items: center;
+    padding: var(--space-3);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+}
+.public-jornada-row:hover {
+    border-color: var(--brand-500);
+    background: color-mix(in srgb, var(--brand-500) 4%, var(--surface-sunken));
+}
+.public-jornada-number {
+    text-align: center;
+}
+.public-jornada-number small {
+    display: block;
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+.public-jornada-number strong {
+    font-family: var(--font-display);
+    font-size: 28px;
+    color: var(--text-brand);
+    line-height: 1;
+}
+.public-jornada-info {
+    min-width: 0;
+}
+.public-jornada-dates {
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+.public-jornada-progress-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+.public-jornada-progress {
+    height: 4px;
+    background: var(--surface-card);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+}
+.public-jornada-progress span {
+    display: block;
+    height: 100%;
+    background: var(--brand-500);
+    border-radius: var(--radius-pill);
+    transition: width 0.3s ease;
+}
+.public-jornada-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ---- Jornada detail prev/next ---- */
+.public-jornada-header {
+    margin-bottom: var(--space-4);
+}
+.public-back-link {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 4px;
+}
+.public-back-link:hover { color: var(--text-primary); }
+.public-jornada-nav {
+    display: flex;
+    justify-content: space-between;
+    margin-top: var(--space-4);
+}
+
+/* ---- Standings ---- */
+.public-standings-table {
+    background: var(--surface-card);
+}
+.public-standings-table th {
+    background: var(--surface-sunken);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+}
+.public-standings-table td.rank {
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    font-weight: 600;
+}
+.public-standing-card {
+    display: grid;
+    grid-template-columns: 30px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+}
+.public-standing-rank {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--text-brand);
+    font-size: 16px;
+    text-align: center;
+}
+.public-standing-info { min-width: 0; }
+.public-standing-info strong { display: block; font-size: 14px; }
+.public-standing-info small { font-size: 11px; }
+.public-standing-points { text-align: center; }
+.public-standing-points strong {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    color: var(--text-brand);
+    display: block;
+    line-height: 1;
+}
+.public-standing-points small {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.public-tabs .nav-link {
+    color: var(--text-secondary);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    padding: 6px 14px;
+    font-size: 13px;
+}
+.public-tabs .nav-link.active {
+    background: var(--brand-500);
+    color: var(--neutral-900);
+}
+
+/* ---- Players index ---- */
+.public-players-controls {
+    display: grid;
+    grid-template-columns: 1fr 200px 200px;
+    gap: 10px;
+    margin-bottom: var(--space-3);
+}
+@media (max-width: 767.98px) {
+    .public-players-controls { grid-template-columns: 1fr; }
+}
+.public-player-row {
+    display: grid;
+    grid-template-columns: 40px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+}
+.public-player-avatar {
+    width: 36px;
+    height: 36px;
+    background: var(--brand-500);
+    color: var(--neutral-900);
+    border-radius: var(--radius-pill);
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+}
+.public-player-info { min-width: 0; }
+.public-player-info strong { display: block; font-size: 14px; }
+.public-player-info small { font-size: 11px; }
+.public-player-stat { text-align: center; }
+.public-player-stat strong {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    color: var(--text-brand);
+    display: block;
+    line-height: 1;
+}
+.public-player-stat small {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+/* ---- Reglas ---- */
+.public-rule-card {
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    height: 100%;
+}
+.public-rule-card h6 {
+    margin-bottom: var(--space-3);
+    color: var(--text-primary);
+}
+.public-rule-card ul li {
+    padding: 2px 0;
+    font-size: 13.5px;
+}
+.public-sede-block {
+    padding: var(--space-2) 0;
+    border-bottom: 1px dashed var(--border-subtle);
+}
+.public-sede-block:last-child { border-bottom: 0; }
+
+/* ============================================================
+   PUBLIC NAV — theme toggle
+   ============================================================ */
+
+.public-nav-inner {
+    /* keep the existing flex layout, just push the toggle to the right */
+    align-items: center;
+}
+
+.public-nav-theme-toggle {
+    margin-left: auto;
+    background: transparent;
+    border: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-pill);
+    display: grid;
+    place-items: center;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.public-nav-theme-toggle:hover,
+.public-nav-theme-toggle:focus-visible {
+    background: var(--surface-sunken);
+    color: var(--text-primary);
+}
+
+/* Show sun in light mode, moon in dark mode */
+.public-nav-theme-toggle .theme-icon-dark { display: none; }
+.public-nav-theme-toggle .theme-icon-light { display: inline; }
+
+[data-bs-theme="dark"] .public-nav-theme-toggle .theme-icon-dark { display: inline; }
+[data-bs-theme="dark"] .public-nav-theme-toggle .theme-icon-light { display: none; }
+
+/* Mobile: the toggle sits alongside icon-only nav links — make sure it still
+   has room and doesn't get pushed off-screen */
+@media (max-width: 575.98px) {
+    .public-nav-theme-toggle {
+        margin-left: 4px;
+        width: 44px;
+        height: 44px;
+    }
+}
+/* ============================================================
+   PUBLIC HERO — title row with theme toggle
+   ============================================================ */
+
+.public-hero-title-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.public-hero-title {
+    text-decoration: none;
+    color: inherit;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.public-hero-theme-toggle {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--neutral-900);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.public-hero-theme-toggle:hover,
+.public-hero-theme-toggle:focus-visible {
+    background: rgba(255, 255, 255, 0.4);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.05);
+}
+
+.public-hero-theme-toggle:active {
+    transform: scale(0.96);
+}
+
+/* Sun visible in light mode, moon in dark mode */
+.public-hero-theme-toggle .theme-icon-dark { display: none; }
+.public-hero-theme-toggle .theme-icon-light { display: inline; }
+
+[data-bs-theme="dark"] .public-hero-theme-toggle .theme-icon-dark { display: inline; }
+[data-bs-theme="dark"] .public-hero-theme-toggle .theme-icon-light { display: none; }
+
+/* In dark mode, the hero gradient gets darker — adjust button colors */
+[data-bs-theme="dark"] .public-hero-theme-toggle {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+}
+[data-bs-theme="dark"] .public-hero-theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+@media (max-width: 575.98px) {
+    .public-hero-theme-toggle {
+        width: 36px;
+        height: 36px;
+    }
+    .public-hero-title h1 {
+        font-size: 24px;
+    }
+}
+
+/* ============================================================
+   JORNADA DETAIL — cancha quick-jump pill bar (scroll-spy)
+   ============================================================ */
+
+.cancha-pillbar {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 8px 2px 12px;
+    margin: 0 -8px 12px;            /* bleed slightly past the section padding */
+    padding-left: 8px;
+    padding-right: 8px;
+    position: sticky;
+    top: 56px;                       /* sits below the nav (which is also sticky) */
+    z-index: 20;
+    background: var(--surface-card);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-subtle);
+}
+.cancha-pillbar::-webkit-scrollbar { display: none; }
+
+.cancha-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all var(--transition-fast);
+}
+.cancha-pill:hover {
+    border-color: var(--brand-500);
+    color: var(--text-primary);
+}
+.cancha-pill i {
+    font-size: 10px;
+}
+
+/* Status-coded icons */
+.cancha-pill.is-completed i { color: var(--success-700); }
+.cancha-pill.is-scheduled i { color: var(--info-700); }
+.cancha-pill:not(.is-completed):not(.is-scheduled) i { color: var(--text-muted); }
+
+/* Active state via scroll-spy (JS adds .is-active) */
+.cancha-pill.is-active {
+    background: var(--brand-500);
+    border-color: var(--brand-500);
+    color: var(--neutral-900);
+}
+.cancha-pill.is-active i { color: var(--neutral-900); }
+
+/* Slight extra space above each anchored cancha so the sticky pill bar
+   doesn't cover the top of a card when scrolled into view */
+.cancha-anchor {
+    scroll-margin-top: 120px;
+    margin-bottom: var(--space-3);
+}
+
+/* Make the cancha cards a bit more distinct visually since we're showing many */
+.cancha-cards-list .public-cancha {
+    border-left: 3px solid var(--border-subtle);
+    transition: border-color var(--transition-fast);
+}
+.cancha-cards-list .public-cancha:has(+ .cancha-anchor[data-active]),
+.cancha-cards-list .cancha-anchor[data-active] .public-cancha {
+    border-left-color: var(--brand-500);
+}
+
+@media (max-width: 575.98px) {
+    .cancha-pillbar {
+        top: 48px;
+    }
+    .cancha-pill {
+        padding: 5px 10px;
+        font-size: 11.5px;
+    }
+}
+

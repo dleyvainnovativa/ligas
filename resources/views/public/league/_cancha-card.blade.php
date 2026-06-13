@@ -1,20 +1,21 @@
 @php
+/** @var array $m cancha payload */
 $allCompleted = $m['status'] === 'completed';
 @endphp
-<article class="public-match" data-cancha-id="{{ $m['id'] }}">
-    <div class="public-match-head">
-        <span class="match-when">
+<article class="public-cancha" data-cancha-id="{{ $m['id'] }}">
+    <div class="public-cancha-head">
+        <span class="cancha-when">
             {{ $m['date_display'] ?? '?' }}
             @if ($m['time_slot']) · {{ $m['time_slot'] }} @endif
         </span>
-        <span class="match-where">
+        <span class="cancha-where">
             @if ($m['pista'])
             {{ $m['pista'] }}@if ($m['sede']) · {{ $m['sede'] }}@endif
             @endif
         </span>
     </div>
 
-    <div class="cancha-players-list">
+    <div class="public-cancha-players">
         @foreach ($m['players'] as $name)
         <span class="cancha-player">{{ $name }}</span>
         @endforeach
@@ -28,21 +29,15 @@ $allCompleted = $m['status'] === 'completed';
     $bWinner = $hasResult && $round['winner'] === 'b';
     @endphp
     <div class="public-round">
-        <div class="public-round-label">Set {{ $round['rotation_index'] }}</div>
+        <div class="public-round-label">S{{ $round['rotation_index'] }}</div>
         <div class="public-round-teams">
-            <span class="{{ $aWinner ? 'is-winner' : '' }}">
-                {{ implode(' / ', $round['team_a']) }}
-            </span>
+            <span class="{{ $aWinner ? 'is-winner' : '' }}">{{ implode(' / ', $round['team_a']) }}</span>
             @if ($hasResult)
-            <span class="public-round-score">
-                {{ $round['sets_a'] ?? 0 }}–{{ $round['sets_b'] ?? 0 }}
-            </span>
+            <span class="public-round-score">{{ $round['sets_a'] ?? 0 }}–{{ $round['sets_b'] ?? 0 }}</span>
             @else
             <span class="vs">vs</span>
             @endif
-            <span class="{{ $bWinner ? 'is-winner' : '' }}">
-                {{ implode(' / ', $round['team_b']) }}
-            </span>
+            <span class="{{ $bWinner ? 'is-winner' : '' }}">{{ implode(' / ', $round['team_b']) }}</span>
         </div>
         @if ($hasResult && !empty($round['sets']))
         <div class="public-round-sets">
@@ -67,7 +62,7 @@ $allCompleted = $m['status'] === 'completed';
             data-round-id="{{ $round['id'] }}"
             data-cancha-id="{{ $m['id'] }}">
             <i class="fa-solid fa-pencil me-1"></i>
-            Proponer marcador Set {{ $round['rotation_index'] }}
+            Proponer marcador S{{ $round['rotation_index'] }}
         </button>
         @endif
     </div>

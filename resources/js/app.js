@@ -39,6 +39,21 @@ window.firebase = { auth, signInWithEmailAndPassword, signOut };
 
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
+
+    // NEW: Bootstrap-tab hash activation — open a tab if its target is in the URL hash
+    if (window.location.hash) {
+        const tabButton = document.querySelector(`[data-bs-toggle="tab"][data-bs-target="${window.location.hash}"]`);
+        if (tabButton) {
+            new bootstrap.Tab(tabButton).show();
+        }
+    }
+
+    // NEW: Flash message → toast
+    const flash = document.getElementById('flash-message');
+    if (flash?.dataset.message) {
+        toast.success(flash.dataset.message);
+    }
+
     mountTagInputs();
     mountAds();
     mountLeagueForm();
@@ -52,8 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     mountMatchResult();
     mountCellPicker();
     mountGroupPicker();
- mountCanchaPicker();
-
+    mountCanchaPicker();
 });
 
 document.addEventListener('click', (e) => {

@@ -6,12 +6,13 @@ use App\Http\Requests\PlayerRequest;
 use App\Models\League;
 use App\Models\Player;
 use App\Services\PlayerImportService;
+use App\Services\RosterService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class PlayerController extends Controller
 {
-    public function __construct(private PlayerImportService $importer) {}
+    public function __construct(private PlayerImportService $importer, private RosterService $roster) {}
 
     public function index(Request $request, League $league)
     {
@@ -24,13 +25,17 @@ class PlayerController extends Controller
     public function store(PlayerRequest $request, League $league)
     {
         $this->authorize('update', $league);
-
+        // dd($league->groups()->first());
         $data = $request->validated();
         $data['paid_amount']    = $data['paid_amount'] ?? 0;
         $data['payment_status'] = $data['payment_status']
             ?? $this->importer->derivePaymentStatus((float) $data['paid_amount'], (float) $league->cost);
 
         $player = $league->players()->create($data);
+        $group = $league->groups()->first();
+        $assigned = $league->format === League::FORMAT_PAIRS
+            ? $this->roster->autoFillPairs($group, 1)
+            : $this->roster->autoFillPlayers($group, 1);
 
         return response()->json(['player' => $this->serialize($player)]);
     }
@@ -74,7 +79,11 @@ class PlayerController extends Controller
         $this->authorize('update', $league);
         $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:2048']]);
 
+        $group = $league->groups()->first();
         $result = $this->importer->import($league, $request->file('file'));
+        $assigned = $league->format === League::FORMAT_PAIRS
+            ? $this->roster->autoFillPairs($group, 2000)
+            : $this->roster->autoFillPlayers($group, 2000);
         return response()->json($result);
     }
 

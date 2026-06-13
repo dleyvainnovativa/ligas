@@ -3,11 +3,11 @@ $tabs = [
 ['key' => 'settings', 'route' => route('leagues.edit', $league), 'label' => 'Configuración', 'icon' => 'fa-gear'],
 ['key' => 'overview', 'route' => route('leagues.show', $league), 'label' => 'Resumen', 'icon' => 'fa-chart-line'],
 ['key' => 'players', 'route' => route('leagues.players.index', $league), 'label' => 'Jugadores', 'icon' => 'fa-users'],
-['key' => 'groups', 'route' => route('leagues.groups.index', $league), 'label' => 'Grupos', 'icon' => 'fa-layer-group'],
+['key' => 'groups', 'route' => route('leagues.jornadas.index', [$league, $league->groups()->first()]), 'label' => 'Jornadas', 'icon' => 'fa-layer-group'],
 ['key' => 'standings', 'route' => route('leagues.standings.index', $league), 'label' => 'Standings', 'icon' => 'fa-ranking-star'],
 ['key' => 'ads', 'route' => route('leagues.ads.index', $league), 'label' => 'Anuncios', 'icon' => 'fa-rectangle-ad'],
 ];
-$active = $active ?? 'overview';
+$active = $active ?? 'settings';
 @endphp
 <div class="d-flex align-items-center gap-3 mb-3">
 
@@ -47,16 +47,15 @@ $active = $active ?? 'overview';
             </a>
         </div>
     </div>
-    <!-- <a href="{{ route('leagues.index') }}" class="btn btn-icon btn-sm" title="Volver a ligas">
-        <i class="fa-solid fa-arrow-left"></i>
-    </a> -->
 </div>
 
-<ul class="nav nav-tabs panel-tabs mb-4" role="tablist">
+<ul class="nav nav-pills league-panel-nav mb-4 flex-nowrap">
     @foreach ($tabs as $tab)
     <li class="nav-item">
-        <a class="nav-link {{ $active === $tab['key'] ? 'active' : '' }}" href="{{ $tab['route'] }}">
-            <i class="fa-solid {{ $tab['icon'] }} me-2"></i>{{ $tab['label'] }}
+        <a href="{{ $tab['route'] }}"
+            class="nav-link {{ $active === $tab['key'] ? 'active' : '' }}">
+            <i class="fa-solid {{ $tab['icon'] }} me-1"></i>
+            <span>{{ $tab['label'] }}</span>
         </a>
     </li>
     @endforeach

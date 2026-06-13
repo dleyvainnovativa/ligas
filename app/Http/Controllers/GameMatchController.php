@@ -8,6 +8,7 @@ use App\Models\Group;
 use App\Models\Jornada;
 use App\Models\League;
 use App\Services\MatchSchedulingService;
+use App\Services\PublicCacheService;
 use Illuminate\Http\Request;
 
 class GameMatchController extends Controller
@@ -161,7 +162,9 @@ class GameMatchController extends Controller
             'status' => $this->scheduler->deriveStatus($cancha->fresh()),
         ]);
 
-        \Illuminate\Support\Facades\Cache::forget("public_league:{$league->id}:v2");
+        // \Illuminate\Support\Facades\Cache::forget("public_league:{$league->id}:v2");
+        app(PublicCacheService::class)->bust($league);
+
 
         return response()->json(['ok' => true]);
     }
@@ -194,7 +197,9 @@ class GameMatchController extends Controller
 
         $proposals->reject($proposal);
 
-        \Illuminate\Support\Facades\Cache::forget("public_league:{$league->id}:v2");
+        // \Illuminate\Support\Facades\Cache::forget("public_league:{$league->id}:v2");
+        app(PublicCacheService::class)->bust($league);
+
 
         return response()->json(['ok' => true]);
     }

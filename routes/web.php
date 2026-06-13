@@ -131,12 +131,33 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-// PUBLIC: propose a score (still operates on a single round/match)
+// PUBLIC: propose a score (already exists, leave it)
 Route::post('/{slug}/matches/{match}/propose', [\App\Http\Controllers\PublicMatchProposalController::class, 'store'])
     ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
     ->name('public.match.propose');
 
-// Public league page — MUST be last among the slug routes
+// PUBLIC: sub-pages — must come before the catch-all /{slug} below
+Route::get('/{slug}/calendario',         [\App\Http\Controllers\PublicLeagueController::class, 'calendario'])
+    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->name('public.calendario');
+
+Route::get('/{slug}/jornada/{number}',   [\App\Http\Controllers\PublicLeagueController::class, 'jornada'])
+    ->where(['slug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'number' => '[0-9]+'])
+    ->name('public.jornada');
+
+Route::get('/{slug}/clasificacion',      [\App\Http\Controllers\PublicLeagueController::class, 'clasificacion'])
+    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->name('public.clasificacion');
+
+Route::get('/{slug}/jugadores',          [\App\Http\Controllers\PublicLeagueController::class, 'jugadores'])
+    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->name('public.jugadores');
+
+Route::get('/{slug}/reglas',             [\App\Http\Controllers\PublicLeagueController::class, 'reglas'])
+    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->name('public.reglas');
+
+// PUBLIC: home — must be LAST among the slug routes
 Route::get('/{slug}', [\App\Http\Controllers\PublicLeagueController::class, 'show'])
     ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
     ->name('public.league');

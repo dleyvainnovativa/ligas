@@ -222,8 +222,8 @@ return $cancha->rounds->where('status', \App\Models\GameMatch::STATUS_COMPLETED)
                                             @foreach ($cellCancha->rounds as $round)
                                             @php $t = $round->status === 'completed' ? $round->tally() : null; @endphp
                                             <span class="round-pill {{ $round->status }}"
-                                                @if($t) title="R{{ $round->rotation_index }}: {{ $t['games_a'] }}–{{ $t['games_b'] }}" @endif>
-                                                R{{ $round->rotation_index }}
+                                                @if($t) title="S{{ $round->rotation_index }}: {{ $t['games_a'] }}–{{ $t['games_b'] }}" @endif>
+                                                S{{ $round->rotation_index }}
                                                 @if ($t)
                                                 <span class="round-pill-score">{{ $t['sets_a'] }}-{{ $t['sets_b'] }}</span>
                                                 @endif

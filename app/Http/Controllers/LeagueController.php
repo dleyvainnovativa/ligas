@@ -49,6 +49,11 @@ class LeagueController extends Controller
             $request->file('banner'),
         );
 
+        $group = $league->groups()->create([
+            'name'     => "Principal",
+            'position' => 1
+        ]);
+
         return redirect()
             ->route('leagues.edit', $league)
             ->with('success', 'Liga creada correctamente.');

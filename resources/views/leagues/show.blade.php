@@ -48,7 +48,7 @@ $standings = app(\App\Services\StandingsService::class);
     <div class="row g-3">
         @foreach ($league->groups as $g)
         @php $rows = $standings->forGroup($g); @endphp
-        <div class="col-md-6">
+        <div class="col-md-12">
             <div class="mini-standings">
                 <h6 class="mini-standings-title">{{ $g->name }}</h6>
                 @if (empty($rows))
@@ -71,9 +71,4 @@ $standings = app(\App\Services\StandingsService::class);
 </div>
 @endif
 
-<div class="row g-3 mt-1" id="sedes">
-    <div class="col-12">
-        @include('leagues.partials._sedes', ['league' => $league->load('sedes.pistas')])
-    </div>
-</div>
 @endsection
