@@ -2796,7 +2796,8 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
 .cancha-pill {
     background: var(--surface-sunken);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
+    /* border-radius: var(--radius-sm); */
+    width: 100%;
     padding: 6px 8px;
     cursor: grab;
     user-select: none;
