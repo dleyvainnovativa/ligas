@@ -18,12 +18,15 @@ class Manager extends Model implements Authenticatable
         'avatar_url',
         'remember_token',
         'last_login_at',
+        'tier',
+        'tier_until',     // ← new
     ];
 
     protected function casts(): array
     {
         return [
             'last_login_at' => 'datetime',
+            'tier_until'    => 'datetime',
         ];
     }
 

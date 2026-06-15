@@ -15,6 +15,51 @@
     $activeCount = $manager->leagues()->where('status', 'active')->count();
     @endphp
 
+
+
+    @php
+    $tiers = app(\App\Services\TierService::class);
+    $snapshot = $tiers->snapshot($manager);
+    $activeLeagues = $snapshot['usage']['active_leagues'];
+    @endphp
+
+    <div class="plan-card card-soft p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <div class="plan-badge plan-badge-{{ $snapshot['tier'] }}">
+                    <i class="fa-solid fa-{{ $snapshot['tier'] === 'pro' ? 'crown' : ($snapshot['tier'] === 'plus' ? 'star' : 'circle') }}"></i>
+                    Plan {{ $snapshot['tier_label'] }}
+                </div>
+                <h6 class="mt-2 mb-1">{{ config("tiers.{$snapshot['tier']}.tagline") }}</h6>
+                <small class="text-secondary">{{ $snapshot['price_label'] }}</small>
+            </div>
+
+            @if ($snapshot['tier'] !== 'pro')
+            <a href="{{ route('plans.index') }}" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-arrow-up me-1"></i>
+                Mejorar plan
+            </a>
+            @endif
+        </div>
+
+        <hr class="my-3">
+
+        <div class="d-flex gap-3 flex-wrap">
+            <div class="plan-usage">
+                <div class="plan-usage-label">Ligas activas</div>
+                <div class="plan-usage-value">
+                    {{ $activeLeagues['used'] }}@if ($activeLeagues['limit'] !== null) / {{ $activeLeagues['limit'] }}@else <span class="text-muted small">/ ∞</span>@endif
+                </div>
+                @if ($activeLeagues['limit'] !== null)
+                @php $pct = min(100, ($activeLeagues['used'] / $activeLeagues['limit']) * 100); @endphp
+                <div class="plan-usage-bar">
+                    <span style="width: {{ $pct }}%; background: {{ $pct >= 100 ? 'var(--danger-500)' : ($pct >= 80 ? 'var(--warning-500)' : 'var(--brand-500)') }};"></span>
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
     @if ($leagueCount === 0)
     {{-- First-run state --}}
     <div class="col-12">

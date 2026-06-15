@@ -48,6 +48,13 @@
         <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
         <main class="app-main">
+            @if (session('flash'))
+            <div id="flash-message" data-message="{{ session('flash') }}" hidden></div>
+            @endif
+
+            @if (session('flash_error'))
+            <div id="flash-error" data-message="{{ session('flash_error') }}" hidden></div>
+            @endif
             @include('partials.topbar')
 
             <div class="app-content">

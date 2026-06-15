@@ -48,11 +48,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // NEW: Flash message → toast
-    const flash = document.getElementById('flash-message');
-    if (flash?.dataset.message) {
-        toast.success(flash.dataset.message);
-    }
+    // Flash message → toast (success)
+const flash = document.getElementById('flash-message');
+if (flash?.dataset.message) {
+    toast.success(flash.dataset.message);
+}
+
+// Flash error → toast (error)
+const flashError = document.getElementById('flash-error');
+if (flashError?.dataset.message) {
+    toast.error(flashError.dataset.message);
+}
 
     mountTagInputs();
     mountAds();

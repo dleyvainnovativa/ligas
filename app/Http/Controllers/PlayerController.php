@@ -22,10 +22,17 @@ class PlayerController extends Controller
         return view('leagues.players.index', compact('league', 'players'));
     }
 
-    public function store(PlayerRequest $request, League $league)
+    public function store(PlayerRequest $request, League $league, \App\Services\TierService $tiers)
     {
         $this->authorize('update', $league);
         // dd($league->groups()->first());
+        if (!$tiers->canAddPlayer($league)) {
+            $snapshot = $tiers->leagueSnapshot($league);
+            $limit = $snapshot['players']['limit'];
+            return response()->json([
+                'message' => "Esta liga llegó al límite de {$limit} jugadores. Mejora tu plan para agregar más.",
+            ], 422);
+        }
         $data = $request->validated();
         $data['paid_amount']    = $data['paid_amount'] ?? 0;
         $data['payment_status'] = $data['payment_status']
@@ -69,21 +76,64 @@ class PlayerController extends Controller
     public function importPreview(Request $request, League $league)
     {
         $this->authorize('update', $league);
-        $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:2048']]);
+        // $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:2048']]);
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx,xls', 'max:5120'],
+        ]);
 
         return response()->json($this->importer->preview($request->file('file')));
     }
 
-    public function import(Request $request, League $league)
-    {
+    public function import(
+        Request $request,
+        League $league,
+        \App\Services\TierService $tiers
+    ) {
         $this->authorize('update', $league);
-        $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:2048']]);
+        $request->validate([
+            'file' => ['required', 'file', 'max:5120', function ($attr, $value, $fail) {
+                $ext = strtolower($value->getClientOriginalExtension());
+                if (!in_array($ext, ['csv', 'txt', 'xlsx', 'xls'], true)) {
+                    $fail('El archivo debe ser CSV o Excel (.xlsx, .xls).');
+                }
+            }],
+        ]);
+
+        // Parse without saving to count how many players we'd be adding
+        $preview = $this->importer->preview($request->file('file'));
+        $incomingCount = $preview['valid'] ?? 0;
+        // dd($incomingCount, $preview);
+
+        if ($incomingCount === 0) {
+            return response()->json([
+                'message' => 'El archivo no contiene jugadores válidos para importar.',
+            ], 422);
+        }
+
+        // Tier check: would importing this many exceed the league's player limit?
+        if (!$tiers->canAddPlayer($league, $incomingCount)) {
+            $snapshot = $tiers->leagueSnapshot($league);
+            $used      = $snapshot['players']['used'];
+            $limit     = $snapshot['players']['limit'];
+            $available = max(0, $limit - $used);
+
+            return response()->json([
+                'message' => $available === 0
+                    ? "Esta liga ya llegó al límite de {$limit} jugadores. Mejora tu plan para agregar más."
+                    : "Estás intentando importar {$incomingCount} jugadores pero tu plan solo permite agregar {$available} más en esta liga (tienes {$used}/{$limit}).",
+            ], 422);
+        }
 
         $group = $league->groups()->first();
         $result = $this->importer->import($league, $request->file('file'));
-        $assigned = $league->format === League::FORMAT_PAIRS
-            ? $this->roster->autoFillPairs($group, 2000)
-            : $this->roster->autoFillPlayers($group, 2000);
+
+        // Auto-assign newly-imported players into the first group, preserving original behavior
+        if ($group) {
+            $assigned = $league->format === League::FORMAT_PAIRS
+                ? $this->roster->autoFillPairs($group, 2000)
+                : $this->roster->autoFillPlayers($group, 2000);
+        }
+
         return response()->json($result);
     }
 

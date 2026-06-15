@@ -39,9 +39,18 @@ class LeagueController extends Controller
         ]);
     }
 
-    public function store(LeagueRequest $request)
+    public function store(LeagueRequest $request, \App\Services\TierService $tiers)
+
     {
         $this->authorize('create', League::class);
+
+        if (!$tiers->canCreateLeague($request->user())) {
+            $snapshot = $tiers->snapshot($request->user());
+            $limit = $snapshot['usage']['active_leagues']['limit'];
+            return redirect()
+                ->route('leagues.index')
+                ->with('flash_error', "Tu plan {$snapshot['tier_label']} permite hasta {$limit} ligas activas. Cierra una liga antes de crear otra o mejora tu plan.");
+        }
 
         $league = $this->leagues->create(
             $request->user(),

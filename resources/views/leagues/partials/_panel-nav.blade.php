@@ -39,6 +39,24 @@ $active = $active ?? 'settings';
                 {{ $pendingProposalsCount }} {{ Str::plural('propuesta', $pendingProposalsCount) }}
             </span>
             @endif
+
+            @php
+            $tiers = app(\App\Services\TierService::class);
+            $leagueSnapshot = $tiers->leagueSnapshot($league);
+            @endphp
+
+            @foreach (['players' => 'Jugadores', 'jornadas' => 'Jornadas'] as $key => $label)
+            @php
+            $used = $leagueSnapshot[$key]['used'];
+            $limit = $leagueSnapshot[$key]['limit'];
+            $atLimit = $limit !== null && $used >= $limit;
+            $nearLimit = $limit !== null && $used >= $limit * 0.8;
+            @endphp
+            <span class="usage-chip @if ($atLimit) is-at-limit @elseif ($nearLimit) is-near-limit @endif">
+                <i class="fa-solid fa-{{ $key === 'players' ? 'users' : 'calendar-day' }}"></i>
+                {{ $used }}@if ($limit !== null) / {{ $limit }}@endif
+            </span>
+            @endforeach
         </div>
         <div class="panel-meta">
             {{ $league->num_jornadas }} jornadas · ${{ number_format($league->cost, 0) }}

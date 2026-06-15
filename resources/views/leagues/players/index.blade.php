@@ -21,12 +21,12 @@
         <div class="players-header-actions">
             <input type="search" id="players-search" class="form-control form-control-sm"
                 placeholder="Buscar…">
-            <button class="btn btn-outline-primary btn-sm" id="import-csv-btn">
-                <i class="fa-solid fa-file-csv me-1"></i>
-                <span class="d-none d-sm-inline">Importar CSV</span>
-                <span class="d-sm-none">CSV</span>
+            <button class="btn btn-outline-primary btn-sm mt-2" id="import-csv-btn">
+                <i class="fa-solid fa-file-upload me-1"></i>
+                <span class="d-none d-sm-inline">Importar</span>
+                <span class="d-sm-none">Importar</span>
             </button>
-            <button class="btn btn-primary btn-sm" id="add-player-btn">
+            <button class="btn btn-primary btn-sm mt-2" id="add-player-btn">
                 <i class="fa-solid fa-plus me-1"></i>
                 <span class="d-none d-sm-inline">Agregar jugador</span>
                 <span class="d-sm-none">Agregar</span>

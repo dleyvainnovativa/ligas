@@ -324,7 +324,6 @@ return $cancha->rounds->where('status', \App\Models\GameMatch::STATUS_COMPLETED)
         </div>
     </div>
 </div>
-@endsection
 
 <div class="modal fade" id="auto-generate-modal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -369,3 +368,4 @@ return $cancha->rounds->where('status', \App\Models\GameMatch::STATUS_COMPLETED)
         </div>
     </div>
 </div>
+@endsection

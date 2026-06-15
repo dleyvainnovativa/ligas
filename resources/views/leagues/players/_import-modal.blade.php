@@ -2,7 +2,7 @@
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Importar jugadores desde CSV</h5>
+                <h5 class="modal-title">Importar jugadores desde archivo</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -11,7 +11,8 @@
                     También se aceptan los equivalentes en inglés.
                 </p>
 
-                <input type="file" id="csv-file-input" accept=".csv,text/csv" class="form-control mb-3">
+                <!-- <input type="file" id="csv-file-input" accept=".csv,text/csv" class="form-control mb-3"> -->
+                <input type="file" id="csv-file-input" accept=".csv,.txt,.xlsx,.xls" class="form-control mb-3">
 
                 <div id="csv-preview" class="d-none">
                     <div class="d-flex gap-3 mb-2 small">

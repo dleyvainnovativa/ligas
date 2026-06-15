@@ -44,9 +44,17 @@ class JornadaController extends Controller
         ]);
     }
 
-    public function store(Request $request, League $league, Group $group)
+    public function store(Request $request, League $league, Group $group, \App\Services\TierService $tiers)
+
     {
         $this->authorize('update', $league);
+        if (!$tiers->canAddJornada($league)) {
+            $snapshot = $tiers->leagueSnapshot($league);
+            $limit = $snapshot['jornadas']['limit'];
+            return response()->json([
+                'message' => "Esta liga llegó al límite de {$limit} jornadas. Mejora tu plan para agregar más.",
+            ], 422);
+        }
         abort_unless($group->league_id === $league->id, 404);
 
         $nextNumber = ($group->jornadas()->max('number') ?? 0) + 1;

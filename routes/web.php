@@ -129,6 +129,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('ads/{ad}',      [AdController::class, 'destroy'])->name('ads.destroy');
         Route::post('ads/reorder',     [AdController::class, 'reorder'])->name('ads.reorder');
     });
+    Route::get('/plans', [\App\Http\Controllers\PlanController::class, 'index'])->name('plans.index');
 });
 
 // PUBLIC: propose a score (already exists, leave it)

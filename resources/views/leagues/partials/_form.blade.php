@@ -32,7 +32,7 @@ $isEditing = isset($league) && $league->exists;
         @endif
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-schedule" type="button">Calendario</button></li>
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rules" type="button">Reglas</button></li>
-        <!-- <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-branding" type="button">Branding</button></li> -->
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-branding" type="button">Branding</button></li>
     </ul>
 
     <div class="tab-content">
