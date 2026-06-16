@@ -173,15 +173,35 @@ export function mountMatchResult() {
     function setRow(roundId, idx, a, b) {
         return `
         <div class="set-row d-flex align-items-center gap-2 mb-2" data-round-id="${roundId}" data-i="${idx}">
-            <input type="number" min="0" max="99" class="form-control form-control-sm set-a" inputmode="numeric" value="${a}">
+            <input type="number" min="0" max="7" class="form-control form-control-sm set-a" inputmode="numeric" value="${a}">
             <span class="text-secondary">—</span>
-            <input type="number" min="0" max="99" class="form-control form-control-sm set-b" inputmode="numeric" value="${b}">
+            <input type="number" min="0" max="7" class="form-control form-control-sm set-b" inputmode="numeric" value="${b}">
         </div>`;
     }
 
     function wireRowControls() {
-        // (No add/remove set buttons anymore — sets are fixed per round.
-        //  Left here as a no-op for forward compatibility if you add them back.)
+        const body = document.getElementById('result-modal-body');
+        if (!body) return;
+
+        // Select-all on focus, so typing replaces instead of appending
+        body.querySelectorAll('.set-a, .set-b').forEach(input => {
+            input.addEventListener('focus', () => input.select());
+
+            // Clamp to 0–7 on every input, and strip non-digits
+            input.addEventListener('input', () => {
+                let v = input.value.replace(/[^\d]/g, '');     // digits only
+                if (v === '') { input.value = ''; return; }     // allow empty mid-edit
+                let n = parseInt(v, 10);
+                if (n > 7) n = 7;
+                if (n < 0) n = 0;
+                input.value = String(n);
+            });
+
+            // On blur, an empty field becomes 0 (so a set is never left blank)
+            input.addEventListener('blur', () => {
+                if (input.value.trim() === '') input.value = '0';
+            });
+        });
     }
 
     function wireProposalActions(canchaId) {

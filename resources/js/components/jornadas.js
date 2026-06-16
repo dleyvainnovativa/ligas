@@ -3,14 +3,13 @@ export function mountJornadas() {
     const addBtn = document.getElementById('add-jornada-btn');
     if (!list || !addBtn) return;
 
-    addBtn.addEventListener('click', async () => {
+    addBtn?.addEventListener('click', async () => {
         window.app.loading.on(addBtn);
         try {
-            const { jornada } = await window.app.api.post(addBtn.dataset.url, {});
-            window.app.toast.success(`Jornada #${jornada.number} creada`);
-            // Easiest: reload so the URL builder gives us the right detail link
-            window.location.reload();
-        } catch (err) {
+            const data = await window.app.api.post(addBtn.dataset.url, {});
+            window.app.toast.success(data.message || 'Jornada creada');
+            setTimeout(() => window.location.reload(), 700);
+         } catch (err) {
             window.app.toast.error(err.message);
             window.app.loading.off(addBtn);
         }

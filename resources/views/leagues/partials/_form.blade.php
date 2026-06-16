@@ -75,8 +75,8 @@ $isEditing = isset($league) && $league->exists;
                     <div class="col-md-4">
                         <label class="form-label small">Estado</label>
                         <select name="status" class="form-select">
-                            <option value="draft" @selected(old('status', $league->status) === 'draft')>Borrador</option>
                             <option value="active" @selected(old('status', $league->status) === 'active')>Activa</option>
+                            <option value="draft" @selected(old('status', $league->status) === 'draft')>Borrador</option>
                             <option value="completed" @selected(old('status', $league->status) === 'completed')>Completada</option>
                             <option value="archived" @selected(old('status', $league->status) === 'archived')>Archivada</option>
                         </select>
@@ -98,6 +98,18 @@ $isEditing = isset($league) && $league->exists;
                                 value="{{ old('cost', $league->cost) }}">
                             @error('cost') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Grupo de WhatsApp (opcional)</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-brands fa-whatsapp text-success"></i></span>
+                            <input type="url" name="whatsapp_url" class="form-control"
+                                value="{{ old('whatsapp_url', $league->whatsapp_url ?? '') }}"
+                                placeholder="https://chat.whatsapp.com/...">
+                        </div>
+                        <small class="text-muted">Se mostrará como botón en la página pública.</small>
+                        @error('whatsapp_url')<small class="text-danger">{{ $message }}</small>@enderror
                     </div>
 
                     <div class="col-12">
@@ -155,13 +167,21 @@ $isEditing = isset($league) && $league->exists;
                 </div>
             </div>
 
-            <div class="card-soft p-4">
+            <div class="card-soft p-4 mb-3">
                 <h6 class="mb-1">Generación de jornadas</h6>
                 <p class="text-secondary small mb-3">
                     Cuántas jornadas se generan a la vez según la paridad de equipos en el grupo.
                 </p>
                 <div class="row g-3">
                     <div class="col-md-6">
+                        <label class="form-label">Ascenso / descenso por cancha</label>
+                        <input type="number" name="promotion_relegation" min="1" max="3" class="form-control"
+                            value="{{ old('promotion_relegation', $league->promotion_relegation ?? 1) }}">
+                        <small class="text-muted">
+                            Cuántos jugadores suben a la cancha de arriba y bajan a la de abajo cada jornada.
+                        </small>
+                    </div>
+                    <!-- <div class="col-md-6">
                         <label class="form-label small">Jornadas pares <small class="text-secondary">(grupos con # par de equipos)</small></label>
                         <input type="number" name="jornadas_pares" min="1" max="10"
                             class="form-control" value="{{ old('jornadas_pares', $league->jornadas_pares) }}">
@@ -170,7 +190,7 @@ $isEditing = isset($league) && $league->exists;
                         <label class="form-label small">Jornadas nones <small class="text-secondary">(grupos con # impar de equipos)</small></label>
                         <input type="number" name="jornadas_nones" min="1" max="10"
                             class="form-control" value="{{ old('jornadas_nones', $league->jornadas_nones) }}">
-                    </div>
+                    </div> -->
                 </div>
             </div>
 

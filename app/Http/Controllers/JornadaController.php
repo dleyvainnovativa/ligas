@@ -44,27 +44,110 @@ class JornadaController extends Controller
         ]);
     }
 
-    public function store(Request $request, League $league, Group $group, \App\Services\TierService $tiers)
-
-    {
-        $this->authorize('update', $league);
-        if (!$tiers->canAddJornada($league)) {
-            $snapshot = $tiers->leagueSnapshot($league);
-            $limit = $snapshot['jornadas']['limit'];
-            return response()->json([
-                'message' => "Esta liga llegó al límite de {$limit} jornadas. Mejora tu plan para agregar más.",
-            ], 422);
-        }
+    public function store(
+        Request $request,
+        League $league,
+        Group $group,
+        \App\Services\TierService $tiers,
+        \App\Services\PromotionRelegationService $promo,
+        \App\Services\CanchaService $canchaService
+    ) {
+        $this->authorize('update', $group);
         abort_unless($group->league_id === $league->id, 404);
 
-        $nextNumber = ($group->jornadas()->max('number') ?? 0) + 1;
+        // ---- Tier limit on jornadas ----
+        if (!$tiers->canAddJornada($league)) {
+            $snapshot = $tiers->leagueSnapshot($league);
+            return response()->json([
+                'message' => "Esta liga llegó al límite de {$snapshot['jornadas']['limit']} jornadas. Mejora tu plan para agregar más.",
+            ], 422);
+        }
 
+        // ---- Determine the new jornada number ----
+        $lastNumber = $group->jornadas()->max('number') ?? 0;
+        $newNumber = $lastNumber + 1;
+
+        // ---- Item 3: gate — previous jornada must be complete (unless this is #1) ----
+        if ($newNumber > 1) {
+            $previous = $group->jornadas()->where('number', $lastNumber)->first();
+
+            if (!$previous || !$this->isJornadaComplete($previous)) {
+                return response()->json([
+                    'message' => "Debes completar todos los resultados de la Jornada {$lastNumber} antes de crear la Jornada {$newNumber}.",
+                ], 422);
+            }
+        }
+
+        // ---- Create the jornada ----
         $jornada = $group->jornadas()->create([
-            'number' => $nextNumber,
-            'status' => Jornada::STATUS_DRAFT,
+            'number' => $newNumber,
+            'status' => 'draft',
         ]);
 
-        return response()->json(['jornada' => $this->serialize($jornada)]);
+        // ---- Item 4: auto-generate canchas from previous results (if not first) ----
+        $generated = false;
+        if ($newNumber > 1) {
+            $previous = $group->jornadas()->where('number', $lastNumber)->first();
+            $distribution = $promo->computeNextDistribution(
+                $previous,
+                (int) $league->promotion_relegation
+            );
+
+            if (!empty($distribution)) {
+                $this->buildCanchasFromDistribution($jornada, $distribution, $canchaService);
+                $generated = true;
+            }
+        }
+
+        return response()->json([
+            'jornada'   => [
+                'id'     => $jornada->id,
+                'number' => $jornada->number,
+                'status' => $jornada->status,
+            ],
+            'generated' => $generated,
+            'message'   => $generated
+                ? "Jornada {$newNumber} creada con canchas generadas desde los resultados anteriores. Revísalas y ajústalas si es necesario."
+                : "Jornada {$newNumber} creada.",
+        ]);
+    }
+
+    /**
+     * A jornada is "complete" when it has at least one cancha and every cancha
+     * is marked completed.
+     */
+    private function isJornadaComplete(Jornada $jornada): bool
+    {
+        $canchas = $jornada->canchas()->get();
+        if ($canchas->isEmpty()) return false;
+        return $canchas->every(fn($c) => $c->status === \App\Models\Cancha::STATUS_COMPLETED);
+    }
+
+    /**
+     * Create canchas for the new jornada and assign players per the distribution.
+     * Canchas are created unscheduled; the manager schedules them afterward.
+     */
+    private function buildCanchasFromDistribution(
+        Jornada $jornada,
+        array $distribution,
+        \App\Services\CanchaService $canchaService
+    ): void {
+        foreach ($distribution as $index => $playerIds) {
+            if (empty($playerIds)) continue;
+
+            $cancha = $jornada->canchas()->create([
+                'label'    => 'Cancha ' . ($index + 1),
+                'position' => $index + 1,
+                'status'   => \App\Models\Cancha::STATUS_UNSCHEDULED,
+            ]);
+
+            // Attach players with slot numbers 1..N
+            $slot = 1;
+            foreach ($playerIds as $pid) {
+                $cancha->players()->attach($pid, ['slot' => $slot]);
+                $slot++;
+            }
+        }
     }
 
     public function update(Request $request, League $league, Group $group, Jornada $jornada)
@@ -111,5 +194,30 @@ class JornadaController extends Controller
             'window_end'   => $j->window_end?->toDateString(),
             'canchas_count' => $j->canchas()->count(),
         ];
+    }
+    public function standings(
+        League $league,
+        Group $group,
+        Jornada $jornada,
+        \App\Services\PromotionRelegationService $promo
+    ) {
+        $this->authorize('view', $group);
+        abort_unless(
+            $jornada->group_id === $group->id && $group->league_id === $league->id,
+            404
+        );
+
+        $breakdown = $promo->jornadaBreakdown($jornada, (int) $league->promotion_relegation);
+        $playerNames = $league->players()->pluck('full_name', 'id');
+        $isComplete = $this->isJornadaComplete($jornada);
+
+        return view('leagues.jornadas.standings', [
+            'league'      => $league,
+            'group'       => $group,
+            'jornada'     => $jornada,
+            'breakdown'   => $breakdown,
+            'playerNames' => $playerNames,
+            'isComplete'  => $isComplete,
+        ]);
     }
 }

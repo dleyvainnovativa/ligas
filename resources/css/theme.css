@@ -554,6 +554,8 @@ hr {
 }
 .btn-icon.btn-sm { width: 28px; height: 28px; }
 
+
+
 /* ---------- FORMS ---------- */
 .form-control, .form-select {
     background: var(--surface-card);
@@ -750,6 +752,77 @@ textarea.form-control { line-height: 1.5; }
 }
 .btn-close:hover { opacity: 1; background-color: var(--surface-hover); }
 [data-bs-theme="dark"] .btn-close { filter: invert(1); }
+
+
+/* ============================================================
+   BUTTON ACTIVE / FOCUS STATES — override Bootstrap's blue
+   ============================================================ */
+
+/* ---- Primary (solid gold) ---- */
+.btn-primary:active,
+.btn-primary:focus-visible,
+.btn-primary.active,
+.btn-primary:first-child:active,
+.btn-check:checked + .btn-primary,
+.btn-check:active + .btn-primary {
+    background-color: var(--brand-600) !important;
+    border-color: var(--brand-600) !important;
+    color: var(--neutral-900) !important;
+    box-shadow: none !important;
+}
+
+.btn-primary:focus-visible {
+    /* gold focus ring instead of blue */
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--brand-500) 35%, transparent) !important;
+}
+
+/* ---- Outline primary ---- */
+.btn-outline-primary {
+    color: var(--brand-700) !important;
+    border-color: var(--brand-500) !important;
+}
+.btn-outline-primary:hover {
+    background-color: var(--brand-500) !important;
+    border-color: var(--brand-500) !important;
+    color: var(--neutral-900) !important;
+}
+.btn-outline-primary:active,
+.btn-outline-primary.active,
+.btn-outline-primary:first-child:active,
+.btn-check:checked + .btn-outline-primary,
+.btn-check:active + .btn-outline-primary {
+    background-color: var(--brand-600) !important;
+    border-color: var(--brand-600) !important;
+    color: var(--neutral-900) !important;
+    box-shadow: none !important;
+}
+.btn-outline-primary:focus-visible {
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--brand-500) 35%, transparent) !important;
+}
+
+/* ---- Outline secondary ---- */
+.btn-outline-secondary {
+    color: var(--text-secondary) !important;
+    border-color: var(--border-default) !important;
+}
+.btn-outline-secondary:hover {
+    background-color: var(--surface-sunken) !important;
+    border-color: var(--border-default) !important;
+    color: var(--text-primary) !important;
+}
+.btn-outline-secondary:active,
+.btn-outline-secondary.active,
+.btn-outline-secondary:first-child:active,
+.btn-check:checked + .btn-outline-secondary,
+.btn-check:active + .btn-outline-secondary {
+    background-color: var(--surface-sunken) !important;
+    border-color: var(--border-default) !important;
+    color: var(--text-primary) !important;
+    box-shadow: none !important;
+}
+.btn-outline-secondary:focus-visible {
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--text-muted) 25%, transparent) !important;
+}
 
 /* ---------- TOASTS ---------- */
 .toast-container-fixed {
@@ -4116,3 +4189,141 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     color: var(--text-secondary);
 }
 .plan-tier-features li i { font-size: 10px; }
+
+.public-hero-whatsapp {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px;
+    height: 40px;
+    border-radius: var(--radius-pill);
+    background: #25D366;
+    color: #fff;
+    font-weight: 600;
+    font-size: 13.5px;
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: all var(--transition-fast);
+    box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+}
+.public-hero-whatsapp:hover {
+    background: #20bd5a;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+}
+.public-hero-whatsapp i { font-size: 18px; }
+
+@media (max-width: 575.98px) {
+    .public-hero-whatsapp {
+        padding: 0;
+        width: 40px;
+        justify-content: center;
+    }
+}
+
+/* ============================================================
+   PER-JORNADA STANDINGS (manager + public)
+   ============================================================ */
+
+.jornada-standings {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.jstand-cancha {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.jstand-cancha-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--surface-sunken);
+    border-bottom: 1px solid var(--border-subtle);
+}
+.jstand-cancha-label {
+    font-weight: 600;
+    font-size: 14px;
+}
+.jstand-tier-tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+}
+.jstand-tier-tag.is-top {
+    background: color-mix(in srgb, var(--success-500) 15%, transparent);
+    color: var(--success-700);
+}
+.jstand-tier-tag.is-bottom {
+    background: color-mix(in srgb, var(--warning-500) 15%, transparent);
+    color: var(--warning-700);
+}
+
+.jstand-table {
+    width: 100%;
+    margin: 0;
+    border-collapse: collapse;
+}
+.jstand-table thead th {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.jstand-table tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 13.5px;
+}
+.jstand-table tbody tr:last-child td { border-bottom: 0; }
+
+.jstand-rank {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--text-muted);
+}
+.jstand-name { font-weight: 500; }
+
+/* Subtle row tint by movement */
+.jstand-row.movement-up { background: color-mix(in srgb, var(--success-500) 4%, transparent); }
+.jstand-row.movement-down { background: color-mix(in srgb, var(--danger-500) 4%, transparent); }
+
+.jstand-move {
+    display: inline-grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+}
+.jstand-move.up    { background: color-mix(in srgb, var(--success-500) 15%, transparent); color: var(--success-700); }
+.jstand-move.down  { background: color-mix(in srgb, var(--danger-500) 15%, transparent);  color: var(--danger-700); }
+.jstand-move.stay  { background: var(--surface-sunken); color: var(--text-muted); }
+
+.jstand-legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: var(--space-3);
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+}
+.jstand-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}

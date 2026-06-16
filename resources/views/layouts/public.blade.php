@@ -36,6 +36,15 @@
                 <a href="{{ route('public.league', $league->slug) }}" class="public-hero-title">
                     <h1>{{ $league->name }}</h1>
                 </a>
+
+                @if ($league->whatsapp_url)
+                <a href="{{ $league->whatsapp_url }}" target="_blank" rel="noopener noreferrer"
+                    class="public-hero-whatsapp" title="Unirse al grupo de WhatsApp" aria-label="WhatsApp">
+                    <i class="fa-brands fa-whatsapp"></i>
+                    <span class="d-none d-sm-inline">WhatsApp</span>
+                </a>
+                @endif
+
                 <button type="button"
                     data-theme-toggle
                     class="public-hero-theme-toggle"
@@ -82,7 +91,7 @@
             </div>
         </nav>
 
-        <main class="public-main">
+        <main class="public-main pb-5">
             @yield('content')
         </main>
 

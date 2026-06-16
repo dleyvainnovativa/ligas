@@ -419,4 +419,69 @@ class PublicLeagueController extends Controller
             'rounds'       => $rounds,
         ];
     }
+    public function jornadaStandings(
+        string $slug,
+        int $number,
+        \App\Services\PromotionRelegationService $promo
+    ) {
+        $league = $this->loadLeague($slug);
+
+        $payload = Cache::remember(
+            "public_league:{$league->id}:jornada:{$number}:standings:v1",
+            60,
+            fn() => $this->buildJornadaStandingsPayload($league, $number, $promo)
+        );
+
+        if (!$payload) abort(404);
+
+        return view('public.league.jornada-standings', [
+            'league'      => $league,
+            'payload'     => $payload,
+            'active_page' => 'calendario',
+        ]);
+    }
+
+    private function buildJornadaStandingsPayload(
+        League $league,
+        int $number,
+        \App\Services\PromotionRelegationService $promo
+    ): ?array {
+        $playerNames = $league->players()->pluck('full_name', 'id');
+
+        $groupsData = collect();
+        foreach ($league->groups as $group) {
+            $jornada = $group->jornadas->firstWhere('number', $number);
+            if (!$jornada) continue;
+
+            $breakdown = $promo->jornadaBreakdown($jornada, (int) $league->promotion_relegation);
+            $complete = $jornada->canchas()->count() > 0
+                && !$jornada->canchas()->where('status', '!=', \App\Models\Cancha::STATUS_COMPLETED)->exists();
+
+            $groupsData->push([
+                'group_name' => $group->name,
+                'breakdown'  => $breakdown,
+                'complete'   => $complete,
+            ]);
+        }
+
+        if ($groupsData->isEmpty()) return null;
+
+        // Resolve player names into the breakdown for the view (so the public
+        // view doesn't need the full name map separately)
+        $groupsData = $groupsData->map(function ($g) use ($playerNames) {
+            $g['breakdown'] = collect($g['breakdown'])->map(function ($cancha) use ($playerNames) {
+                $cancha['players'] = collect($cancha['players'])->map(function ($p) use ($playerNames) {
+                    $p['name'] = $playerNames[$p['player_id']] ?? '—';
+                    return $p;
+                })->all();
+                return $cancha;
+            })->all();
+            return $g;
+        })->all();
+
+        return [
+            'number' => $number,
+            'groups' => $groupsData,
+        ];
+    }
 }

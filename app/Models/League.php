@@ -56,7 +56,8 @@ class League extends Model
         'points_win',
         'points_draw',
         'points_loss',
-
+        'whatsapp_url',
+        'promotion_relegation',
     ];
 
     protected function casts(): array
@@ -73,6 +74,7 @@ class League extends Model
             'points_win'  => 'integer',
             'points_draw' => 'integer',
             'points_loss' => 'integer',
+            'promotion_relegation'   => 'integer',
         ];
     }
 

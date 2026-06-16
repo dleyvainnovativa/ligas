@@ -12,6 +12,10 @@
         <p class="text-secondary mb-0">{{ $payload['date_display'] }}</p>
         @endif
     </div>
+    <a href="{{ route('public.jornada.standings', [$league->slug, $payload['number']]) }}"
+        class="btn btn-sm btn-outline-primary mb-2">
+        <i class="fa-solid fa-ranking-star me-1"></i> Ver standings de esta jornada
+    </a>
 
     @if (count($payload['groups']) > 1)
     <ul class="nav nav-pills public-tabs mb-3" role="tablist">

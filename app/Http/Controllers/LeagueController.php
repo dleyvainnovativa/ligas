@@ -32,9 +32,11 @@ class LeagueController extends Controller
                 'time_slots'       => ['18:00', '19:00', '20:00'],
                 'penalty_suplente' => 0,
                 'penalty_no_show'  => 3,
-                'jornadas_pares'   => 2,
-                'jornadas_nones'   => 1,
-                'status'           => League::STATUS_DRAFT,
+                // 'jornadas_pares'   => 2,
+                // 'jornadas_nones'   => 1,
+                'status'           => League::STATUS_ACTIVE,
+                'promotion_relegation'   => 1,
+
             ]),
         ]);
     }

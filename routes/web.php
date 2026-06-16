@@ -70,6 +70,7 @@ Route::middleware('auth')->group(function () {
         Route::put('groups/{group}/jornadas/{jornada}',             [JornadaController::class, 'update'])->name('jornadas.update');
         Route::delete('groups/{group}/jornadas/{jornada}',          [JornadaController::class, 'destroy'])->name('jornadas.destroy');
         Route::post('groups/{group}/jornadas/{jornada}/auto-fill',  [JornadaController::class, 'autoFill'])->name('jornadas.auto-fill');
+        Route::get('groups/{group}/jornadas/{jornada}/standings',   [JornadaController::class, 'standings'])->name('jornadas.standings');
 
         // Canchas (roster: assigning players/pairs into a cancha)
         Route::post('groups/{group}/jornadas/{jornada}/canchas',                [CanchaController::class, 'store'])->name('canchas.store');
@@ -162,6 +163,13 @@ Route::get('/{slug}/reglas',             [\App\Http\Controllers\PublicLeagueCont
 Route::get('/{slug}', [\App\Http\Controllers\PublicLeagueController::class, 'show'])
     ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
     ->name('public.league');
+
+Route::get(
+    '/{slug}/jornada/{number}/standings',
+    [\App\Http\Controllers\PublicLeagueController::class, 'jornadaStandings']
+)
+    ->where(['slug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'number' => '[0-9]+'])
+    ->name('public.jornada.standings');
 
 Route::get('/health', function () {
     $checks = [

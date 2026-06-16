@@ -94,8 +94,6 @@
         @endforeach
     </div>
 </section>
-@endsection
-
 @include('public.league._propose-modal')
 
 @php
@@ -114,3 +112,4 @@ $proposeRounds->push(array_merge($round, [
 }
 @endphp
 @include('public.league._propose-context', ['proposeRounds' => $proposeRounds])
+@endsection

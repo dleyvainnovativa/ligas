@@ -39,8 +39,8 @@ class LeagueRequest extends FormRequest
             'time_slots.*'     => ['regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
             'penalty_suplente' => ['required', 'integer', 'min:0', 'max:100'],
             'penalty_no_show'  => ['required', 'integer', 'min:0', 'max:100'],
-            'jornadas_pares'   => ['required', 'integer', 'min:1', 'max:10'],
-            'jornadas_nones'   => ['required', 'integer', 'min:1', 'max:10'],
+            'jornadas_pares'   => ['nullable', 'integer', 'min:1', 'max:10'],
+            'jornadas_nones'   => ['nullable', 'integer', 'min:1', 'max:10'],
             'status'           => ['nullable', Rule::in([
                 League::STATUS_DRAFT,
                 League::STATUS_ACTIVE,
@@ -50,6 +50,12 @@ class LeagueRequest extends FormRequest
             'points_win'  => ['nullable', 'integer', 'min:0', 'max:10'],
             'points_draw' => ['nullable', 'integer', 'min:0', 'max:10'],
             'points_loss' => ['nullable', 'integer', 'min:0', 'max:10'],
+            'whatsapp_url' => ['nullable', 'url', 'max:300', function ($attr, $value, $fail) {
+                if ($value && !\Illuminate\Support\Str::contains($value, ['whatsapp.com', 'wa.me'])) {
+                    $fail('El enlace debe ser de WhatsApp (chat.whatsapp.com o wa.me).');
+                }
+            }],
+            'promotion_relegation' => ['required', 'integer', 'min:1', 'max:4'],
         ];
     }
 
