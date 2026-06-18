@@ -8,10 +8,11 @@
         <div class="public-stat-value">{{ $payload['stats']['players'] }}</div>
         <div class="public-stat-label">Jugadores</div>
     </div>
-    <div class="public-stat">
-        <div class="public-stat-value">{{ $payload['stats']['groups'] }}</div>
-        <div class="public-stat-label">Divisiones</div>
-    </div>
+
+    <a href="#" class="public-stat public-stat-logo">
+        <img src="{{ asset('img/logo.png') }}" alt="Logo" class="public-stat-logo-img">
+    </a>
+
     <div class="public-stat">
         <div class="public-stat-value">{{ $payload['current_jornada'] ?? '—' }}</div>
         <div class="public-stat-label">Jornada actual</div>
@@ -27,13 +28,13 @@
 @include('public.league._ads-carousel', ['ads' => $league->activeAds])
 @endif
 
-{{-- Current jornada --}}
+{{-- Current jornada — standings view --}}
 @if ($payload['current_jornada'])
 <section class="public-section">
     <div class="public-section-head">
         <h2>Jornada {{ $payload['current_jornada'] }}</h2>
         <a href="{{ route('public.jornada', [$league->slug, $payload['current_jornada']]) }}" class="public-section-link">
-            Ver detalle →
+            Ver partidos →
         </a>
     </div>
 
@@ -44,12 +45,13 @@
             {{ $g['group']->name }}
         </h6>
 
-        @if (empty($g['canchas']))
+        @if (empty($g['breakdown']))
         <div class="public-empty">Aún no hay canchas en esta jornada.</div>
         @else
-        @foreach ($g['canchas'] as $cancha)
-        @include('public.league._cancha-card', ['m' => $cancha, 'showScore' => $cancha['status'] === 'completed'])
-        @endforeach
+        @include('public.league._jornada-standings-body', [
+        'breakdown' => $g['breakdown'],
+        'complete' => $g['jornada_done'],
+        ])
         @endif
     </div>
     @endforeach
@@ -66,7 +68,7 @@
 {{-- Mini standings --}}
 <section class="public-section">
     <div class="public-section-head">
-        <h2>Top 3 por división</h2>
+        <h2>Top 3</h2>
         <a href="{{ route('public.clasificacion', $league->slug) }}" class="public-section-link">
             Clasificación completa →
         </a>

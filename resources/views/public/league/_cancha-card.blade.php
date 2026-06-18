@@ -32,20 +32,27 @@ $allCompleted = $m['status'] === 'completed';
         <div class="public-round-label">S{{ $round['rotation_index'] }}</div>
         <div class="public-round-teams">
             <span class="{{ $aWinner ? 'is-winner' : '' }}">{{ implode(' / ', $round['team_a']) }}</span>
-            @if ($hasResult)
+            <!-- @if ($hasResult)
             <span class="public-round-score">{{ $round['sets_a'] ?? 0 }}–{{ $round['sets_b'] ?? 0 }}</span>
             @else
             <span class="vs">vs</span>
+            @endif -->
+            @if ($hasResult)
+            @if ($hasResult && !empty($round['sets']))
+            <div class="public-round-sets">
+                @foreach ($round['sets'] as $set)
+                <!-- <span class="set-tag">{{ $set[0] }}–{{ $set[1] }}</span> -->
+                <span class="public-round-score">{{ $set[0] }}–{{ $set[1]}}</span>
+                @endforeach
+            </div>
+            @else
+            <span class="vs">vs</span>
             @endif
-            <span class="{{ $bWinner ? 'is-winner' : '' }}">{{ implode(' / ', $round['team_b']) }}</span>
+            @else
+            <span class="vs">vs</span>
+            @endif
+            <span class="text-end{{ $bWinner ? 'is-winner' : '' }}">{{ implode(' / ', $round['team_b']) }}</span>
         </div>
-        @if ($hasResult && !empty($round['sets']))
-        <div class="public-round-sets">
-            @foreach ($round['sets'] as $set)
-            <span class="set-tag">{{ $set[0] }}–{{ $set[1] }}</span>
-            @endforeach
-        </div>
-        @endif
         @if ($proposal && !$hasResult)
         <div class="proposal-banner">
             <i class="fa-solid fa-clock-rotate-left"></i>

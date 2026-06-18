@@ -247,4 +247,156 @@ class PromotionRelegationService
         }
         return $out;
     }
+    /**
+     * Reconstruct a single player's journey across all jornadas in their group(s).
+     *
+     * Returns:
+     * [
+     *   'history' => [
+     *     ['jornada'=>1, 'cancha_label'=>'Cancha 3', 'cancha_position'=>3,
+     *      'rank'=>1, 'won'=>20, 'lost'=>13, 'diff'=>7, 'movement'=>'up', 'complete'=>true],
+     *     ...
+     *   ],
+     *   'totals' => ['won'=>.., 'lost'=>.., 'diff'=>.., 'jornadas_played'=>..,
+     *                'best_position'=>.., 'current_position'=>..],
+     * ]
+     */
+    public function playerHistory(\App\Models\Player $player, int $movement): array
+    {
+        $league = $player->league;
+
+        // Find every (group, jornada) where this player was assigned to a cancha
+        $history = [];
+
+        foreach ($league->groups as $group) {
+            foreach ($group->jornadas->sortBy('number') as $jornada) {
+                // Is the player in any cancha of this jornada?
+                $cancha = $jornada->canchas()
+                    ->whereHas('players', fn($q) => $q->where('players.id', $player->id))
+                    ->with('rounds')
+                    ->first();
+
+                if (!$cancha) continue;
+
+                $breakdown = $this->jornadaBreakdown($jornada, $movement);
+
+                // Find this cancha + this player's row in the breakdown
+                $canchaBreakdown = collect($breakdown)->firstWhere('cancha_id', $cancha->id);
+                if (!$canchaBreakdown) continue;
+
+                $row = collect($canchaBreakdown['players'])->firstWhere('player_id', $player->id);
+                if (!$row) continue;
+
+                $complete = $jornada->canchas()->count() > 0
+                    && !$jornada->canchas()->where('status', '!=', \App\Models\Cancha::STATUS_COMPLETED)->exists();
+
+                $history[] = [
+                    'jornada'         => $jornada->number,
+                    'group_name'      => $group->name,
+                    'cancha_label'    => $canchaBreakdown['label'],
+                    'cancha_position' => $canchaBreakdown['position'],
+                    'rank'            => $row['rank'],
+                    'won'             => $row['won'],
+                    'lost'            => $row['lost'],
+                    'diff'            => $row['diff'],
+                    'movement'        => $complete ? $row['movement'] : null,
+                    'complete'        => $complete,
+                ];
+            }
+        }
+
+        // Totals
+        $totalWon  = collect($history)->sum('won');
+        $totalLost = collect($history)->sum('lost');
+        $positions = collect($history)->pluck('cancha_position')->filter();
+
+        return [
+            'history' => $history,
+            'totals'  => [
+                'won'              => $totalWon,
+                'lost'             => $totalLost,
+                'diff'             => $totalWon - $totalLost,
+                'jornadas_played'  => count($history),
+                'best_position'    => $positions->min(),   // lowest number = highest court
+                'current_position' => $positions->isNotEmpty() ? collect($history)->last()['cancha_position'] : null,
+            ],
+        ];
+    }
+
+    /**
+     * Cumulative season standings for a group, ranked the king-of-the-court way:
+     * by current cancha position (lower = higher court = better), then by total
+     * games won, then by games difference.
+     *
+     * Returns an ordered array (best first):
+     * [
+     *   ['player_id'=>5, 'name'=>'Juan', 'won'=>54, 'lost'=>33, 'diff'=>21,
+     *    'jornadas_played'=>3, 'current_position'=>1, 'current_cancha'=>'Cancha 1'],
+     *   ...
+     * ]
+     */
+    public function groupSeasonStandings(Group $group, int $movement, $playerNames = null): array
+    {
+        $playerNames ??= $group->league->players()->pluck('full_name', 'id');
+
+        // Aggregate each player's games across every jornada in this group
+        $agg = []; // player_id => ['won','lost','jornadas','last_jornada','last_position','last_label']
+
+        foreach ($group->jornadas->sortBy('number') as $jornada) {
+            $breakdown = $this->jornadaBreakdown($jornada, $movement);
+
+            foreach ($breakdown as $cancha) {
+                foreach ($cancha['players'] as $p) {
+                    $pid = $p['player_id'];
+                    if (!isset($agg[$pid])) {
+                        $agg[$pid] = [
+                            'won' => 0,
+                            'lost' => 0,
+                            'jornadas' => 0,
+                            'last_jornada' => 0,
+                            'last_position' => null,
+                            'last_label' => null,
+                        ];
+                    }
+                    $agg[$pid]['won']  += $p['won'];
+                    $agg[$pid]['lost'] += $p['lost'];
+                    $agg[$pid]['jornadas']++;
+
+                    // Track the most recent jornada's cancha as "current"
+                    if ($jornada->number >= $agg[$pid]['last_jornada']) {
+                        $agg[$pid]['last_jornada']  = $jornada->number;
+                        $agg[$pid]['last_position'] = $cancha['position'];
+                        $agg[$pid]['last_label']    = $cancha['label'];
+                    }
+                }
+            }
+        }
+
+        // Build rows
+        $rows = [];
+        foreach ($agg as $pid => $a) {
+            $rows[] = [
+                'player_id'        => $pid,
+                'name'             => $playerNames[$pid] ?? '—',
+                'won'              => $a['won'],
+                'lost'             => $a['lost'],
+                'diff'             => $a['won'] - $a['lost'],
+                'jornadas_played'  => $a['jornadas'],
+                'current_position' => $a['last_position'],
+                'current_cancha'   => $a['last_label'],
+            ];
+        }
+
+        // Rank: current cancha asc (1 = top), then games won desc, then diff desc.
+        // Players with no position (never assigned) sink to the bottom.
+        usort($rows, function ($a, $b) {
+            $posA = $a['current_position'] ?? PHP_INT_MAX;
+            $posB = $b['current_position'] ?? PHP_INT_MAX;
+            if ($posA !== $posB) return $posA <=> $posB;
+            if ($a['won'] !== $b['won']) return $b['won'] <=> $a['won'];
+            return $b['diff'] <=> $a['diff'];
+        });
+
+        return $rows;
+    }
 }

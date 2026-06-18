@@ -40,7 +40,7 @@ $allCompleted = $m['status'] === 'completed';
             @else
             <span class="vs">vs</span>
             @endif
-            <span class="{{ $bWinner ? 'is-winner' : '' }}">
+            <span class="text-end {{ $bWinner ? 'is-winner' : '' }}">
                 {{ implode(' / ', $round['team_b']) }}
             </span>
         </div>

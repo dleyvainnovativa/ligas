@@ -155,6 +155,13 @@ Route::get('/{slug}/jugadores',          [\App\Http\Controllers\PublicLeagueCont
     ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
     ->name('public.jugadores');
 
+Route::get(
+    '/{slug}/jugador/{player}',
+    [\App\Http\Controllers\PublicLeagueController::class, 'jugador']
+)
+    ->where(['slug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'player' => '[0-9]+'])
+    ->name('public.jugador');
+
 Route::get('/{slug}/reglas',             [\App\Http\Controllers\PublicLeagueController::class, 'reglas'])
     ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
     ->name('public.reglas');

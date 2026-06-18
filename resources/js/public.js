@@ -201,3 +201,16 @@ document.querySelectorAll('a[href^="#"]').forEach((a) => {
     });
 });
 
+
+// ---- Jornada cancha dropdown selector ----
+document.querySelectorAll('.cancha-dropdown').forEach(dropdown => {
+    dropdown.addEventListener('change', (e) => {
+        const groupIdx = e.target.dataset.group;
+        const selectedValue = e.target.value; // e.g. "0-2"
+
+        // Hide all panels in this group, show the selected one
+        document.querySelectorAll(`[data-cancha-panel^="${groupIdx}-"]`).forEach(panel => {
+            panel.classList.toggle('d-none', panel.dataset.canchaPanel !== selectedValue);
+        });
+    });
+});

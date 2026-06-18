@@ -105,6 +105,7 @@ class PublicLeagueController extends Controller
     {
         $playerNames = $league->players()->pluck('full_name', 'id');
         $current = $this->findCurrentJornadaNumber($league);
+        $promo = app(\App\Services\PromotionRelegationService::class);
 
         $groupsPayload = [];
         foreach ($league->groups as $group) {
@@ -115,16 +116,36 @@ class PublicLeagueController extends Controller
             $canchas = $currentJornada
                 ? $this->loadCanchas($currentJornada->id)
                 : collect();
+            // Build the ranked breakdown for the current jornada
+            $breakdown = [];
+            $complete = false;
+            if ($currentJornada) {
+                $raw = $promo->jornadaBreakdown($currentJornada, (int) $league->promotion_relegation);
+                // Resolve player names into the breakdown so the view doesn't need the map
+                $breakdown = collect($raw)->map(function ($cancha) use ($playerNames) {
+                    $cancha['players'] = collect($cancha['players'])->map(function ($p) use ($playerNames) {
+                        $p['name'] = $playerNames[$p['player_id']] ?? '—';
+                        return $p;
+                    })->all();
+                    return $cancha;
+                })->all();
+
+                $complete = $currentJornada->canchas()->count() > 0
+                    && !$currentJornada->canchas()->where('status', '!=', \App\Models\Cancha::STATUS_COMPLETED)->exists();
+            }
 
             $standings = $this->standings->forGroup($group);
 
             $groupsPayload[] = [
-                'group'        => $group,
+                'group'         => $group,
                 'canchas'      => $canchas->map(fn($c) => $this->serializeCancha($c, $playerNames))->all(),
-                'top_3'        => array_slice($standings, 0, 3),
+                'breakdown'     => $breakdown,       // ← new: ranked per-cancha standings
+                'jornada_done'  => $complete,        // ← new: gate the arrows
+                'top_3'         => array_slice($standings, 0, 3),
                 'total_players' => $group->players()->count(),
             ];
         }
+
 
         $totalCanchas = Cancha::query()
             ->whereIn('jornada_id', function ($q) use ($league) {
@@ -201,8 +222,8 @@ class PublicLeagueController extends Controller
     private function buildJornadaPayload(League $league, int $number): ?array
     {
         $playerNames = $league->players()->pluck('full_name', 'id');
+        $promo = app(\App\Services\PromotionRelegationService::class);
 
-        // Find every group's jornada with this number
         $jornadas = collect();
         foreach ($league->groups as $group) {
             $j = $group->jornadas->firstWhere('number', $number);
@@ -210,16 +231,40 @@ class PublicLeagueController extends Controller
         }
         if ($jornadas->isEmpty()) return null;
 
-        // Compute prev/next numbers
         $allNumbers = $league->groups->flatMap->jornadas->pluck('number')->unique()->sort()->values();
         $prev = $allNumbers->filter(fn($n) => $n < $number)->max();
         $next = $allNumbers->filter(fn($n) => $n > $number)->min();
 
-        $groupsPayload = $jornadas->map(function ($pair) use ($playerNames) {
-            $canchas = $this->loadCanchas($pair['jornada']->id);
+        $groupsPayload = $jornadas->map(function ($pair) use ($playerNames, $promo, $league) {
+            $jornada = $pair['jornada'];
+            $canchas = $this->loadCanchas($jornada->id);
+
+            // Build ranked breakdown for this jornada, keyed by cancha_id
+            $rawBreakdown = $promo->jornadaBreakdown($jornada, (int) $league->promotion_relegation);
+            $breakdownByCancha = [];
+            foreach ($rawBreakdown as $cb) {
+                // resolve player names
+                $cb['players'] = collect($cb['players'])->map(function ($p) use ($playerNames) {
+                    $p['name'] = $playerNames[$p['player_id']] ?? '—';
+                    return $p;
+                })->all();
+                $breakdownByCancha[$cb['cancha_id']] = $cb;
+            }
+
+            $complete = $canchas->isNotEmpty()
+                && $canchas->every(fn($c) => $c->status === \App\Models\Cancha::STATUS_COMPLETED);
+
+            // Serialize each cancha and attach its standings breakdown
+            $canchaList = $canchas->map(function ($c) use ($playerNames, $breakdownByCancha) {
+                $serialized = $this->serializeCancha($c, $playerNames);
+                $serialized['breakdown'] = $breakdownByCancha[$c->id] ?? null;
+                return $serialized;
+            })->all();
+
             return [
                 'group_name' => $pair['group']->name,
-                'canchas'    => $canchas->map(fn($c) => $this->serializeCancha($c, $playerNames))->all(),
+                'complete'   => $complete,
+                'canchas'    => $canchaList,
             ];
         })->all();
 
@@ -238,11 +283,14 @@ class PublicLeagueController extends Controller
 
     private function buildClasificacionPayload(League $league): array
     {
+        $promo = app(\App\Services\PromotionRelegationService::class);
+        $playerNames = $league->players()->pluck('full_name', 'id');
+
         $groupsPayload = [];
         foreach ($league->groups as $group) {
             $groupsPayload[] = [
                 'group'     => $group,
-                'standings' => $this->standings->forGroup($group),
+                'standings' => $promo->groupSeasonStandings($group, (int) $league->promotion_relegation, $playerNames),
             ];
         }
         return ['groups' => $groupsPayload];
@@ -250,35 +298,41 @@ class PublicLeagueController extends Controller
 
     private function buildJugadoresPayload(League $league): array
     {
-        // Players with their group + summary stats
-        $players = $league->players()->orderBy('full_name')->get();
+        $promo = app(\App\Services\PromotionRelegationService::class);
+        $playerNames = $league->players()->pluck('full_name', 'id');
 
-        $allStandings = [];
+        // Aggregate across all groups, build a player_id => stats map
+        $statsByPlayer = [];
         foreach ($league->groups as $group) {
-            $standings = $this->standings->forGroup($group);
+            $standings = $promo->groupSeasonStandings($group, (int) $league->promotion_relegation, $playerNames);
             foreach ($standings as $row) {
-                $key = $row['player_id'] ?? null;
-                if ($key) $allStandings[$key] = ['standing' => $row, 'group' => $group];
+                $statsByPlayer[$row['player_id']] = [
+                    'group'  => $group->name,
+                    'stats'  => $row,
+                ];
             }
         }
 
-        $rows = $players->map(function ($player) use ($allStandings) {
-            $entry = $allStandings[$player->id] ?? null;
+        $players = $league->players()->orderBy('full_name')->get();
+
+        $rows = $players->map(function ($player) use ($statsByPlayer) {
+            $entry = $statsByPlayer[$player->id] ?? null;
+            $stats = $entry['stats'] ?? null;
             return [
-                'id'             => $player->id,
-                'name'           => $player->full_name,
-                'group_name'     => $entry['group']->name ?? null,
-                'points'         => $entry['standing']['points']        ?? null,
-                'games_won'      => $entry['standing']['games_won']     ?? null,
-                'matches_played' => $entry['standing']['matches_played'] ?? null,
+                'id'               => $player->id,
+                'name'             => $player->full_name,
+                'group_name'       => $entry['group'] ?? null,
+                'won'              => $stats['won']              ?? 0,
+                'lost'             => $stats['lost']             ?? 0,
+                'diff'             => $stats['diff']             ?? 0,
+                'jornadas_played'  => $stats['jornadas_played']  ?? 0,
+                'current_position' => $stats['current_position'] ?? null,
             ];
         })->values()->all();
 
-        $groupNames = $league->groups->pluck('name')->values()->all();
-
         return [
             'players'     => $rows,
-            'group_names' => $groupNames,
+            'group_names' => $league->groups->pluck('name')->values()->all(),
             'total'       => count($rows),
         ];
     }
@@ -482,6 +536,47 @@ class PublicLeagueController extends Controller
         return [
             'number' => $number,
             'groups' => $groupsData,
+        ];
+    }
+    public function jugador(
+        string $slug,
+        int $playerId,
+        \App\Services\PromotionRelegationService $promo
+    ) {
+        $league = $this->loadLeague($slug);
+
+        $player = $league->players()->find($playerId);
+        if (!$player) abort(404);
+
+        $payload = Cache::remember(
+            "public_league:{$league->id}:jugador:{$playerId}:v1",
+            60,
+            fn() => $this->buildJugadorPayload($league, $player, $promo)
+        );
+
+        return view('public.league.jugador', [
+            'league'      => $league,
+            'player'      => $player,
+            'payload'     => $payload,
+            'active_page' => 'jugadores',
+        ]);
+    }
+
+    private function buildJugadorPayload(
+        League $league,
+        \App\Models\Player $player,
+        \App\Services\PromotionRelegationService $promo
+    ): array {
+        $data = $promo->playerHistory($player, (int) $league->promotion_relegation);
+
+        // Which group is the player in (most recent)?
+        $groupName = collect($data['history'])->last()['group_name'] ?? null;
+
+        return [
+            'name'       => $player->full_name,
+            'group_name' => $groupName,
+            'history'    => $data['history'],
+            'totals'     => $data['totals'],
         ];
     }
 }

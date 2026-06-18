@@ -11,17 +11,19 @@
             placeholder="Buscar jugador…"
             autocomplete="off">
 
-        <select id="group-filter" class="form-select">
+        <select id="group-filter" class="form-select d-none">
             <option value="">Todas las divisiones</option>
             @foreach ($payload['group_names'] as $name)
             <option value="{{ $name }}">{{ $name }}</option>
             @endforeach
         </select>
 
+        {{-- sort dropdown --}}
         <select id="sort-by" class="form-select">
             <option value="name">Nombre A-Z</option>
-            <option value="points">Puntos (más a menos)</option>
-            <option value="matches">Partidos jugados</option>
+            <option value="won">Juegos ganados</option>
+            <option value="diff">Diferencia</option>
+            <option value="jornadas">Jornadas jugadas</option>
         </select>
     </div>
 
@@ -31,23 +33,27 @@
 
     <div id="players-list" class="d-flex flex-column gap-2">
         @foreach ($payload['players'] as $p)
-        <div class="public-player-row"
+        <a href="{{ route('public.jugador', [$league->slug, $p['id']]) }}"
+            class="public-player-row"
             data-name="{{ Str::lower($p['name']) }}"
             data-group="{{ $p['group_name'] }}"
-            data-points="{{ $p['points'] ?? 0 }}"
-            data-matches="{{ $p['matches_played'] ?? 0 }}">
+            data-won="{{ $p['won'] }}"
+            data-diff="{{ $p['diff'] }}"
+            data-jornadas="{{ $p['jornadas_played'] }}">
             <div class="public-player-avatar">{{ Str::substr($p['name'], 0, 1) }}</div>
             <div class="public-player-info">
                 <strong>{{ $p['name'] }}</strong>
-                @if ($p['group_name'])
-                <small class="text-muted">{{ $p['group_name'] }}</small>
-                @endif
+                <small class="text-muted">
+                    @if ($p['group_name']){{ $p['group_name'] }}@endif
+                    @if ($p['current_position']) · Cancha {{ $p['current_position'] }}@endif
+                </small>
             </div>
             <div class="public-player-stat">
-                <strong>{{ $p['points'] ?? 0 }}</strong>
-                <small>pts</small>
+                <strong>{{ $p['won'] }}</strong>
+                <small>ganados</small>
             </div>
-        </div>
+            <!-- <i class="fa-solid fa-chevron-right text-muted ms-2"></i> -->
+        </a>
         @endforeach
     </div>
 
@@ -78,8 +84,9 @@
             });
 
             visible.sort((a, b) => {
-                if (sortKey === 'points') return parseInt(b.dataset.points) - parseInt(a.dataset.points);
-                if (sortKey === 'matches') return parseInt(b.dataset.matches) - parseInt(a.dataset.matches);
+                if (sortKey === 'won') return parseInt(b.dataset.won) - parseInt(a.dataset.won);
+                if (sortKey === 'diff') return parseInt(b.dataset.diff) - parseInt(a.dataset.diff);
+                if (sortKey === 'jornadas') return parseInt(b.dataset.jornadas) - parseInt(a.dataset.jornadas);
                 return a.dataset.name.localeCompare(b.dataset.name);
             });
 

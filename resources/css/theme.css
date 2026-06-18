@@ -4327,3 +4327,237 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     align-items: center;
     gap: 5px;
 }
+
+/* ============================================================
+   JORNADA CANCHA SELECTOR (dropdown + inner tabs)
+   ============================================================ */
+
+.cancha-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: var(--space-3);
+}
+.cancha-selector-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+.cancha-selector .cancha-dropdown {
+    max-width: 240px;
+    font-weight: 600;
+}
+
+.cancha-panel {
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+}
+
+.cancha-inner-tabs {
+    gap: 4px;
+}
+.cancha-inner-tabs .nav-link {
+    color: var(--text-secondary);
+    background: var(--surface-card);
+    border-radius: var(--radius-md);
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 500;
+}
+.cancha-inner-tabs .nav-link.active {
+    background: var(--brand-500);
+    color: var(--neutral-900);
+}
+
+@media (max-width: 575.98px) {
+    .cancha-selector .cancha-dropdown { max-width: none; flex: 1 1 auto; }
+}
+
+/* ============================================================
+   PLAYER PROFILE
+   ============================================================ */
+
+.player-profile-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin: var(--space-3) 0 var(--space-4);
+}
+.player-profile-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
+    color: var(--neutral-900);
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.player-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-3);
+}
+.player-stat {
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    text-align: center;
+}
+.player-stat-value {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary);
+}
+.player-stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+@media (max-width: 575.98px) {
+    .player-stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .player-stat-value { font-size: 22px; }
+}
+
+/* ---- Cancha journey chart ---- */
+.journey-chart {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: 8px;
+}
+.journey-yaxis {
+    display: grid;
+    grid-template-rows: repeat(var(--journey-rows), 56px);
+    flex-shrink: 0;
+    padding-top: 4px;
+}
+.journey-ylabel {
+    display: flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    height: 56px;
+}
+.journey-plot {
+    display: flex;
+    gap: 4px;
+    align-items: start;
+}
+.journey-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    min-width: 48px;
+}
+.journey-point-wrap {
+    height: calc(var(--journey-rows) * 56px);
+    display: flex;
+    align-items: start;
+    padding-top: calc(var(--row-index) * 56px);
+}
+.journey-point {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-pill);
+    display: grid;
+    place-items: center;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 14px;
+    background: var(--surface-card);
+    border: 2px solid var(--text-muted);
+    color: var(--text-primary);
+}
+.journey-point.movement-up    { border-color: var(--success-500); color: var(--success-700); }
+.journey-point.movement-down  { border-color: var(--danger-500);  color: var(--danger-700); }
+.journey-point.movement-stay  { border-color: var(--border-default); }
+.journey-point.movement-none  { border-color: var(--border-default); }
+
+.journey-xlabel {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 6px;
+}
+
+/* ---- History table ---- */
+.player-history-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    background: var(--surface-sunken);
+}
+
+a.public-player-row {
+    text-decoration: none;
+    color: inherit;
+    transition: all var(--transition-fast);
+}
+a.public-player-row:hover {
+    border-color: var(--brand-500);
+    background: color-mix(in srgb, var(--brand-500) 4%, var(--surface-sunken));
+}
+
+.cancha-pip {
+    display: inline-grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-pill);
+    background: var(--surface-sunken);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--text-primary);
+}
+.standings-player-link {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+.standings-player-link:hover {
+    color: var(--text-brand);
+    text-decoration: underline;
+}
+a.public-standing-card {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Logo tile in the public stats row */
+.public-stat-logo {
+    display: grid;
+    place-items: center;
+    text-decoration: none;
+    padding: var(--space-2);
+    transition: all var(--transition-fast);
+}
+.public-stat-logo:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+.public-stat-logo-img {
+    max-width: 100%;
+    max-height: 56px;          /* matches the visual height of the stat values */
+    width: auto;
+    object-fit: contain;
+}

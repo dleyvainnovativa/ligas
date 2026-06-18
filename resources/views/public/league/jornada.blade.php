@@ -12,10 +12,6 @@
         <p class="text-secondary mb-0">{{ $payload['date_display'] }}</p>
         @endif
     </div>
-    <a href="{{ route('public.jornada.standings', [$league->slug, $payload['number']]) }}"
-        class="btn btn-sm btn-outline-primary mb-2">
-        <i class="fa-solid fa-ranking-star me-1"></i> Ver standings de esta jornada
-    </a>
 
     @if (count($payload['groups']) > 1)
     <ul class="nav nav-pills public-tabs mb-3" role="tablist">
@@ -34,46 +30,68 @@
 
     <div class="tab-content">
         @foreach ($payload['groups'] as $i => $g)
-        <div class="tab-pane fade {{ $i === 0 ? 'show active' : '' }}"
-            id="jornada-group-{{ $i }}"
-            data-cancha-section>
+        <div class="tab-pane fade {{ $i === 0 ? 'show active' : '' }}" id="jornada-group-{{ $i }}">
 
             @if (empty($g['canchas']))
             <div class="public-empty">Aún no hay canchas en esta jornada.</div>
             @else
-            {{-- Quick-jump pill bar (scroll-spy) --}}
-            @if (count($g['canchas']) > 3)
-            <div class="cancha-pillbar" data-scrollspy>
-                @foreach ($g['canchas'] as $cancha)
-                @php
-                $statusClass = match($cancha['status']) {
-                'completed' => 'is-completed',
-                'scheduled' => 'is-scheduled',
-                default => '',
-                };
-                @endphp
-                <a href="#cancha-{{ $cancha['id'] }}" class="cancha-pill {{ $statusClass }}">
-                    @if ($cancha['status'] === 'completed')
-                    <i class="fa-solid fa-check"></i>
-                    @elseif ($cancha['status'] === 'scheduled')
-                    <i class="fa-regular fa-circle"></i>
-                    @else
-                    <i class="fa-solid fa-circle-question"></i>
-                    @endif
-                    <span>{{ $cancha['label'] }}</span>
-                </a>
-                @endforeach
+            <div class="cancha-selector" data-cancha-group="{{ $i }}">
+                {{-- Cancha dropdown --}}
+                <label class="cancha-selector-label">Cancha</label>
+                <select class="form-select cancha-dropdown" data-group="{{ $i }}">
+                    @foreach ($g['canchas'] as $ci => $cancha)
+                    <option value="{{ $i }}-{{ $ci }}" {{ $ci === 0 ? 'selected' : '' }}>
+                        {{ $cancha['label'] }}
+                        @if ($cancha['status'] === 'completed') · ✓ @endif
+                    </option>
+                    @endforeach
+                </select>
             </div>
-            @endif
 
-            {{-- Cards --}}
-            <div class="cancha-cards-list">
-                @foreach ($g['canchas'] as $cancha)
-                <div id="cancha-{{ $cancha['id'] }}" class="cancha-anchor">
-                    @include('public.league._cancha-card', ['m' => $cancha, 'showScore' => $cancha['status'] === 'completed'])
+            {{-- Cancha panels (only one visible at a time) --}}
+            @foreach ($g['canchas'] as $ci => $cancha)
+            <div class="cancha-panel {{ $ci === 0 ? '' : 'd-none' }}"
+                data-cancha-panel="{{ $i }}-{{ $ci }}">
+
+                {{-- Inner tabs: Standings | Partidos --}}
+                <ul class="nav nav-pills cancha-inner-tabs mb-3" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab"
+                            data-bs-target="#standings-{{ $i }}-{{ $ci }}" type="button">
+                            <i class="fa-solid fa-ranking-star me-1"></i> Standings
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab"
+                            data-bs-target="#matches-{{ $i }}-{{ $ci }}" type="button">
+                            <i class="fa-solid fa-table-tennis-paddle-ball me-1"></i> Partidos
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    {{-- Standings tab --}}
+                    <div class="tab-pane fade show active" id="standings-{{ $i }}-{{ $ci }}">
+                        @if (!empty($cancha['breakdown']))
+                        @include('public.league._cancha-standings', [
+                        'cancha' => $cancha['breakdown'],
+                        'complete' => $g['complete'],
+                        ])
+                        @else
+                        <div class="public-empty">Sin resultados todavía.</div>
+                        @endif
+                    </div>
+
+                    {{-- Matches tab --}}
+                    <div class="tab-pane fade" id="matches-{{ $i }}-{{ $ci }}">
+                        @include('public.league._cancha-card', [
+                        'm' => $cancha,
+                        'showScore' => $cancha['status'] === 'completed',
+                        ])
+                    </div>
                 </div>
-                @endforeach
             </div>
+            @endforeach
             @endif
         </div>
         @endforeach
@@ -96,4 +114,21 @@
         @endif
     </div>
 </section>
+
+{{-- propose modal + context, as before --}}
+@include('public.league._propose-modal')
+@php
+$proposeRounds = collect();
+foreach ($payload['groups'] as $g) {
+foreach ($g['canchas'] as $cancha) {
+foreach ($cancha['rounds'] as $round) {
+$proposeRounds->push(array_merge($round, [
+'date_display' => $cancha['date_display'] ?? null,
+'time_slot' => $cancha['time_slot'] ?? null,
+]));
+}
+}
+}
+@endphp
+@include('public.league._propose-context', ['proposeRounds' => $proposeRounds])
 @endsection
