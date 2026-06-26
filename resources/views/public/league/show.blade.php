@@ -9,9 +9,6 @@
         <div class="public-stat-label">Jugadores</div>
     </div>
 
-    <a href="#" class="public-stat public-stat-logo">
-        <img src="{{ asset('img/logo.png') }}" alt="Logo" class="public-stat-logo-img">
-    </a>
 
     <div class="public-stat">
         <div class="public-stat-value">{{ $payload['current_jornada'] ?? '—' }}</div>
@@ -21,6 +18,9 @@
         <div class="public-stat-value">{{ $payload['stats']['completion_pct'] }}%</div>
         <div class="public-stat-label">Avance</div>
     </div>
+    <a href="#" class="public-stat public-stat-logo">
+        <img src="{{ asset('img/logo.png') }}" alt="Logo" class="public-stat-logo-img">
+    </a>
 </section>
 
 {{-- Ads carousel --}}

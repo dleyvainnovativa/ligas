@@ -214,3 +214,89 @@ document.querySelectorAll('.cancha-dropdown').forEach(dropdown => {
         });
     });
 });
+
+// ---- Jornada: preserve location (group + cancha + inner tab) across reloads ----
+(function () {
+    // Only run on pages that have the cancha selector structure
+    const hasJornadaTabs = document.querySelector('.cancha-dropdown');
+    if (!hasJornadaTabs) return;
+
+    const TAB_STANDINGS = 'standings';
+    const TAB_MATCHES   = 'matches';
+
+    function writeHash(groupIdx, canchaIdx, tab) {
+        const hash = `#loc-${groupIdx}-${canchaIdx}-${tab}`;
+        // replaceState so we don't spam browser history or cause a jump
+        history.replaceState(null, '', hash);
+    }
+
+    function currentTabFor(groupIdx, canchaIdx) {
+        const matchesTab = document.querySelector(`[data-bs-target="#matches-${groupIdx}-${canchaIdx}"]`);
+        return matchesTab && matchesTab.classList.contains('active') ? TAB_MATCHES : TAB_STANDINGS;
+    }
+
+    // --- Wire listeners that update the hash ---
+
+    // Group tab change
+    document.querySelectorAll('[data-bs-target^="#jornada-group-"]').forEach(btn => {
+        btn.addEventListener('shown.bs.tab', () => {
+            const groupIdx = btn.dataset.bsTarget.replace('#jornada-group-', '');
+            const dropdown = document.querySelector(`.cancha-dropdown[data-group="${groupIdx}"]`);
+            const canchaIdx = dropdown ? dropdown.value.split('-')[1] : '0';
+            writeHash(groupIdx, canchaIdx, currentTabFor(groupIdx, canchaIdx));
+        });
+    });
+
+    // Cancha dropdown change
+    document.querySelectorAll('.cancha-dropdown').forEach(dropdown => {
+        dropdown.addEventListener('change', (e) => {
+            const [groupIdx, canchaIdx] = e.target.value.split('-');
+            writeHash(groupIdx, canchaIdx, currentTabFor(groupIdx, canchaIdx));
+        });
+    });
+
+    // Inner tab change (Standings / Partidos)
+    document.querySelectorAll('[data-bs-target^="#standings-"], [data-bs-target^="#matches-"]').forEach(btn => {
+        btn.addEventListener('shown.bs.tab', () => {
+            // target looks like "#matches-0-2" or "#standings-0-2"
+            const target = btn.dataset.bsTarget;
+            const isMatches = target.startsWith('#matches-');
+            const coords = target.replace('#matches-', '').replace('#standings-', ''); // "0-2"
+            const [groupIdx, canchaIdx] = coords.split('-');
+            writeHash(groupIdx, canchaIdx, isMatches ? TAB_MATCHES : TAB_STANDINGS);
+        });
+    });
+
+    // --- On load: restore location from hash, if present ---
+    function restoreFromHash() {
+        const m = window.location.hash.match(/^#loc-(\d+)-(\d+)-(standings|matches)$/);
+        if (!m) return;
+
+        const [, groupIdx, canchaIdx, tab] = m;
+
+        // 1. Activate the group tab (if multiple groups)
+        const groupBtn = document.querySelector(`[data-bs-target="#jornada-group-${groupIdx}"]`);
+        if (groupBtn && window.bootstrap?.Tab) {
+            window.bootstrap.Tab.getOrCreateInstance(groupBtn).show();
+        }
+
+        // 2. Select the cancha in the dropdown + show its panel
+        const dropdown = document.querySelector(`.cancha-dropdown[data-group="${groupIdx}"]`);
+        if (dropdown) {
+            dropdown.value = `${groupIdx}-${canchaIdx}`;
+            // trigger the same panel-swap logic the change handler does
+            dropdown.dispatchEvent(new Event('change'));
+        }
+
+        // 3. Activate the inner tab
+        const innerSelector = tab === 'matches'
+            ? `[data-bs-target="#matches-${groupIdx}-${canchaIdx}"]`
+            : `[data-bs-target="#standings-${groupIdx}-${canchaIdx}"]`;
+        const innerBtn = document.querySelector(innerSelector);
+        if (innerBtn && window.bootstrap?.Tab) {
+            window.bootstrap.Tab.getOrCreateInstance(innerBtn).show();
+        }
+    }
+
+    restoreFromHash();
+})();
