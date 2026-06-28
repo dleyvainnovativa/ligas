@@ -128,4 +128,8 @@ class League extends Model
     {
         return $this->hasMany(Ad::class)->where('is_active', true)->orderBy('position');
     }
+    public function cachedActiveAds()
+    {
+        return $this->activeAds()->get();
+    }
 }

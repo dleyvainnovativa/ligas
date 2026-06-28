@@ -51,6 +51,7 @@ class PromotionRelegationService
 
         // Sort: games won desc, then diff desc
         $sorted = $rows->sortByDesc(fn($r) => [$r['won'], $r['diff']])->values();
+        // $sorted = $rows->sortByDesc(fn ($r) => [$r['diff'], $r['won']])->values();
 
         return $sorted->pluck('player_id')->all();
     }
@@ -169,6 +170,9 @@ class PromotionRelegationService
             $ordered = collect($stats)
                 ->sortByDesc(fn($s) => [$s['won'], $s['diff']])
                 ->values();
+            //         $ordered = collect($stats)
+            // ->sortByDesc(fn ($s) => [$s['diff'], $s['won']])
+            // ->values();
 
             $size = $ordered->count();
             $m = min($movement, intdiv($size, 2));
@@ -396,6 +400,13 @@ class PromotionRelegationService
             if ($a['won'] !== $b['won']) return $b['won'] <=> $a['won'];
             return $b['diff'] <=> $a['diff'];
         });
+        // usort($rows, function ($a, $b) {
+        //     $posA = $a['current_position'] ?? PHP_INT_MAX;
+        //     $posB = $b['current_position'] ?? PHP_INT_MAX;
+        //     if ($posA !== $posB) return $posA <=> $posB;
+        //     if ($a['diff'] !== $b['diff']) return $b['diff'] <=> $a['diff'];  // diff first
+        //     return $b['won'] <=> $a['won'];                                    // games won as tiebreaker
+        // });
 
         return $rows;
     }

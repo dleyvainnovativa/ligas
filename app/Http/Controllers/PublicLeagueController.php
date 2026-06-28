@@ -113,20 +113,49 @@ class PublicLeagueController extends Controller
                 ? $group->jornadas->firstWhere('number', $current)
                 : null;
 
-            $canchas = $currentJornada
-                ? $this->loadCanchas($currentJornada->id)
-                : collect();
-            // Build the ranked breakdown for the current jornada
             $breakdown = [];
             $complete = false;
+
             if ($currentJornada) {
                 $raw = $promo->jornadaBreakdown($currentJornada, (int) $league->promotion_relegation);
-                // Resolve player names into the breakdown so the view doesn't need the map
-                $breakdown = collect($raw)->map(function ($cancha) use ($playerNames) {
+
+                // Load the canchas so we can attach schedule/pista metadata
+                $canchas = $this->loadCanchas($currentJornada->id)->keyBy('id');
+
+                $totalCanchas = count($raw);
+
+                $breakdown = collect($raw)->map(function ($cancha, $idx) use ($playerNames, $canchas, $totalCanchas) {
+                    // Resolve player names
                     $cancha['players'] = collect($cancha['players'])->map(function ($p) use ($playerNames) {
                         $p['name'] = $playerNames[$p['player_id']] ?? '—';
                         return $p;
                     })->all();
+
+                    // Attach schedule + pista from the serialized cancha
+                    $model = $canchas->get($cancha['cancha_id']);
+                    if ($model) {
+                        $cancha['date_display'] = $model->date?->translatedFormat('D d M');
+                        $cancha['time_slot']    = $model->time_slot;
+                        $cancha['pista']        = $model->pista?->name;
+                        $cancha['sede']         = $model->pista?->sede?->name;
+                        $cancha['status']       = $model->status;
+                    } else {
+                        $cancha['date_display'] = null;
+                        $cancha['time_slot']    = null;
+                        $cancha['pista']        = null;
+                        $cancha['sede']         = null;
+                        $cancha['status']       = null;
+                    }
+
+                    // Tier tint: position 1 = warm (~45°), last = cool (~210°)
+                    $pos = $cancha['position'] ?? ($idx + 1);
+                    if ($totalCanchas > 1) {
+                        $t = ($pos - 1) / ($totalCanchas - 1);   // 0 at top, 1 at bottom
+                    } else {
+                        $t = 0;                                   // single cancha = warm
+                    }
+                    $cancha['tint_hue'] = (int) round(45 + $t * (210 - 45));
+
                     return $cancha;
                 })->all();
 
@@ -139,8 +168,8 @@ class PublicLeagueController extends Controller
             $groupsPayload[] = [
                 'group'         => $group,
                 'canchas'      => $canchas->map(fn($c) => $this->serializeCancha($c, $playerNames))->all(),
-                'breakdown'     => $breakdown,       // ← new: ranked per-cancha standings
-                'jornada_done'  => $complete,        // ← new: gate the arrows
+                'breakdown'     => $breakdown,
+                'jornada_done'  => $complete,
                 'top_3'         => array_slice($standings, 0, 3),
                 'total_players' => $group->players()->count(),
             ];

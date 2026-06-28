@@ -23,11 +23,6 @@
     </a>
 </section>
 
-{{-- Ads carousel --}}
-@if ($league->activeAds->isNotEmpty())
-@include('public.league._ads-carousel', ['ads' => $league->activeAds])
-@endif
-
 {{-- Current jornada — standings view --}}
 @if ($payload['current_jornada'])
 <section class="public-section">
@@ -48,10 +43,12 @@
         @if (empty($g['breakdown']))
         <div class="public-empty">Aún no hay canchas en esta jornada.</div>
         @else
-        @include('public.league._jornada-standings-body', [
-        'breakdown' => $g['breakdown'],
+        @foreach ($g['breakdown'] as $cancha)
+        @include('public.league._home-cancha-standings', [
+        'cancha' => $cancha,
         'complete' => $g['jornada_done'],
         ])
+        @endforeach
         @endif
     </div>
     @endforeach

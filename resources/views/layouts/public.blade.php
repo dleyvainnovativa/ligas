@@ -91,6 +91,17 @@
             </div>
         </nav>
 
+        {{-- Ads — shown on every public page --}}
+        @php $publicAds = $league->cachedActiveAds(); @endphp
+        @if ($publicAds->isNotEmpty())
+        <div class="public-ads-wrap">
+            <div class="public-ads-inner">
+                @include('public.league._ads-carousel', ['ads' => $publicAds])
+            </div>
+        </div>
+        @endif
+
+
         <main class="public-main pb-5">
             @yield('content')
         </main>
