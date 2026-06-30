@@ -236,24 +236,31 @@ $isEditing = isset($league) && $league->exists;
                 @error('banner') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 <small class="text-secondary d-block mt-2">PNG, JPG o WEBP · máx. 4 MB.</small>
             </div>
+
+            @unless ($isEditing)
+            {{-- On CREATE, the submit lives only here (Branding is the last tab) --}}
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Crear liga
+                </button>
+                <a href="{{ route('leagues.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+            @endunless
         </div>
     </div>
 
+    @if ($isEditing)
     <div class="d-flex gap-2 mt-4">
         <button type="submit" class="btn btn-primary" id="league-submit">
             <i class="fa-solid fa-floppy-disk me-1"></i>
-            {{ $isEdit ? 'Guardar cambios' : 'Crear liga' }}
+            Guardar cambios
         </button>
-        @if (!$isEditing)
-        <a href="{{ route('leagues.index') }}" class="btn btn-outline-secondary">Cancelar</a>
-        @endif
-        @if ($isEdit)
         <button type="button" class="btn btn-outline-danger ms-auto" id="delete-league-btn"
             data-action="{{ route('leagues.destroy', $league) }}">
             <i class="fa-solid fa-trash me-1"></i> Eliminar
         </button>
-        @endif
     </div>
+    @endif
 </form>
 
 <form id="delete-league-form" method="POST" action="" class="d-none">

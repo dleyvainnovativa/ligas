@@ -57,21 +57,28 @@
                 <ul class="nav nav-pills cancha-inner-tabs mb-3" role="tablist">
                     <li class="nav-item">
                         <button class="nav-link active" data-bs-toggle="tab"
-                            data-bs-target="#standings-{{ $i }}-{{ $ci }}" type="button">
-                            <i class="fa-solid fa-ranking-star me-1"></i> Standings
+                            data-bs-target="#matches-{{ $i }}-{{ $ci }}" type="button">
+                            <i class="fa-solid fa-table-tennis-paddle-ball me-1"></i> Partidos
                         </button>
                     </li>
                     <li class="nav-item">
                         <button class="nav-link" data-bs-toggle="tab"
-                            data-bs-target="#matches-{{ $i }}-{{ $ci }}" type="button">
-                            <i class="fa-solid fa-table-tennis-paddle-ball me-1"></i> Partidos
+                            data-bs-target="#standings-{{ $i }}-{{ $ci }}" type="button">
+                            <i class="fa-solid fa-ranking-star me-1"></i> Standings
                         </button>
                     </li>
                 </ul>
 
                 <div class="tab-content">
+                    {{-- Matches tab --}}
+                    <div class="tab-pane fade show active" id="matches-{{ $i }}-{{ $ci }}">
+                        @include('public.league._cancha-card', [
+                        'm' => $cancha,
+                        'showScore' => $cancha['status'] === 'completed',
+                        ])
+                    </div>
                     {{-- Standings tab --}}
-                    <div class="tab-pane fade show active" id="standings-{{ $i }}-{{ $ci }}">
+                    <div class="tab-pane fade " id="standings-{{ $i }}-{{ $ci }}">
                         @if (!empty($cancha['breakdown']))
                         @include('public.league._cancha-standings', [
                         'cancha' => $cancha['breakdown'],
@@ -82,13 +89,6 @@
                         @endif
                     </div>
 
-                    {{-- Matches tab --}}
-                    <div class="tab-pane fade" id="matches-{{ $i }}-{{ $ci }}">
-                        @include('public.league._cancha-card', [
-                        'm' => $cancha,
-                        'showScore' => $cancha['status'] === 'completed',
-                        ])
-                    </div>
                 </div>
             </div>
             @endforeach
