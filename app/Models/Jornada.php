@@ -39,4 +39,30 @@ class Jornada extends Model
     {
         return $this->hasMany(Cancha::class)->orderBy('position');
     }
+    /**
+     * A jornada is editable only if it is the latest (highest-numbered) jornada
+     * in its group. Once a later jornada exists, this one is frozen — because the
+     * later jornada's canchas were generated from this one's results, so editing
+     * it now would corrupt the promotion/relegation chain.
+     */
+    public function isEditable(): bool
+    {
+        return !$this->group->jornadas()
+            ->where('number', '>', $this->number)
+            ->exists();
+    }
+
+    /** Inverse, for readable guard code. */
+    public function isFrozen(): bool
+    {
+        return !$this->isEditable();
+    }
+
+    /** Is this the latest jornada in its group? (Only the latest can be deleted.) */
+    public function isLatest(): bool
+    {
+        return !$this->group->jornadas()
+            ->where('number', '>', $this->number)
+            ->exists();
+    }
 }

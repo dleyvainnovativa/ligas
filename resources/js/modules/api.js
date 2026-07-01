@@ -39,9 +39,16 @@ async function request(method, url, body = null) {
         throw new Error(msg);
     }
 
+    // if (!res.ok) {
+    //     const err = await res.json().catch(() => ({ message: res.statusText }));
+    //     throw new Error(err.message || `HTTP ${res.status}`);
+    // }
     if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: res.statusText }));
-        throw new Error(err.message || `HTTP ${res.status}`);
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        const error = new Error(body.message || `HTTP ${res.status}`);
+        error.status = res.status;
+        error.data = body;          // full JSON body — lets callers read needs_confirmation, etc.
+        throw error;
     }
     return res.status === 204 ? null : res.json();
 }

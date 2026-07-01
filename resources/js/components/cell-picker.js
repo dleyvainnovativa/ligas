@@ -15,7 +15,7 @@ const HINT_KEY = 'pl_picker_hint_seen';
 export function mountCellPicker() {
     const grid = document.querySelector('.grid-app');
     if (!grid) return;
-
+    if (grid.dataset.readonly === '1') return;
     const mode = grid.dataset.mode;                                  // 'individual' | 'pairs'
     const scheduleUrlTpl = grid.dataset.scheduleUrlTemplate;         // .../matches/__ID__/schedule
     const autofitUrlTpl  = grid.dataset.autofitUrlTemplate;          // .../canchas/__ID__/auto-fit

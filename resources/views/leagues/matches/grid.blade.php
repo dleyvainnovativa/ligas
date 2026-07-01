@@ -4,6 +4,7 @@
 @section('page-title', $league->name)
 
 @php
+$editable = $jornada->isEditable();
 $scheduler = app(\App\Services\MatchSchedulingService::class);
 $dates = $scheduler->enumerateDates($jornada);
 $timeSlots = collect($league->time_slots ?? [])->sort()->values()->all();
@@ -58,12 +59,24 @@ return $cancha->rounds->where('status', \App\Models\GameMatch::STATUS_COMPLETED)
             data-url="{{ route('leagues.matches.conflicts', [$league, $group, $jornada]) }}">
             <i class="fa-solid fa-triangle-exclamation me-1"></i> Verificar conflictos
         </button>
+        @if ($editable)
         <button class="btn btn-outline-primary btn-sm" id="auto-generate-btn"
             data-url="{{ route('leagues.matches.auto-generate', [$league, $group, $jornada]) }}">
             <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Auto-generar
         </button>
+        @endif
     </div>
 </div>
+
+@unless ($editable)
+<div class="alert alert-secondary d-flex align-items-center gap-2 mb-3">
+    <i class="fa-solid fa-lock"></i>
+    <div>
+        Esta jornada está bloqueada porque existe una jornada posterior.
+        El calendario y los resultados son de solo lectura. Para editar, elimina primero las jornadas siguientes.
+    </div>
+</div>
+@endunless
 
 @if (empty($timeSlots) || $sedes->isEmpty() || count($dates) === 0)
 <div class="card-soft p-4">
@@ -80,6 +93,7 @@ return $cancha->rounds->where('status', \App\Models\GameMatch::STATUS_COMPLETED)
 @else
 
 <div class="grid-app"
+    data-readonly="{{ $editable ? '0' : '1' }}"
     data-league-id="{{ $league->id }}"
     data-group-id="{{ $group->id }}"
     data-jornada-id="{{ $jornada->id }}"
@@ -131,7 +145,7 @@ return $cancha->rounds->where('status', \App\Models\GameMatch::STATUS_COMPLETED)
                             </div>
 
                             <div class="cancha-pill @if($isScheduled) is-scheduled @endif"
-                                draggable="true"
+                                @if($editable) draggable="true" @endif
                                 data-cancha-id="{{ $cancha->id }}">
                                 <div class="cancha-pill-players">
                                     @foreach ($players as $name)
@@ -210,7 +224,7 @@ return $cancha->rounds->where('status', \App\Models\GameMatch::STATUS_COMPLETED)
                                     $allDone = $totalRounds > 0 && $completedCount === $totalRounds;
                                     @endphp
                                     <div class="cell-cancha @if($allDone) is-completed @endif"
-                                        draggable="true"
+                                        @if($editable) draggable="true" @endif
                                         data-cancha-id="{{ $cellCancha->id }}">
                                         <div class="cell-cancha-label">{{ $cellCancha->label }}</div>
                                         <div class="cell-cancha-players">
@@ -230,12 +244,14 @@ return $cancha->rounds->where('status', \App\Models\GameMatch::STATUS_COMPLETED)
                                             </span>
                                             @endforeach
                                         </div>
+                                        @if ($editable)
                                         <button class="cell-cancha-result" title="Resultado" data-cancha-id="{{ $cellCancha->id }}">
                                             <i class="fa-solid fa-pencil"></i>
                                         </button>
                                         <button class="cell-cancha-clear" title="Quitar de la programación">
                                             <i class="fa-solid fa-xmark"></i>
                                         </button>
+                                        @endif
                                     </div>
                                     @endif
                                 </td>

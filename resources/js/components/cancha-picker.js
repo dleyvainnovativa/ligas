@@ -8,7 +8,9 @@
  * Desktop drag-and-drop still works via canchas.js. This is a parallel path.
  */
 
-export function mountCanchaPicker() {
+import { postWithResetGuard } from '../modules/reset-guard.js';
+
+export function mountCanchaPicker() { 
     const app = document.querySelector('.canchas-app');
     if (!app) return;
 
@@ -267,12 +269,19 @@ document.addEventListener('click', (e) => {
             : { player_id: parseInt(chip.dataset.playerId, 10), cancha_id: targetCanchaId === '0' ? null : parseInt(targetCanchaId, 10) };
 
         try {
-            await window.app.api.post(assignUrl, payload);
+            const result = await postWithResetGuard(assignUrl, payload);
+            if (result === null) {
+                // User cancelled the reset confirmation — restore the button, keep picker open
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml(targetCanchaId);
+                return;
+            }
             closePicker();
             window.location.reload();
         } catch (err) {
             window.app.toast.error(err.message);
             btn.disabled = false;
+            btn.innerHTML = originalBtnHtml(targetCanchaId);
         }
     }
 
@@ -291,7 +300,15 @@ document.addEventListener('click', (e) => {
             };
 
         try {
-            await window.app.api.post(swapUrl, payload);
+            const result = await postWithResetGuard(swapUrl, payload);
+            if (result === null) {
+                // Cancelled — reopen the destination list so the user can pick again
+                btn.disabled = false;
+                const currentList = swapState?.sourceChip.closest('.roster-list');
+                const currentCanchaId = currentList?.dataset.canchaId || '0';
+                renderDestinationList(currentCanchaId, currentCanchaId !== '0');
+                return;
+            }
             closePicker();
             window.location.reload();
         } catch (err) {
@@ -336,6 +353,22 @@ document.addEventListener('click', (e) => {
 
     function escape(s) {
         return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function originalBtnHtml(targetCanchaId) {
+        // Rebuild the button's inner content after a cancelled action.
+        if (targetCanchaId === '0') {
+            return `<span class="picker-action-icon"><i class="fa-solid fa-arrow-up-from-bracket"></i></span>
+                    <span class="picker-action-text"><strong>Sacar de la cancha</strong><small>Volver al pool de pendientes</small></span>
+                    <i class="fa-solid fa-chevron-right text-muted"></i>`;
+        }
+        const card = document.querySelector(`.cancha-card[data-cancha-id="${targetCanchaId}"]`);
+        const label = card?.querySelector('.cancha-label')?.value.trim() || `Cancha ${targetCanchaId}`;
+        const list = card?.querySelector('.roster-list');
+        const count = list ? list.querySelectorAll('.roster-chip').length : 0;
+        return `<span class="picker-action-icon"><i class="fa-solid fa-table-cells"></i></span>
+                <span class="picker-action-text"><strong>${escape(label)}</strong><small>${count}/${max}</small></span>
+                <i class="fa-solid fa-chevron-right text-muted"></i>`;
     }
 
     if (window.matchMedia('(hover: none)').matches && !localStorage.getItem('pl_cancha_hint_seen')) {

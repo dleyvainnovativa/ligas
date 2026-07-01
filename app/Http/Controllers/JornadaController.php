@@ -7,9 +7,12 @@ use App\Models\Jornada;
 use App\Models\League;
 use App\Services\CanchaService;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Concerns\GuardsFrozenJornadas;
 
 class JornadaController extends Controller
 {
+    use GuardsFrozenJornadas;
+
     public function __construct(private CanchaService $canchas) {}
 
     public function index(League $league, Group $group)
@@ -154,7 +157,7 @@ class JornadaController extends Controller
     {
         $this->authorize('update', $jornada);
         abort_unless($jornada->group_id === $group->id && $group->league_id === $league->id, 404);
-
+        $this->ensureJornadaEditable($jornada);
         $data = $request->validate([
             'window_start' => ['nullable', 'date'],
             'window_end'   => ['nullable', 'date', 'after_or_equal:window_start'],
@@ -171,16 +174,93 @@ class JornadaController extends Controller
         $this->authorize('delete', $jornada);
         abort_unless($jornada->group_id === $group->id && $group->league_id === $league->id, 404);
 
-        $jornada->delete();
-        return response()->json(['ok' => true]);
+        // Only the latest jornada in the group can be deleted. This is the escape
+        // hatch: to unlock a frozen jornada, peel off the ones after it, one at a time.
+        if (!$jornada->isLatest()) {
+            return response()->json([
+                'message' => "Solo puedes eliminar la última jornada del grupo. "
+                    . "Elimina las jornadas posteriores primero.",
+                'code'    => 'JORNADA_NOT_LATEST',
+            ], 422);
+        }
+
+        // Cascade: delete canchas → rounds → proposals so nothing is orphaned.
+        $this->cascadeDeleteJornada($jornada);
+
+        app(\App\Services\PublicCacheService::class)->bust($league);
+
+        return response()->json([
+            'ok' => true,
+            'message' => "Jornada {$jornada->number} eliminada. La jornada anterior vuelve a estar disponible para editar.",
+        ]);
     }
 
-    public function autoFill(League $league, Group $group, Jornada $jornada)
+    /**
+     * Remove a jornada and everything under it: canchas, their rounds (game_matches),
+     * and any score proposals attached to those rounds.
+     */
+    private function cascadeDeleteJornada(Jornada $jornada): void
+    {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($jornada) {
+            $canchas = $jornada->canchas()->with('rounds')->get();
+
+            foreach ($canchas as $cancha) {
+                $roundIds = $cancha->rounds->pluck('id');
+
+                if ($roundIds->isNotEmpty()) {
+                    // Proposals reference rounds via match_id
+                    \App\Models\MatchScoreProposal::whereIn('match_id', $roundIds)->delete();
+                    // Rounds themselves
+                    \App\Models\GameMatch::whereIn('id', $roundIds)->delete();
+                }
+
+                // Pivot rows (cancha_player / cancha_pair) — detach then delete cancha
+                $cancha->players()->detach();
+                $cancha->pairs()->detach();
+                $cancha->delete();
+            }
+
+            $jornada->delete();
+        });
+    }
+
+    public function autoFill(Request $request, League $league, Group $group, Jornada $jornada)
     {
         $this->authorize('update', $jornada);
         abort_unless($jornada->group_id === $group->id && $group->league_id === $league->id, 404);
+        $this->ensureJornadaEditable($jornada);
 
-        $this->canchas->autoFill($jornada);
+        $confirm = (bool) $request->input('confirm_reset', false);
+
+        // Any scheduled/completed canchas that auto-fill would invalidate?
+        $affected = $jornada->canchas()->get()
+            ->filter(fn($c) => $this->canchas->canchaHasScheduleOrResults($c))
+            ->values();
+
+        if ($affected->isNotEmpty() && !$confirm) {
+            $withResults = $affected->filter(fn($c) => $c->rounds()->whereNotNull('sets')->exists());
+            $msg = "Auto-generar reasignará a todos los jugadores y reprogramará {$affected->count()} cancha(s)";
+            if ($withResults->isNotEmpty()) {
+                $msg .= " ({$withResults->count()} con resultados que se borrarán)";
+            }
+            $msg .= ". ¿Continuar?";
+
+            return response()->json([
+                'needs_confirmation' => true,
+                'message' => $msg,
+            ], 422);
+        }
+
+        // Reset schedules/results on affected canchas, then auto-fill assignments
+        \Illuminate\Support\Facades\DB::transaction(function () use ($affected, $jornada) {
+            foreach ($affected as $c) {
+                $this->canchas->resetCanchaScheduleAndResults($c);
+            }
+            $this->canchas->autoFill($jornada);
+        });
+
+        app(\App\Services\PublicCacheService::class)->bust($league);
+
         return response()->json(['ok' => true]);
     }
 

@@ -1,4 +1,5 @@
 import Sortable from 'sortablejs';
+import { postWithResetGuard } from '../modules/reset-guard.js';
 
 export function mountCanchas() {
     const app = document.querySelector('.canchas-app');
@@ -46,7 +47,6 @@ export function mountCanchas() {
         const isOverCapacity = isTargetCancha && targetChips.length > max;
 
         if (isOverCapacity) {
-            // Find a victim — the chip we displaced, or last one if we landed at the end
             const ourIndex = Array.from(targetChips).indexOf(chip);
             let victim = targetChips[ourIndex + 1] || targetChips[ourIndex - 1];
 
@@ -67,7 +67,11 @@ export function mountCanchas() {
             : { player_id: parseInt(chip.dataset.playerId, 10), cancha_id: targetCanchaId || null };
 
         try {
-            await window.app.api.post(assignUrl, payload);
+            const result = await postWithResetGuard(assignUrl, payload);
+            if (result === null) {
+                // Cancelled — roll the chip back to where it came from
+                fromList.insertBefore(chip, fromList.children[evt.oldIndex] || null);
+            }
         } catch (err) {
             window.app.toast.error(err.message);
             fromList.insertBefore(chip, fromList.children[evt.oldIndex] || null);
@@ -88,12 +92,16 @@ export function mountCanchas() {
             };
 
         try {
-            await window.app.api.post(swapUrl, payload);
-            // Move victim chip to source list (the swap mirror)
-            fromList.appendChild(victimChip);
-            window.app.toast.success('Intercambio realizado');
+            const result = await postWithResetGuard(swapUrl, payload);
+            if (result === null) {
+                // Cancelled — roll dropped chip back, leave victim in place
+                fromList.insertBefore(droppedChip, fromList.children[evt.oldIndex] || null);
+            } else {
+                // Move victim chip to source list (the swap mirror)
+                fromList.appendChild(victimChip);
+                window.app.toast.success('Intercambio realizado');
+            }
         } catch (err) {
-            // Roll back: dropped chip back to source, victim stays in target
             window.app.toast.error(err.message);
             fromList.insertBefore(droppedChip, fromList.children[evt.oldIndex] || null);
         } finally {
@@ -177,13 +185,18 @@ export function mountCanchas() {
     autoBtn?.addEventListener('click', async () => {
         const ok = await window.app.modal.confirm({
             title: 'Auto-asignar',
-            body: '¿Auto-asignar redistribuye TODOS los miembros del grupo en canchas. ¿Continuar?',
+            body: 'Auto-asignar redistribuye TODOS los miembros del grupo en canchas. ¿Continuar?',
             confirmText: 'Auto-asignar',
         });
         if (!ok) return;
         window.app.loading.on(autoBtn);
         try {
-            await window.app.api.post(autoBtn.dataset.url, {});
+            const result = await postWithResetGuard(autoBtn.dataset.url, {});
+            if (result === null) {
+                // User cancelled the second (schedule-reset) confirmation
+                window.app.loading.off(autoBtn);
+                return;
+            }
             window.location.reload();
         } catch (err) {
             window.app.toast.error(err.message);

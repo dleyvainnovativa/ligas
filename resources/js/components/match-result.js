@@ -1,7 +1,7 @@
 export function mountMatchResult() {
     const grid = document.querySelector('.grid-app');
     if (!grid) return;
-
+    if (grid.dataset.readonly === '1') return;
     const scheduleUrlTpl = grid.dataset.scheduleUrlTemplate;
 
     let currentCanchaId = null;

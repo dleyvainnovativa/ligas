@@ -289,4 +289,188 @@ class CanchaService
             }
         });
     }
+    /**
+     * Reset a cancha back to unscheduled: clear its schedule (date/time/pista)
+     * and wipe all round results. Keeps the cancha row and its player/pair
+     * assignments intact. Used when a roster change invalidates a cancha that
+     * was already scheduled or had results.
+     */
+    public function resetCanchaScheduleAndResults(Cancha $cancha): void
+    {
+        DB::transaction(function () use ($cancha) {
+            // Clear results on every round of this cancha
+            foreach ($cancha->rounds()->get() as $round) {
+                // Drop any pending proposals tied to this round
+                \App\Models\MatchScoreProposal::where('match_id', $round->id)->delete();
+
+                $round->update([
+                    'sets'                => null,
+                    'winner'              => null,
+                    'no_show_player_ids'  => null,
+                    'suplente_player_ids' => null,
+                    'status'              => \App\Models\GameMatch::STATUS_PENDING,
+                ]);
+            }
+
+            // Clear the cancha's schedule
+            $cancha->update([
+                'date'      => null,
+                'time_slot' => null,
+                'pista_id'  => null,
+                'status'    => Cancha::STATUS_UNSCHEDULED,
+            ]);
+        });
+    }
+
+    /**
+     * Does this cancha have anything worth warning about before a reset?
+     * True if it's scheduled OR any round has recorded results.
+     */
+    public function canchaHasScheduleOrResults(Cancha $cancha): bool
+    {
+        if ($cancha->date || $cancha->time_slot || $cancha->pista_id) {
+            return true;
+        }
+        return $cancha->rounds()
+            ->whereNotNull('sets')
+            ->exists();
+    }
+
+    /**
+     * For an assignPlayer operation: the affected canchas are the one the player
+     * currently sits in (if any) and the destination cancha. Returns those among
+     * them that have schedule/results (i.e. would be reset).
+     */
+    public function affectedByAssignPlayer(Cancha $destination, Player $player): \Illuminate\Support\Collection
+    {
+        $jornadaId = $destination->jornada_id;
+
+        $affected = collect();
+
+        // Destination cancha (unless the player is already in it)
+        // Current cancha of the player in this jornada
+        $currentCanchaId = DB::table('cancha_player')
+            ->whereIn('cancha_id', function ($q) use ($jornadaId) {
+                $q->select('id')->from('canchas')->where('jornada_id', $jornadaId);
+            })
+            ->where('player_id', $player->id)
+            ->value('cancha_id');
+
+        $ids = collect([$destination->id, $currentCanchaId])->filter()->unique();
+
+        foreach ($ids as $id) {
+            $cancha = Cancha::find($id);
+            if ($cancha && $this->canchaHasScheduleOrResults($cancha)) {
+                $affected->push($cancha);
+            }
+        }
+
+        return $affected;
+    }
+
+    /**
+     * For a swapPlayers operation: affected canchas are the two players' current
+     * canchas. If it's an intra-cancha slot swap (same cancha), the player SET is
+     * unchanged, so nothing needs resetting — we return empty in that case.
+     */
+    public function affectedBySwapPlayers(Jornada $jornada, Player $source, Player $target): \Illuminate\Support\Collection
+    {
+        $canchaIds = $jornada->canchas()->pluck('id');
+
+        $sourceCanchaId = DB::table('cancha_player')
+            ->whereIn('cancha_id', $canchaIds)->where('player_id', $source->id)->value('cancha_id');
+        $targetCanchaId = DB::table('cancha_player')
+            ->whereIn('cancha_id', $canchaIds)->where('player_id', $target->id)->value('cancha_id');
+
+        // Same cancha → pure slot reorder, player sets unchanged → no reset needed
+        if ($sourceCanchaId && $targetCanchaId && $sourceCanchaId === $targetCanchaId) {
+            return collect();
+        }
+
+        $affected = collect();
+        foreach (collect([$sourceCanchaId, $targetCanchaId])->filter()->unique() as $id) {
+            $cancha = Cancha::find($id);
+            if ($cancha && $this->canchaHasScheduleOrResults($cancha)) {
+                $affected->push($cancha);
+            }
+        }
+        return $affected;
+    }
+
+    /**
+     * For unassignPlayer: the one cancha the player currently sits in.
+     */
+    public function affectedByUnassignPlayer(Jornada $jornada, Player $player): \Illuminate\Support\Collection
+    {
+        $canchaId = DB::table('cancha_player')
+            ->whereIn('cancha_id', $jornada->canchas()->pluck('id'))
+            ->where('player_id', $player->id)
+            ->value('cancha_id');
+
+        if (!$canchaId) return collect();
+
+        $cancha = Cancha::find($canchaId);
+        return ($cancha && $this->canchaHasScheduleOrResults($cancha))
+            ? collect([$cancha])
+            : collect();
+    }
+
+    public function affectedByAssignPair(Cancha $destination, Pair $pair): \Illuminate\Support\Collection
+    {
+        $jornadaId = $destination->jornada_id;
+
+        $currentCanchaId = DB::table('cancha_pair')
+            ->whereIn('cancha_id', function ($q) use ($jornadaId) {
+                $q->select('id')->from('canchas')->where('jornada_id', $jornadaId);
+            })
+            ->where('pair_id', $pair->id)
+            ->value('cancha_id');
+
+        $affected = collect();
+        foreach (collect([$destination->id, $currentCanchaId])->filter()->unique() as $id) {
+            $cancha = Cancha::find($id);
+            if ($cancha && $this->canchaHasScheduleOrResults($cancha)) {
+                $affected->push($cancha);
+            }
+        }
+        return $affected;
+    }
+
+    public function affectedBySwapPairs(Jornada $jornada, Pair $source, Pair $target): \Illuminate\Support\Collection
+    {
+        $canchaIds = $jornada->canchas()->pluck('id');
+
+        $sourceCanchaId = DB::table('cancha_pair')
+            ->whereIn('cancha_id', $canchaIds)->where('pair_id', $source->id)->value('cancha_id');
+        $targetCanchaId = DB::table('cancha_pair')
+            ->whereIn('cancha_id', $canchaIds)->where('pair_id', $target->id)->value('cancha_id');
+
+        if ($sourceCanchaId && $targetCanchaId && $sourceCanchaId === $targetCanchaId) {
+            return collect();
+        }
+
+        $affected = collect();
+        foreach (collect([$sourceCanchaId, $targetCanchaId])->filter()->unique() as $id) {
+            $cancha = Cancha::find($id);
+            if ($cancha && $this->canchaHasScheduleOrResults($cancha)) {
+                $affected->push($cancha);
+            }
+        }
+        return $affected;
+    }
+
+    public function affectedByUnassignPair(Jornada $jornada, Pair $pair): \Illuminate\Support\Collection
+    {
+        $canchaId = DB::table('cancha_pair')
+            ->whereIn('cancha_id', $jornada->canchas()->pluck('id'))
+            ->where('pair_id', $pair->id)
+            ->value('cancha_id');
+
+        if (!$canchaId) return collect();
+
+        $cancha = Cancha::find($canchaId);
+        return ($cancha && $this->canchaHasScheduleOrResults($cancha))
+            ? collect([$cancha])
+            : collect();
+    }
 }

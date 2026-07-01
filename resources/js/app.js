@@ -1,16 +1,6 @@
 import 'bootstrap';
 import * as bootstrap from 'bootstrap';
 
-// Fonts (loaded once, cached)
-import '@fontsource/inter/400.css';
-import '@fontsource/inter/500.css';
-import '@fontsource/inter/600.css';
-import '@fontsource/inter/700.css';
-import '@fontsource/inter-tight/600.css';
-import '@fontsource/inter-tight/700.css';
-import '@fontsource/inter-tight/800.css';
-import '@fontsource/jetbrains-mono/500.css';
-
 import { auth, signInWithEmailAndPassword, signOut } from './firebase.js';
 import { toast } from './modules/toast.js';
 import { api } from './modules/api.js';

@@ -1,11 +1,78 @@
+@import "bootstrap/dist/css/bootstrap.min.css";
+@import "@fortawesome/fontawesome-free/css/all.min.css";
 /* ============================================================
    PADEL LEAGUES — Design System
    Inspired by Linear (structure) + Stripe (warmth)
    Brand: #edc35f gold + #ebebeb warm grey
    ============================================================ */
 
-@import "bootstrap/dist/css/bootstrap.min.css";
-@import "@fortawesome/fontawesome-free/css/all.min.css";
+
+/* ============================================================
+   FONTS — declared here (not in JS) so they load early via the
+   CSS <link>, with font-display: optional to eliminate FOUT.
+   ============================================================ */
+
+/* Inter — body */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    font-display: optional;
+    src: url('@fontsource/inter/files/inter-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 500;
+    font-display: optional;
+    src: url('@fontsource/inter/files/inter-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 600;
+    font-display: optional;
+    src: url('@fontsource/inter/files/inter-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 700;
+    font-display: optional;
+    src: url('@fontsource/inter/files/inter-latin-700-normal.woff2') format('woff2');
+}
+
+/* Inter Tight — display/headings */
+@font-face {
+    font-family: 'Inter Tight';
+    font-style: normal;
+    font-weight: 600;
+    font-display: optional;
+    src: url('@fontsource/inter-tight/files/inter-tight-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Inter Tight';
+    font-style: normal;
+    font-weight: 700;
+    font-display: optional;
+    src: url('@fontsource/inter-tight/files/inter-tight-latin-700-normal.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Inter Tight';
+    font-style: normal;
+    font-weight: 800;
+    font-display: optional;
+    src: url('@fontsource/inter-tight/files/inter-tight-latin-800-normal.woff2') format('woff2');
+}
+
+/* JetBrains Mono — numbers/mono */
+@font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-weight: 500;
+    font-display: optional;
+    src: url('@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff2') format('woff2');
+}
 
 /* ---------- TOKENS: light ---------- */
 :root,
@@ -4640,4 +4707,36 @@ a.public-standing-card {
 [data-bs-theme="dark"] .tinted-head .jstand-cancha-label i,
 [data-bs-theme="dark"] .tinted-head-meta i {
     color: hsl(var(--cancha-hue) 50% 65%);
+}
+
+.jornada-card-wrapper.is-frozen .jornada-card {
+    opacity: 0.85;
+}
+.jornada-card-wrapper.is-frozen .jornada-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        color-mix(in srgb, var(--text-muted) 4%, transparent) 10px,
+        color-mix(in srgb, var(--text-muted) 4%, transparent) 20px
+    );
+    border-radius: inherit;
+    pointer-events: none;
+}
+.jornada-card-wrapper.is-frozen .jornada-card { position: relative; }
+.grid-app[data-readonly="1"] .cell-cancha,
+.grid-app[data-readonly="1"] .cancha-pill {
+    cursor: default;
+}
+.grid-app[data-readonly="1"] .grid-cell {
+    cursor: default;
+}
+.grid-app[data-readonly="1"] .cell-cancha:hover,
+.grid-app[data-readonly="1"] .cancha-pill:hover {
+    /* neutralize any hover lift/shadow you have on these */
+    transform: none;
+    box-shadow: none;
 }

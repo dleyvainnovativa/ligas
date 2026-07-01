@@ -10,9 +10,11 @@ use App\Models\League;
 use App\Services\MatchSchedulingService;
 use App\Services\PublicCacheService;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Concerns\GuardsFrozenJornadas;
 
 class GameMatchController extends Controller
 {
+    use GuardsFrozenJornadas;
     public function __construct(private MatchSchedulingService $scheduler) {}
 
     /** Returns the full scheduling-grid payload for a jornada. */
@@ -119,7 +121,7 @@ class GameMatchController extends Controller
     ) {
         $this->authorize('update', $cancha);
         abort_unless($cancha->jornada_id === $jornada->id, 404);
-
+        $this->ensureJornadaEditable($jornada);   // ← add
         $data = $request->validate([
             'rounds'                       => ['required', 'array', 'min:1'],
             'rounds.*.round_id'            => ['required', 'integer'],
@@ -194,7 +196,7 @@ class GameMatchController extends Controller
                 $proposal->match_id === $match->id,
             404
         );
-
+        $this->ensureJornadaEditable($jornada);
         $proposals->reject($proposal);
 
         // \Illuminate\Support\Facades\Cache::forget("public_league:{$league->id}:v2");
@@ -212,7 +214,7 @@ class GameMatchController extends Controller
     ) {
         $this->authorize('update', $jornada);
         abort_unless($jornada->group_id === $group->id && $group->league_id === $league->id, 404);
-
+        $this->ensureJornadaEditable($jornada);
         $data = $request->validate([
             'clear_existing' => ['nullable', 'boolean'],
         ]);
