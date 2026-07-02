@@ -105,6 +105,17 @@ class PublicLeagueController extends Controller
     {
         $playerNames = $league->players()->pluck('full_name', 'id');
         $current = $this->findCurrentJornadaNumber($league);
+        $anyJornadas = $league->groups->flatMap->jornadas->isNotEmpty();
+        $noCurrentReason = null;
+        if (!$current) {
+            if ($league->status === 'completed') {
+                $noCurrentReason = 'completed';
+            } elseif (!$anyJornadas) {
+                $noCurrentReason = 'not_started';   // no jornadas created at all
+            } else {
+                $noCurrentReason = 'no_pending';    // jornadas exist but none pending/assigned
+            }
+        }
         $promo = app(\App\Services\PromotionRelegationService::class);
 
         $groupsPayload = [];
@@ -115,6 +126,7 @@ class PublicLeagueController extends Controller
 
             $breakdown = [];
             $complete = false;
+            $canchas   = collect();
 
             if ($currentJornada) {
                 $raw = $promo->jornadaBreakdown($currentJornada, (int) $league->promotion_relegation);
@@ -192,9 +204,11 @@ class PublicLeagueController extends Controller
             ->where('status', Cancha::STATUS_COMPLETED)
             ->count();
 
+
         return [
             'groups'           => $groupsPayload,
             'current_jornada'  => $current,
+            'no_current_reason' => $noCurrentReason,
             'stats' => [
                 'players'           => $league->players()->count(),
                 'groups'            => $league->groups->count(),

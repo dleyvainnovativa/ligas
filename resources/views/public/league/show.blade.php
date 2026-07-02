@@ -56,8 +56,26 @@
 @else
 <section class="public-section">
     <div class="public-empty-big">
+        @switch($payload['no_current_reason'] ?? null)
+        @case('completed')
+        <i class="fa-solid fa-flag-checkered"></i>
+        <p class="mb-0">Esta liga ha terminado. ¡Gracias por participar!</p>
+        @break
+
+        @case('not_started')
+        <i class="fa-solid fa-hourglass-start"></i>
+        <p class="mb-0">Esta liga aún no comienza. Pronto se publicarán las jornadas.</p>
+        @break
+
+        @case('no_pending')
         <i class="fa-solid fa-circle-check"></i>
-        <p class="mb-0">Esta liga {{ $league->status === 'completed' ? 'ha terminado' : 'aún no comienza' }}.</p>
+        <p class="mb-0">No hay más jornadas asignadas por el momento. Vuelve pronto para la siguiente.</p>
+        @break
+
+        @default
+        <i class="fa-solid fa-circle-info"></i>
+        <p class="mb-0">No hay información disponible en este momento.</p>
+        @endswitch
     </div>
 </section>
 @endif

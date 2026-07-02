@@ -3559,6 +3559,7 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     font-size: 13px;
 }
 .public-empty-big {
+    justify-items: center;
     text-align: center;
     padding: var(--space-8) var(--space-3);
     color: var(--text-muted);
