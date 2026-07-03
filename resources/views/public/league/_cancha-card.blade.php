@@ -51,7 +51,7 @@ $allCompleted = $m['status'] === 'completed';
             @else
             <span class="vs">vs</span>
             @endif
-            <span class="text-end{{ $bWinner ? 'is-winner' : '' }}">{{ implode(' / ', $round['team_b']) }}</span>
+            <span class="text-end {{ $bWinner ? 'is-winner' : '' }}">{{ implode(' / ', $round['team_b']) }}</span>
         </div>
         @if ($proposal && !$hasResult)
         <div class="proposal-banner">
