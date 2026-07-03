@@ -523,11 +523,12 @@ class PublicLeagueController extends Controller
     ) {
         $league = $this->loadLeague($slug);
 
-        $payload = Cache::remember(
-            "public_league:{$league->id}:jornada:{$number}:standings:v1",
-            60,
-            fn() => $this->buildJornadaStandingsPayload($league, $number, $promo)
-        );
+        // $payload = Cache::remember(
+        //     "public_league:{$league->id}:jornada:{$number}:standings:v1",
+        //     60,
+        //     fn() => $this->buildJornadaStandingsPayload($league, $number, $promo)
+        // );
+        $payload = $this->buildJornadaStandingsPayload($league, $number, $promo);
 
         if (!$payload) abort(404);
 
@@ -591,11 +592,12 @@ class PublicLeagueController extends Controller
         $player = $league->players()->find($playerId);
         if (!$player) abort(404);
 
-        $payload = Cache::remember(
-            "public_league:{$league->id}:jugador:{$playerId}:v1",
-            60,
-            fn() => $this->buildJugadorPayload($league, $player, $promo)
-        );
+        // $payload = Cache::remember(
+        //     "public_league:{$league->id}:jugador:{$playerId}:v1",
+        //     60,
+        //     fn() => $this->buildJugadorPayload($league, $player, $promo)
+        // );
+        $payload = $this->buildJugadorPayload($league, $player, $promo);
 
         return view('public.league.jugador', [
             'league'      => $league,
