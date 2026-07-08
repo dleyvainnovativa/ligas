@@ -20,6 +20,8 @@ $isPairs = $league->format === \App\Models\League::FORMAT_PAIRS;
                     <th class="text-center">Sets</th>
                     <th class="text-center">Games</th>
                     @unless ($isPairs)<th class="text-center" title="No shows">NS</th>@endunless
+                    @unless ($isPairs)<th class="text-center" title="Suplentes">Sup</th>@endunless
+
                     <th class="text-end">Pts</th>
                 </tr>
             </thead>
@@ -43,10 +45,9 @@ $isPairs = $league->format === \App\Models\League::FORMAT_PAIRS;
                     @unless ($isPairs)
                     <td class="text-center">
                         {{ $row['no_shows'] }}
-                        @if (($row['penalty_points'] ?? 0) > 0)
-                        <small class="text-danger">(-{{ $row['penalty_points'] }})</small>
-                        @endif
                     </td>
+                    <td class="text-center">{{ $row['suplentes'] ?? 0 }}</td>
+
                     @endunless
                     <td class="text-end fw-bold">{{ $row['points'] }}</td>
                 </tr>
@@ -77,6 +78,7 @@ $isPairs = $league->format === \App\Models\League::FORMAT_PAIRS;
                 Games {{ $row['games_for'] }}–{{ $row['games_against'] }}
                 @unless ($isPairs)
                 @if (($row['no_shows'] ?? 0) > 0) · NS: {{ $row['no_shows'] }} @endif
+                @if (($row['suplentes'] ?? 0) > 0) · Sup: {{ $row['suplentes'] }} @endif
                 @endunless
             </div>
         </div>

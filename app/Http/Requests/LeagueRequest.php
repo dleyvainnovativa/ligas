@@ -56,6 +56,8 @@ class LeagueRequest extends FormRequest
                 }
             }],
             'promotion_relegation' => ['required', 'integer', 'min:1', 'max:4'],
+            'standings_order'   => ['nullable', 'array'],
+            'standings_order.*' => ['string', 'in:diff,won,rounds'],
         ];
     }
 

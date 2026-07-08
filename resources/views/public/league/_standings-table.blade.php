@@ -30,7 +30,14 @@
                     @endif
                 </td>
                 <td class="text-end font-mono">{{ $row['jornadas_played'] }}</td>
-                <td class="text-end font-mono fw-bold">{{ $row['won'] }}</td>
+                <td class="text-end font-mono fw-bold">
+                    {{ $row['won'] }}
+                    @if (($row['penalty'] ?? 0) > 0)
+                    <small class="text-danger d-block" style="font-weight:400;font-size:10px;line-height:1;">
+                        {{ $row['won_raw'] }} − {{ $row['penalty'] }}
+                    </small>
+                    @endif
+                </td>
                 <td class="text-end font-mono text-muted">{{ $row['lost'] }}</td>
                 <td class="text-end font-mono {{ $row['diff'] > 0 ? 'text-success' : ($row['diff'] < 0 ? 'text-danger' : 'text-muted') }}">
                     {{ $row['diff'] > 0 ? '+' : '' }}{{ $row['diff'] }}
@@ -52,6 +59,9 @@
             <small class="text-muted">
                 @if ($row['current_position']) Cancha {{ $row['current_position'] }} · @endif
                 {{ $row['jornadas_played'] }} jornadas · {{ $row['won'] }}G / {{ $row['lost'] }}P
+                @if (($row['penalty'] ?? 0) > 0)
+                <span class="text-danger">· −{{ $row['penalty'] }} pen.</span>
+                @endif
             </small>
         </div>
         <div class="public-standing-points">

@@ -54,10 +54,11 @@ class StandingsService
             $tally = $m->tally();
             $teamA = $m->team_a_player_ids ?? [];
             $teamB = $m->team_b_player_ids ?? [];
-            $noShow = $m->no_show_player_ids ?? [];
+            $noShow   = $m->no_show_player_ids ?? [];
+            $suplente = $m->suplente_player_ids ?? [];
 
-            $this->applyIndividualMatch($rows, $teamA, $tally['games_a'], $tally['games_b'], $tally['sets_a'], $tally['sets_b'], $m->winner === 'a', $m->winner === 'b', $noShow, $league);
-            $this->applyIndividualMatch($rows, $teamB, $tally['games_b'], $tally['games_a'], $tally['sets_b'], $tally['sets_a'], $m->winner === 'b', $m->winner === 'a', $noShow, $league);
+            $this->applyIndividualMatch($rows, $teamA, $tally['games_a'], $tally['games_b'], $tally['sets_a'], $tally['sets_b'], $m->winner === 'a', $m->winner === 'b', $noShow, $suplente, $league);
+            $this->applyIndividualMatch($rows, $teamB, $tally['games_b'], $tally['games_a'], $tally['sets_b'], $tally['sets_a'], $m->winner === 'b', $m->winner === 'a', $noShow, $suplente, $league);
         }
 
         // Sort: points desc, sets_diff desc, games_diff desc, name asc
@@ -82,6 +83,7 @@ class StandingsService
         bool $won,
         bool $lost,
         array $noShow,
+        array $suplente,
         League $league
     ): void {
         foreach ($teamPlayerIds as $pid) {
@@ -102,6 +104,13 @@ class StandingsService
                 $rows[$pid]['no_shows']++;
                 $rows[$pid]['points'] -= $league->penalty_no_show;
                 $rows[$pid]['penalty_points'] += $league->penalty_no_show;
+            }
+
+            // Penalty: suplente
+            if (in_array($pid, $suplente, true)) {
+                $rows[$pid]['suplentes']++;
+                $rows[$pid]['points'] -= $league->penalty_suplente;
+                $rows[$pid]['penalty_points'] += $league->penalty_suplente;
             }
 
             // Recompute diffs after each update
@@ -125,6 +134,7 @@ class StandingsService
             'sets_against'   => 0,
             'sets_diff'      => 0,
             'no_shows'       => 0,
+            'suplentes'      => 0,   // ← add
             'penalty_points' => 0,
             'points'         => 0,
             'rank'           => null,

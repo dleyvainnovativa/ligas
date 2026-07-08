@@ -58,6 +58,7 @@ class League extends Model
         'points_loss',
         'whatsapp_url',
         'promotion_relegation',
+        'standings_order',
     ];
 
     protected function casts(): array
@@ -75,6 +76,7 @@ class League extends Model
             'points_draw' => 'integer',
             'points_loss' => 'integer',
             'promotion_relegation'   => 'integer',
+            'standings_order' => 'array',
         ];
     }
 
@@ -131,5 +133,21 @@ class League extends Model
     public function cachedActiveAds()
     {
         return $this->activeAds()->get();
+    }
+    /**
+     * The tiebreaker chain for standings + promotion/relegation.
+     * Defaults to diff → games won, which is the current behavior.
+     */
+    public function standingsOrder(): array
+    {
+        $order = $this->standings_order ?: ['diff', 'won'];
+
+        // Sanitize: keep only known metrics, dedupe, ensure non-empty
+        $valid = array_values(array_unique(array_filter(
+            $order,
+            fn($m) => in_array($m, ['diff', 'won', 'rounds'], true)
+        )));
+
+        return $valid ?: ['diff', 'won'];
     }
 }

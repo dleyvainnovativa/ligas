@@ -19,41 +19,10 @@ class PromotionRelegationService
      */
     public function rankCancha(Cancha $cancha): array
     {
-        $cancha->loadMissing('rounds');
-
-        $stats = []; // playerId => ['won' => x, 'lost' => y]
-
-        foreach ($cancha->rounds as $round) {
-            $teamA = $round->team_a_player_ids ?? [];
-            $teamB = $round->team_b_player_ids ?? [];
-            $tally = $round->tally(); // ['games_a', 'games_b', ...]
-
-            $gamesA = $tally['games_a'] ?? 0;
-            $gamesB = $tally['games_b'] ?? 0;
-
-            foreach ($teamA as $pid) {
-                $stats[$pid]['won']  = ($stats[$pid]['won']  ?? 0) + $gamesA;
-                $stats[$pid]['lost'] = ($stats[$pid]['lost'] ?? 0) + $gamesB;
-            }
-            foreach ($teamB as $pid) {
-                $stats[$pid]['won']  = ($stats[$pid]['won']  ?? 0) + $gamesB;
-                $stats[$pid]['lost'] = ($stats[$pid]['lost'] ?? 0) + $gamesA;
-            }
-        }
-
-        // Build sortable rows
-        $rows = collect($stats)->map(fn($s, $pid) => [
-            'player_id' => (int) $pid,
-            'won'       => $s['won'] ?? 0,
-            'lost'      => $s['lost'] ?? 0,
-            'diff'      => ($s['won'] ?? 0) - ($s['lost'] ?? 0),
-        ])->values();
-
-        // Sort: games won desc, then diff desc
-        $sorted = $rows->sortByDesc(fn($r) => [$r['won'], $r['diff']])->values();
-        // $sorted = $rows->sortByDesc(fn ($r) => [$r['diff'], $r['won']])->values();
-
-        return $sorted->pluck('player_id')->all();
+        $chain = $cancha->jornada->group->league->standingsOrder();
+        $stats = array_values($this->canchaPlayerStats($cancha));
+        $sorted = $this->sortByChain($stats, $chain);
+        return array_map(fn($r) => $r['player_id'], $sorted);
     }
 
     /**
@@ -151,7 +120,8 @@ class PromotionRelegationService
      */
     public function jornadaBreakdown(Jornada $jornada, int $movement): array
     {
-        $jornada->loadMissing(['canchas.rounds', 'canchas.players']);
+        $jornada->loadMissing(['canchas.rounds', 'canchas.players', 'group.league']);
+        $chain = $jornada->group->league->standingsOrder();
 
         $canchas = $jornada->canchas
             ->sortBy(fn($c) => $c->position ?? $c->id)
@@ -163,41 +133,35 @@ class PromotionRelegationService
         $out = [];
 
         foreach ($canchas as $i => $cancha) {
-            // Per-player stats for this cancha (won/lost across the 3 rounds)
-            $stats = $this->canchaPlayerStats($cancha);
+            $stats = array_values($this->canchaPlayerStats($cancha));
+            $ordered = $this->sortByChain($stats, $chain);   // ← was sortByDesc([...])
 
-            // Order best-first: won desc, then diff desc
-            $ordered = collect($stats)
-                ->sortByDesc(fn($s) => [$s['won'], $s['diff']])
-                ->values();
-            //         $ordered = collect($stats)
-            // ->sortByDesc(fn ($s) => [$s['diff'], $s['won']])
-            // ->values();
-
-            $size = $ordered->count();
+            $size = count($ordered);
             $m = min($movement, intdiv($size, 2));
 
-            $players = $ordered->map(function ($s, $rankIdx) use ($i, $n, $size, $m) {
+            $players = [];
+            foreach ($ordered as $rankIdx => $s) {
                 $isTop    = $rankIdx < $m;
                 $isBottom = $rankIdx >= ($size - $m);
 
-                // Forward-looking movement, honoring edge canchas
-                $movement = 'stay';
+                $mv = 'stay';
                 if ($isTop && $i > 0) {
-                    $movement = 'up';
+                    $mv = 'up';
                 } elseif ($isBottom && $i < $n - 1) {
-                    $movement = 'down';
+                    $mv = 'down';
                 }
 
-                return [
+                $players[] = [
                     'player_id' => $s['player_id'],
                     'rank'      => $rankIdx + 1,
                     'won'       => $s['won'],
                     'lost'      => $s['lost'],
                     'diff'      => $s['diff'],
-                    'movement'  => $movement,
+                    'rounds'    => $s['rounds'],   // ← now available for display too
+                    'penalty'   => $s['penalty'] ?? 0,           // ← must be here
+                    'movement'  => $mv,
                 ];
-            })->all();
+            }
 
             $out[] = [
                 'cancha_id' => $cancha->id,
@@ -218,8 +182,17 @@ class PromotionRelegationService
      */
     private function canchaPlayerStats(Cancha $cancha): array
     {
-        $cancha->loadMissing('rounds');
+        $cancha->loadMissing(['rounds', 'jornada.group.league']);
+        $league = $cancha->jornada->group->league;
+
+        $penaltyNoShow   = (int) ($league->penalty_no_show   ?? 0);
+        $penaltySuplente = (int) ($league->penalty_suplente ?? 0);
+
         $stats = [];
+
+        // Track which players we've already penalized in THIS cancha, so a flag
+        // (stored on a single round) is only ever applied once per cancha.
+        $penalized = [];
 
         foreach ($cancha->rounds as $round) {
             $teamA = $round->team_a_player_ids ?? [];
@@ -228,29 +201,96 @@ class PromotionRelegationService
             $gamesA = $tally['games_a'] ?? 0;
             $gamesB = $tally['games_b'] ?? 0;
 
+            $aWon = $gamesA > $gamesB;
+            $bWon = $gamesB > $gamesA;
+
             foreach ($teamA as $pid) {
-                $stats[$pid]['won']  = ($stats[$pid]['won']  ?? 0) + $gamesA;
-                $stats[$pid]['lost'] = ($stats[$pid]['lost'] ?? 0) + $gamesB;
+                $stats[$pid]['won']    = ($stats[$pid]['won']    ?? 0) + $gamesA;
+                $stats[$pid]['lost']   = ($stats[$pid]['lost']   ?? 0) + $gamesB;
+                $stats[$pid]['rounds'] = ($stats[$pid]['rounds'] ?? 0) + ($aWon ? 1 : 0);
             }
             foreach ($teamB as $pid) {
-                $stats[$pid]['won']  = ($stats[$pid]['won']  ?? 0) + $gamesB;
-                $stats[$pid]['lost'] = ($stats[$pid]['lost'] ?? 0) + $gamesA;
+                $stats[$pid]['won']    = ($stats[$pid]['won']    ?? 0) + $gamesB;
+                $stats[$pid]['lost']   = ($stats[$pid]['lost']   ?? 0) + $gamesA;
+                $stats[$pid]['rounds'] = ($stats[$pid]['rounds'] ?? 0) + ($bWon ? 1 : 0);
+            }
+
+            // Apply penalties recorded on this round (flags live on one round only)
+            $noShowIds   = $round->no_show_player_ids   ?? [];
+            $suplenteIds = $round->suplente_player_ids ?? [];
+
+            foreach ($noShowIds as $pid) {
+                if (!isset($penalized[$pid]['no_show'])) {
+                    $stats[$pid]['penalty'] = ($stats[$pid]['penalty'] ?? 0) + $penaltyNoShow;
+                    $penalized[$pid]['no_show'] = true;
+                }
+            }
+            foreach ($suplenteIds as $pid) {
+                if (!isset($penalized[$pid]['suplente'])) {
+                    $stats[$pid]['penalty'] = ($stats[$pid]['penalty'] ?? 0) + $penaltySuplente;
+                    $penalized[$pid]['suplente'] = true;
+                }
             }
         }
 
         $out = [];
         foreach ($stats as $pid => $s) {
-            $won = $s['won'] ?? 0;
-            $lost = $s['lost'] ?? 0;
+            $rawWon  = $s['won']     ?? 0;
+            $lost    = $s['lost']    ?? 0;
+            $penalty = $s['penalty'] ?? 0;
+
+            // Subtract penalty from games won. Clamp at 0 so a heavy penalty can't
+            // make "won" negative (which would look absurd in the table).
+            $won = max(0, $rawWon - $penalty);
+
+
             $out[$pid] = [
-                'player_id' => (int) $pid,
-                'won'       => $won,
-                'lost'      => $lost,
-                'diff'      => $won - $lost,
+                'player_id'   => (int) $pid,
+                'won'         => $won,               // penalty already applied
+                'won_raw'     => $rawWon,            // pre-penalty, for display if wanted
+                'lost'        => $lost,
+                'diff'        => $won - $lost,        // flows from penalized "won"
+                'rounds'      => $s['rounds'] ?? 0,
+                'penalty'     => $penalty,           // how much was subtracted
             ];
         }
         return $out;
     }
+
+    /**
+     * Compare two player stat-rows by the league's configured tiebreaker chain.
+     * Returns negative if $a ranks higher, positive if $b ranks higher, 0 if fully tied.
+     * (Follows the usort/spaceship convention: negative = $a first.)
+     *
+     * @param array $a  stat row with keys: won, lost, diff, rounds
+     * @param array $b  same shape
+     * @param array $chain  ordered metric keys, e.g. ['diff','won','rounds']
+     */
+    public function comparePlayers(array $a, array $b, array $chain): int
+    {
+        foreach ($chain as $metric) {
+            // Higher is better for all current metrics → $b <=> $a for descending
+            $cmp = match ($metric) {
+                'diff'   => ($b['diff']   ?? 0) <=> ($a['diff']   ?? 0),
+                'won'    => ($b['won']    ?? 0) <=> ($a['won']    ?? 0),
+                'rounds' => ($b['rounds'] ?? 0) <=> ($a['rounds'] ?? 0),
+                default  => 0,
+            };
+            if ($cmp !== 0) return $cmp;
+        }
+        return 0;
+    }
+
+    /**
+     * Sort a collection/array of player stat-rows (best first) by the chain.
+     * Returns a plain re-indexed array.
+     */
+    public function sortByChain(array $rows, array $chain): array
+    {
+        usort($rows, fn($a, $b) => $this->comparePlayers($a, $b, $chain));
+        return $rows;
+    }
+
     /**
      * Reconstruct a single player's journey across all jornadas in their group(s).
      *
@@ -365,6 +405,9 @@ class PromotionRelegationService
                     $agg[$pid]['won']  += $p['won'];
                     $agg[$pid]['lost'] += $p['lost'];
                     $agg[$pid]['jornadas']++;
+                    // in the aggregation loop, alongside $agg[$pid]['won'] += ...
+                    $agg[$pid]['penalty'] = ($agg[$pid]['penalty'] ?? 0) + ($p['penalty'] ?? 0);
+                    $agg[$pid]['won_raw'] = ($agg[$pid]['won_raw'] ?? 0) + ($p['won_raw'] ?? $p['won']);
 
                     // Track the most recent jornada's cancha as "current"
                     if ($jornada->number >= $agg[$pid]['last_jornada']) {
@@ -388,17 +431,17 @@ class PromotionRelegationService
                 'jornadas_played'  => $a['jornadas'],
                 'current_position' => $a['last_position'],
                 'current_cancha'   => $a['last_label'],
+                'penalty'  => $a['penalty']  ?? 0,
+                'won_raw'  => $a['won_raw']  ?? $a['won'],
             ];
         }
+        $chain = $group->league->standingsOrder();
 
-        // Rank: current cancha asc (1 = top), then games won desc, then diff desc.
-        // Players with no position (never assigned) sink to the bottom.
-        usort($rows, function ($a, $b) {
+        usort($rows, function ($a, $b) use ($chain) {
             $posA = $a['current_position'] ?? PHP_INT_MAX;
             $posB = $b['current_position'] ?? PHP_INT_MAX;
-            if ($posA !== $posB) return $posA <=> $posB;
-            if ($a['won'] !== $b['won']) return $b['won'] <=> $a['won'];
-            return $b['diff'] <=> $a['diff'];
+            if ($posA !== $posB) return $posA <=> $posB;   // cancha ladder first
+            return $this->comparePlayers($a, $b, $chain);   // then configured chain
         });
         // usort($rows, function ($a, $b) {
         //     $posA = $a['current_position'] ?? PHP_INT_MAX;

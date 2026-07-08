@@ -195,27 +195,36 @@ $isEditing = isset($league) && $league->exists;
             </div>
 
             <div class="card-soft p-4 mb-3">
-                <h6 class="mb-1">Puntos por partido <small class="text-secondary">(modo parejas)</small></h6>
+                <h6 class="mb-1">Orden de clasificación (desempate)</h6>
                 <p class="text-secondary small mb-3">
-                    Sistema clásico tipo liga: puntos otorgados a la pareja según el resultado del partido.
+                    Arrastra para ordenar los criterios. El primero decide la posición;
+                    los siguientes rompen empates. Aplica a la tabla y al ascenso/descenso.
                 </p>
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label small">Victoria</label>
-                        <input type="number" name="points_win" min="0" max="10"
-                            class="form-control" value="{{ old('points_win', $league->points_win ?? 3) }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small">Empate</label>
-                        <input type="number" name="points_draw" min="0" max="10"
-                            class="form-control" value="{{ old('points_draw', $league->points_draw ?? 1) }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small">Derrota</label>
-                        <input type="number" name="points_loss" min="0" max="10"
-                            class="form-control" value="{{ old('points_loss', $league->points_loss ?? 0) }}">
-                    </div>
-                </div>
+
+                @php
+                $labels = [
+                'diff' => ['Diferencia de juegos', 'Juegos ganados − perdidos'],
+                'won' => ['Juegos ganados', 'Total de juegos ganados'],
+                'rounds' => ['Rondas ganadas', 'Cuántas rondas ganó'],
+                ];
+                $current = old('standings_order', $league->standingsOrder());
+                // Ensure any metric not in the saved order still appears (at the end)
+                $ordered = array_values(array_unique(array_merge($current, array_keys($labels))));
+                @endphp
+
+                <ul class="standings-order-list" id="standings-order-list">
+                    @foreach ($ordered as $i => $key)
+                    <li class="standings-order-item" data-key="{{ $key }}">
+                        <i class="fa-solid fa-grip-vertical drag-handle"></i>
+                        <span class="standings-order-rank">{{ $i + 1 }}</span>
+                        <div class="standings-order-text">
+                            <strong>{{ $labels[$key][0] }}</strong>
+                            <small class="text-muted">{{ $labels[$key][1] }}</small>
+                        </div>
+                        <input type="hidden" name="standings_order[]" value="{{ $key }}">
+                    </li>
+                    @endforeach
+                </ul>
             </div>
         </div>
 
