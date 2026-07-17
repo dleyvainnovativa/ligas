@@ -205,7 +205,7 @@ $isEditing = isset($league) && $league->exists;
                 $labels = [
                 'diff' => ['Diferencia de juegos', 'Juegos ganados − perdidos'],
                 'won' => ['Juegos ganados', 'Total de juegos ganados'],
-                'rounds' => ['Rondas ganadas', 'Cuántas rondas ganó'],
+                'rounds' => ['Set ganados', 'Cuántas rondas ganó'],
                 ];
                 $current = old('standings_order', $league->standingsOrder());
                 // Ensure any metric not in the saved order still appears (at the end)

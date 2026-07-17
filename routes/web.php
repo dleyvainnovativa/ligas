@@ -31,6 +31,7 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('leagues/{league}')->name('leagues.')->group(function () {
 
+
         // Sedes
         Route::post('sedes',               [SedeController::class, 'store'])->name('sedes.store');
         Route::put('sedes/{sede}',         [SedeController::class, 'update'])->name('sedes.update');
@@ -71,6 +72,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('groups/{group}/jornadas/{jornada}',          [JornadaController::class, 'destroy'])->name('jornadas.destroy');
         Route::post('groups/{group}/jornadas/{jornada}/auto-fill',  [JornadaController::class, 'autoFill'])->name('jornadas.auto-fill');
         Route::get('groups/{group}/jornadas/{jornada}/standings',   [JornadaController::class, 'standings'])->name('jornadas.standings');
+        Route::get('report.pdf', [LeagueController::class, 'reportPdf'])->name('jornadas.summary');
 
         // Canchas (roster: assigning players/pairs into a cancha)
         Route::post('groups/{group}/jornadas/{jornada}/canchas',                [CanchaController::class, 'store'])->name('canchas.store');
@@ -84,6 +86,8 @@ Route::middleware('auth')->group(function () {
         // Scheduling grid (read-only view)
         Route::get('groups/{group}/jornadas/{jornada}/grid', [GameMatchController::class, 'gridIndex'])
             ->name('matches.grid');
+
+
 
         // Cancha-level scheduling (date + time + pista per cancha)
         Route::put(

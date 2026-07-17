@@ -42,7 +42,6 @@ class PublicLeagueController extends Controller
         $payload = $this->buildJornadaPayload($league, $number);
 
         if (!$payload) abort(404);
-
         return view('public.league.jornada', [
             'league'      => $league,
             'payload'     => $payload,
@@ -54,6 +53,8 @@ class PublicLeagueController extends Controller
     {
         $league = $this->loadLeague($slug);
         $payload = $this->buildClasificacionPayload($league);
+
+        // dd($payload);
 
         return view('public.league.clasificacion', [
             'league'      => $league,
@@ -312,7 +313,7 @@ class PublicLeagueController extends Controller
         })->all();
 
         $firstJornada = $jornadas->first()['jornada'];
-
+        // dd($groupsPayload);
         return [
             'number'       => $number,
             'window_start' => $firstJornada->window_start,

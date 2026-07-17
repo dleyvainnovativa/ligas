@@ -60,8 +60,8 @@ $active = $active ?? 'settings';
         </div>
         <div class="panel-meta">
             {{ $league->num_jornadas }} jornadas · ${{ number_format($league->cost, 0) }}
-            · <a href="{{ url('/'.$league->slug) }}" target="_blank" class="text-muted text-decoration-none">
-                /{{ $league->slug }} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:9px;"></i>
+            · <a href="{{ url('/'.$league->slug) }}" target="_blank" class="btn btn-primary btn-sm">
+                URL Pública <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:9px;"></i>
             </a>
         </div>
     </div>

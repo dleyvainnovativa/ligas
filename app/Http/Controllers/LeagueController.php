@@ -41,6 +41,27 @@ class LeagueController extends Controller
         ]);
     }
 
+    public function reportPdf(
+        League $league,
+        \App\Services\LeagueReportService $reports
+    ) {
+        $this->authorize('view', $league);
+
+        $data = $reports->build($league);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('leagues.pdf.report', $data)
+            ->setPaper('a4', 'portrait')
+            ->setOptions([
+                'isRemoteEnabled'      => true,   // allows the banner/logo image
+                'defaultFont'          => 'DejaVu Sans',  // has full accent support
+                'isHtml5ParserEnabled' => true,
+            ]);
+
+        $filename = \Illuminate\Support\Str::slug($league->name) . '-resumen.pdf';
+
+        return $pdf->download($filename);
+    }
+
     public function store(LeagueRequest $request, \App\Services\TierService $tiers)
 
     {

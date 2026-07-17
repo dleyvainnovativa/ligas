@@ -43,9 +43,11 @@ class MatchResultService
                 $match->status    = GameMatch::STATUS_COMPLETED;
                 $match->played_at = $match->played_at ?: now();
             } else {
-                // Empty sets means "clear results"; keep schedule if any
-                // $match->status    = $match->date ? GameMatch::STATUS_SCHEDULED : GameMatch::STATUS_UNSCHEDULED;
+                // No sets with any score → the round was not played.
+                // (Schedule lives on the cancha now, so the round only has pending/completed.)
+                $match->status    = GameMatch::STATUS_PENDING;
                 $match->played_at = null;
+                $match->winner    = null;
             }
 
             $match->save();

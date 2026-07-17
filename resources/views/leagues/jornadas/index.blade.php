@@ -16,11 +16,17 @@
         </small>
         <h5 class="mb-0 mt-1">Jornadas — {{ $group->name }}</h5>
     </div>
+    <div>
+        <a href="{{ route('leagues.jornadas.summary', [$league, $group]) }}"
+            class="btn btn-outline-secondary" target="_blank">
+            <i class="fa-solid fa-file-pdf me-1"></i> Resumen PDF
+        </a>
+        <button class="btn btn-primary btn-sm" id="add-jornada-btn"
+            data-url="{{ route('leagues.jornadas.store', [$league, $group]) }}">
+            <i class="fa-solid fa-plus me-1"></i> Nueva jornada
+        </button>
+    </div>
 
-    <button class="btn btn-primary btn-sm" id="add-jornada-btn"
-        data-url="{{ route('leagues.jornadas.store', [$league, $group]) }}">
-        <i class="fa-solid fa-plus me-1"></i> Nueva jornada
-    </button>
 </div>
 
 <div id="jornadas-list" class="row g-3">

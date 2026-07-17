@@ -6,10 +6,12 @@
                 <th style="width:40px;">#</th>
                 <th>Jugador</th>
                 <th class="text-center">Cancha</th>
-                <th class="text-end">PJ</th>
-                <th class="text-end">Ganados</th>
-                <th class="text-end">Perdidos</th>
-                <th class="text-end">Dif.</th>
+                <th class="text-center" title="Jornadas jugadas">Jornadas</th>
+                <th class="text-center">Sets</th>
+                <th class="text-center">Games</th>
+                <th class="text-center" title="No shows">NS</th>
+                <th class="text-center" title="Suplentes">Sup</th>
+                <th class="text-end">Pts</th>
             </tr>
         </thead>
         <tbody>
@@ -29,17 +31,23 @@
                     <span class="text-muted">—</span>
                     @endif
                 </td>
-                <td class="text-end font-mono">{{ $row['jornadas_played'] }}</td>
-                <td class="text-end font-mono fw-bold">
-                    {{ $row['won'] }}
+                <td class="text-center font-mono">{{ $row['jornadas_played'] }}</td>
+                <td class="text-center font-mono">{{ $row['rounds'] }}</td>
+                <td class="text-center font-mono">
+                    {{ $row['won'] }}–{{ $row['lost'] }}
                     @if (($row['penalty'] ?? 0) > 0)
-                    <small class="text-danger d-block" style="font-weight:400;font-size:10px;line-height:1;">
+                    <small class="text-danger d-block" style="font-size:10px;line-height:1;">
                         {{ $row['won_raw'] }} − {{ $row['penalty'] }}
                     </small>
                     @endif
                 </td>
-                <td class="text-end font-mono text-muted">{{ $row['lost'] }}</td>
-                <td class="text-end font-mono {{ $row['diff'] > 0 ? 'text-success' : ($row['diff'] < 0 ? 'text-danger' : 'text-muted') }}">
+                <td class="text-center font-mono {{ ($row['no_shows'] ?? 0) > 0 ? 'text-danger' : 'text-muted' }}">
+                    {{ $row['no_shows'] ?? 0 }}
+                </td>
+                <td class="text-center font-mono {{ ($row['suplentes'] ?? 0) > 0 ? 'text-warning' : 'text-muted' }}">
+                    {{ $row['suplentes'] ?? 0 }}
+                </td>
+                <td class="text-end font-mono fw-bold {{ $row['diff'] > 0 ? 'text-success' : ($row['diff'] < 0 ? 'text-danger' : '') }}">
                     {{ $row['diff'] > 0 ? '+' : '' }}{{ $row['diff'] }}
                 </td>
             </tr>
@@ -58,17 +66,27 @@
             <strong>{{ $row['name'] }}</strong>
             <small class="text-muted">
                 @if ($row['current_position']) Cancha {{ $row['current_position'] }} · @endif
-                {{ $row['jornadas_played'] }} jornadas · {{ $row['won'] }}G / {{ $row['lost'] }}P
+                {{ $row['rounds'] }} Sets · {{ $row['won'] }}–{{ $row['lost'] }} games
+            </small>
+            @if (($row['no_shows'] ?? 0) > 0 || ($row['suplentes'] ?? 0) > 0)
+            <small class="standing-flags">
+                @if (($row['no_shows'] ?? 0) > 0)
+                <span class="flag-pill is-ns">NS {{ $row['no_shows'] }}</span>
+                @endif
+                @if (($row['suplentes'] ?? 0) > 0)
+                <span class="flag-pill is-sup">Sup {{ $row['suplentes'] }}</span>
+                @endif
                 @if (($row['penalty'] ?? 0) > 0)
-                <span class="text-danger">· −{{ $row['penalty'] }} pen.</span>
+                <span class="flag-pill is-pen">−{{ $row['penalty'] }}</span>
                 @endif
             </small>
+            @endif
         </div>
         <div class="public-standing-points">
             <strong class="{{ $row['diff'] > 0 ? 'text-success' : ($row['diff'] < 0 ? 'text-danger' : '') }}">
                 {{ $row['diff'] > 0 ? '+' : '' }}{{ $row['diff'] }}
             </strong>
-            <small>dif</small>
+            <small>pts</small>
         </div>
     </a>
     @endforeach

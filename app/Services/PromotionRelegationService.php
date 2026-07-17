@@ -155,10 +155,13 @@ class PromotionRelegationService
                     'player_id' => $s['player_id'],
                     'rank'      => $rankIdx + 1,
                     'won'       => $s['won'],
+                    'won_raw'   => $s['won_raw'] ?? $s['won'],
                     'lost'      => $s['lost'],
                     'diff'      => $s['diff'],
-                    'rounds'    => $s['rounds'],   // ← now available for display too
-                    'penalty'   => $s['penalty'] ?? 0,           // ← must be here
+                    'rounds'    => $s['rounds'],
+                    'penalty'   => $s['penalty']   ?? 0,
+                    'no_shows'  => $s['no_shows']  ?? 0,   // ← add
+                    'suplentes' => $s['suplentes'] ?? 0,   // ← add
                     'movement'  => $mv,
                 ];
             }
@@ -252,6 +255,8 @@ class PromotionRelegationService
                 'diff'        => $won - $lost,        // flows from penalized "won"
                 'rounds'      => $s['rounds'] ?? 0,
                 'penalty'     => $penalty,           // how much was subtracted
+                'no_shows'  => $s['no_shows']  ?? 0,   // ← add
+                'suplentes' => $s['suplentes'] ?? 0,   // ← add
             ];
         }
         return $out;
@@ -409,6 +414,12 @@ class PromotionRelegationService
                     $agg[$pid]['penalty'] = ($agg[$pid]['penalty'] ?? 0) + ($p['penalty'] ?? 0);
                     $agg[$pid]['won_raw'] = ($agg[$pid]['won_raw'] ?? 0) + ($p['won_raw'] ?? $p['won']);
 
+                    $agg[$pid]['no_shows']  = ($agg[$pid]['no_shows']  ?? 0) + ($p['no_shows']  ?? 0);   // ← add
+                    $agg[$pid]['suplentes'] = ($agg[$pid]['suplentes'] ?? 0) + ($p['suplentes'] ?? 0);   // ← add
+
+                    $agg[$pid]['rounds']      = ($agg[$pid]['rounds']      ?? 0) + ($p['rounds']      ?? 0);   // ← add
+                    $agg[$pid]['rounds_lost'] = ($agg[$pid]['rounds_lost'] ?? 0) + ($p['rounds_lost'] ?? 0);   // ← add
+
                     // Track the most recent jornada's cancha as "current"
                     if ($jornada->number >= $agg[$pid]['last_jornada']) {
                         $agg[$pid]['last_jornada']  = $jornada->number;
@@ -433,15 +444,23 @@ class PromotionRelegationService
                 'current_cancha'   => $a['last_label'],
                 'penalty'  => $a['penalty']  ?? 0,
                 'won_raw'  => $a['won_raw']  ?? $a['won'],
+                'no_shows'  => $a['no_shows']  ?? 0,   // ← add
+                'suplentes' => $a['suplentes'] ?? 0,   // ← add
+                'rounds'      => $a['rounds']      ?? 0,   // ← add (rounds won)
+                'rounds_lost' => $a['rounds_lost'] ?? 0,   // ← add
+
             ];
         }
         $chain = $group->league->standingsOrder();
 
+        // usort($rows, function ($a, $b) use ($chain) {
+        //     $posA = $a['current_position'] ?? PHP_INT_MAX;
+        //     $posB = $b['current_position'] ?? PHP_INT_MAX;
+        //     if ($posA !== $posB) return $posA <=> $posB;   // cancha ladder first
+        //     return $this->comparePlayers($a, $b, $chain);   // then configured chain
+        // });
         usort($rows, function ($a, $b) use ($chain) {
-            $posA = $a['current_position'] ?? PHP_INT_MAX;
-            $posB = $b['current_position'] ?? PHP_INT_MAX;
-            if ($posA !== $posB) return $posA <=> $posB;   // cancha ladder first
-            return $this->comparePlayers($a, $b, $chain);   // then configured chain
+            return $this->comparePlayers($a, $b, $chain);
         });
         // usort($rows, function ($a, $b) {
         //     $posA = $a['current_position'] ?? PHP_INT_MAX;
@@ -450,7 +469,6 @@ class PromotionRelegationService
         //     if ($a['diff'] !== $b['diff']) return $b['diff'] <=> $a['diff'];  // diff first
         //     return $b['won'] <=> $a['won'];                                    // games won as tiebreaker
         // });
-
         return $rows;
     }
 }
