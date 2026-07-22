@@ -18,7 +18,7 @@
     </div>
     <div>
         <a href="{{ route('leagues.jornadas.summary', [$league, $group]) }}"
-            class="btn btn-outline-secondary" target="_blank">
+            class="btn btn-outline-secondary">
             <i class="fa-solid fa-file-pdf me-1"></i> Resumen PDF
         </a>
         <button class="btn btn-primary btn-sm" id="add-jornada-btn"

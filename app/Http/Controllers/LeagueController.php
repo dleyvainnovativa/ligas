@@ -49,12 +49,16 @@ class LeagueController extends Controller
 
         $data = $reports->build($league);
 
+        // dd(asset('img/logo.jpg'), public_path('img/logo.jpg'));
+        // return view('leagues.pdf.report', $data);
+
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('leagues.pdf.report', $data)
             ->setPaper('a4', 'portrait')
             ->setOptions([
                 'isRemoteEnabled'      => true,   // allows the banner/logo image
                 'defaultFont'          => 'DejaVu Sans',  // has full accent support
                 'isHtml5ParserEnabled' => true,
+                'chroot'               => public_path(),
             ]);
 
         $filename = \Illuminate\Support\Str::slug($league->name) . '-resumen.pdf';

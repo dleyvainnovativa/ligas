@@ -31,7 +31,7 @@
         }
 
         .group-block {
-            page-break-before: always;
+            /* page-break-before: always; */
         }
 
         .group-block:first-of-type {
@@ -142,16 +142,25 @@
 <body>
 
     <div class="header">
-        <h1>{{ $league->name }}</h1>
-        <div class="meta">
-            {{ $league->format === 'pairs' ? 'Parejas' : 'Individual' }}
-            · {{ $league->num_jornadas }} jornadas
-            · Generado el {{ $generated_at }}
-        </div>
+        <table style="width:100%; border:0;">
+            <tr>
+                <td style="border:0; vertical-align:middle;">
+                    <h1 style="margin:0 0 4px 0;">{{ $league->name }}</h1>
+                    <div class="meta">
+                        {{ $league->format === 'pairs' ? 'Parejas' : 'Individual' }}
+                        · {{ $league->num_jornadas }} jornadas
+                        · Generado el {{ $generated_at }}
+                    </div>
+                </td>
+                <td style="border:0; width:60px; vertical-align:middle;">
+                    <img src="{{ public_path('img/logo.png') }}" style="height:48px; width:auto;" alt="">
+                </td>
+            </tr>
+        </table>
     </div>
 
     @foreach ($groups as $g)
-    <div class="group-block">
+    <div class="group-block" @if(!$loop->first) style="page-break-before: always;" @endif>
         <h2 class="group-title">{{ $g['name'] }}</h2>
 
         {{-- FINAL STANDINGS FIRST (most important, top of the page) --}}
