@@ -60,6 +60,7 @@ class StandingsService
             $this->applyIndividualMatch($rows, $teamA, $tally['games_a'], $tally['games_b'], $tally['sets_a'], $tally['sets_b'], $m->winner === 'a', $m->winner === 'b', $noShow, $suplente, $league);
             $this->applyIndividualMatch($rows, $teamB, $tally['games_b'], $tally['games_a'], $tally['sets_b'], $tally['sets_a'], $m->winner === 'b', $m->winner === 'a', $noShow, $suplente, $league);
         }
+        // dd($rows);
 
         // Sort: points desc, sets_diff desc, games_diff desc, name asc
         $list = array_values($rows);
@@ -89,6 +90,7 @@ class StandingsService
         foreach ($teamPlayerIds as $pid) {
             if (!isset($rows[$pid])) continue; // player moved out of the group — historical match doesn't count
             $rows[$pid]['played']++;
+            $rows[$pid]['games_raw']     += $gamesFor;
             $rows[$pid]['games_for']     += $gamesFor;
             $rows[$pid]['games_against'] += $gamesAgainst;
             $rows[$pid]['sets_for']      += $setsFor;
@@ -97,11 +99,12 @@ class StandingsService
             if ($lost) $rows[$pid]['losses']++;
 
             // Individual scoring: games won = points
-            $rows[$pid]['points'] += $gamesFor;
 
             // Penalty: no-show
             if (in_array($pid, $noShow, true)) {
                 $rows[$pid]['no_shows']++;
+                $rows[$pid]['games_for'] -= $league->penalty_no_show;
+                // $gamesFor -= $league->penalty_no_show;
                 $rows[$pid]['points'] -= $league->penalty_no_show;
                 $rows[$pid]['penalty_points'] += $league->penalty_no_show;
             }
@@ -109,11 +112,15 @@ class StandingsService
             // Penalty: suplente
             if (in_array($pid, $suplente, true)) {
                 $rows[$pid]['suplentes']++;
+                $rows[$pid]['games_for'] -= $league->penalty_suplente;
+                // $gamesFor -= $league->penalty_suplente;
                 $rows[$pid]['points'] -= $league->penalty_suplente;
                 $rows[$pid]['penalty_points'] += $league->penalty_suplente;
             }
+            $rows[$pid]['points'] += $gamesFor;
 
             // Recompute diffs after each update
+            $rows[$pid]['points'] = $rows[$pid]['games_for'] - $rows[$pid]['games_against'];
             $rows[$pid]['games_diff'] = $rows[$pid]['games_for'] - $rows[$pid]['games_against'];
             $rows[$pid]['sets_diff']  = $rows[$pid]['sets_for']  - $rows[$pid]['sets_against'];
         }
@@ -127,6 +134,7 @@ class StandingsService
             'played'         => 0,
             'wins'           => 0,
             'losses'         => 0,
+            'games_raw'      => 0,
             'games_for'      => 0,
             'games_against'  => 0,
             'games_diff'     => 0,

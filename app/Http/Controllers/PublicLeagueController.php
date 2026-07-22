@@ -329,7 +329,6 @@ class PublicLeagueController extends Controller
     {
         $promo = app(\App\Services\PromotionRelegationService::class);
         $playerNames = $league->players()->pluck('full_name', 'id');
-
         $groupsPayload = [];
         foreach ($league->groups as $group) {
             $groupsPayload[] = [

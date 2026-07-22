@@ -224,18 +224,19 @@ class PromotionRelegationService
 
             foreach ($noShowIds as $pid) {
                 if (!isset($penalized[$pid]['no_show'])) {
-                    $stats[$pid]['penalty'] = ($stats[$pid]['penalty'] ?? 0) + $penaltyNoShow;
+                    $stats[$pid]['penalty']  = ($stats[$pid]['penalty']  ?? 0) + $penaltyNoShow;
+                    $stats[$pid]['no_shows'] = ($stats[$pid]['no_shows'] ?? 0) + 1;   // ← add
                     $penalized[$pid]['no_show'] = true;
                 }
             }
             foreach ($suplenteIds as $pid) {
                 if (!isset($penalized[$pid]['suplente'])) {
-                    $stats[$pid]['penalty'] = ($stats[$pid]['penalty'] ?? 0) + $penaltySuplente;
+                    $stats[$pid]['penalty']   = ($stats[$pid]['penalty']   ?? 0) + $penaltySuplente;
+                    $stats[$pid]['suplentes'] = ($stats[$pid]['suplentes'] ?? 0) + 1;   // ← add
                     $penalized[$pid]['suplente'] = true;
                 }
             }
         }
-
         $out = [];
         foreach ($stats as $pid => $s) {
             $rawWon  = $s['won']     ?? 0;
@@ -393,7 +394,6 @@ class PromotionRelegationService
 
         foreach ($group->jornadas->sortBy('number') as $jornada) {
             $breakdown = $this->jornadaBreakdown($jornada, $movement);
-
             foreach ($breakdown as $cancha) {
                 foreach ($cancha['players'] as $p) {
                     $pid = $p['player_id'];
@@ -429,7 +429,6 @@ class PromotionRelegationService
                 }
             }
         }
-
         // Build rows
         $rows = [];
         foreach ($agg as $pid => $a) {

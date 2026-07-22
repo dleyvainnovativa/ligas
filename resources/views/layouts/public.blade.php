@@ -37,6 +37,9 @@
                     <h1>{{ $league->name }}</h1>
                 </a>
 
+                @include('public.league._social-links', ['variant' => 'header'])
+
+
                 @if ($league->whatsapp_url)
                 <a href="{{ $league->whatsapp_url }}" target="_blank" rel="noopener noreferrer"
                     class="public-hero-whatsapp" title="Unirse al grupo de WhatsApp" aria-label="WhatsApp">
@@ -108,6 +111,8 @@
 
         <footer class="public-footer fixed-bottom">
             <div class="public-footer-inner">
+                @include('public.league._social-links', ['variant' => 'footer'])
+
                 <small class="text-secondary">
                     Powered by PlayWinners
                 </small>
