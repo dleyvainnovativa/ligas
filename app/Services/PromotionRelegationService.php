@@ -159,6 +159,7 @@ class PromotionRelegationService
                     'lost'      => $s['lost'],
                     'diff'      => $s['diff'],
                     'rounds'    => $s['rounds'],
+                    'rounds_lost' => $s['rounds_lost'] ?? 0,   // ← must be here
                     'penalty'   => $s['penalty']   ?? 0,
                     'no_shows'  => $s['no_shows']  ?? 0,   // ← add
                     'suplentes' => $s['suplentes'] ?? 0,   // ← add
@@ -211,11 +212,13 @@ class PromotionRelegationService
                 $stats[$pid]['won']    = ($stats[$pid]['won']    ?? 0) + $gamesA;
                 $stats[$pid]['lost']   = ($stats[$pid]['lost']   ?? 0) + $gamesB;
                 $stats[$pid]['rounds'] = ($stats[$pid]['rounds'] ?? 0) + ($aWon ? 1 : 0);
+                $stats[$pid]['rounds_lost'] = ($stats[$pid]['rounds_lost'] ?? 0) + ($bWon ? 1 : 0);
             }
             foreach ($teamB as $pid) {
                 $stats[$pid]['won']    = ($stats[$pid]['won']    ?? 0) + $gamesB;
                 $stats[$pid]['lost']   = ($stats[$pid]['lost']   ?? 0) + $gamesA;
                 $stats[$pid]['rounds'] = ($stats[$pid]['rounds'] ?? 0) + ($bWon ? 1 : 0);
+                $stats[$pid]['rounds_lost'] = ($stats[$pid]['rounds_lost'] ?? 0) + ($aWon ? 1 : 0);
             }
 
             // Apply penalties recorded on this round (flags live on one round only)
@@ -243,21 +246,24 @@ class PromotionRelegationService
             $lost    = $s['lost']    ?? 0;
             $penalty = $s['penalty'] ?? 0;
 
-            // Subtract penalty from games won. Clamp at 0 so a heavy penalty can't
-            // make "won" negative (which would look absurd in the table).
-            $won = max(0, $rawWon - $penalty);
-
+            // New rule: if the player was penalized in this cancha, the games
+            // don't count — the cancha contributes exactly -penalty.
+            // Otherwise the normal game difference applies.
+            $won  = $rawWon;
+            $diff = $penalty > 0
+                ? -$penalty
+                : $rawWon - $lost;
 
             $out[$pid] = [
                 'player_id'   => (int) $pid,
-                'won'         => $won,               // penalty already applied
-                'won_raw'     => $rawWon,            // pre-penalty, for display if wanted
+                'won'         => $won,       // raw games won (not reduced)
+                'won_raw'     => $rawWon,
                 'lost'        => $lost,
-                'diff'        => $won - $lost,        // flows from penalized "won"
+                'diff'        => $diff,      // -penalty when penalized, else game diff
                 'rounds'      => $s['rounds'] ?? 0,
-                'penalty'     => $penalty,           // how much was subtracted
-                'no_shows'  => $s['no_shows']  ?? 0,   // ← add
-                'suplentes' => $s['suplentes'] ?? 0,   // ← add
+                'penalty'     => $penalty,
+                'no_shows'    => $s['no_shows']  ?? 0,
+                'suplentes'   => $s['suplentes'] ?? 0,
             ];
         }
         return $out;
@@ -409,6 +415,7 @@ class PromotionRelegationService
                     }
                     $agg[$pid]['won']  += $p['won'];
                     $agg[$pid]['lost'] += $p['lost'];
+                    $agg[$pid]['diff'] = ($agg[$pid]['diff'] ?? 0) + ($p['diff'] ?? 0);   // ← add
                     $agg[$pid]['jornadas']++;
                     // in the aggregation loop, alongside $agg[$pid]['won'] += ...
                     $agg[$pid]['penalty'] = ($agg[$pid]['penalty'] ?? 0) + ($p['penalty'] ?? 0);
@@ -437,7 +444,7 @@ class PromotionRelegationService
                 'name'             => $playerNames[$pid] ?? '—',
                 'won'              => $a['won'],
                 'lost'             => $a['lost'],
-                'diff'             => $a['won'] - $a['lost'],
+                'diff'  => $a['diff'] ?? 0,        // ← was: $a['won'] - $a['lost']
                 'jornadas_played'  => $a['jornadas'],
                 'current_position' => $a['last_position'],
                 'current_cancha'   => $a['last_label'],

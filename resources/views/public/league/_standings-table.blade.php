@@ -35,11 +35,11 @@
                 <td class="text-center font-mono">{{ $row['rounds'] }}</td>
                 <td class="text-center font-mono">
                     {{ $row['won'] }}–{{ $row['lost'] }}
-                    @if (($row['penalty'] ?? 0) > 0)
+                    <!-- @if (($row['penalty'] ?? 0) > 0)
                     <small class="text-danger d-block" style="font-size:10px;line-height:1;">
                         {{ $row['won_raw'] }} − {{ $row['penalty'] }}
                     </small>
-                    @endif
+                    @endif -->
                 </td>
                 <td class="text-center font-mono {{ ($row['no_shows'] ?? 0) > 0 ? 'text-danger' : 'text-muted' }}">
                     {{ $row['no_shows'] ?? 0 }}
