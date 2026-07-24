@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GameMatchController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\JornadaController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LeagueController;
 use App\Http\Controllers\PairController;
 use App\Http\Controllers\PistaController;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn() => redirect()->route('dashboard'));
 
 // Auth
+Route::get('/landing', [LandingController::class, 'index'])->name('landing');
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/auth/session', [AuthController::class, 'sessionLogin'])->name('auth.session');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
