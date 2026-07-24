@@ -114,10 +114,16 @@ class CanchaController extends Controller
             $affected = $this->canchas->affectedByUnassignPlayer($jornada, $player);
             if ($guard = $this->maybeConfirm($affected, $data)) return $guard;
 
-            DB::transaction(function () use ($affected, $player, $jornada) {
+            $touched = $this->canchas->touchedByUnassignPlayer($jornada, $player);   // ← before
+
+            DB::transaction(function () use ($affected, $player, $jornada, $touched) {
                 foreach ($affected as $c) $this->canchas->resetCanchaScheduleAndResults($c);
                 $this->canchas->unassignPlayer($player, $jornada);
+
+                $scheduler = app(\App\Services\MatchSchedulingService::class);
+                foreach ($touched as $c) $scheduler->rebuildRounds($c->fresh());   // ← after
             });
+
             app(PublicCacheService::class)->bust($league);
             return response()->json(['ok' => true]);
         }
@@ -127,11 +133,17 @@ class CanchaController extends Controller
         $affected = $this->canchas->affectedByAssignPlayer($cancha, $player);
         if ($guard = $this->maybeConfirm($affected, $data)) return $guard;
 
+        $touched = $this->canchas->touchedByAssignPlayer($cancha, $player);   // ← before
+
         $slot = null;
-        DB::transaction(function () use ($affected, $cancha, $player, $data, &$slot) {
+        DB::transaction(function () use ($affected, $cancha, $player, $data, &$slot, $touched) {
             foreach ($affected as $c) $this->canchas->resetCanchaScheduleAndResults($c);
             $slot = $this->canchas->assignPlayer($cancha, $player, $data['preferred_slot'] ?? null);
+
+            $scheduler = app(\App\Services\MatchSchedulingService::class);
+            foreach ($touched as $c) $scheduler->rebuildRounds($c->fresh());   // ← after
         });
+
         app(PublicCacheService::class)->bust($league);
         return response()->json(['ok' => true, 'slot' => $slot]);
     }
@@ -151,12 +163,12 @@ class CanchaController extends Controller
             $source = $league->pairs()->findOrFail($data['source_pair_id']);
             $target = $league->pairs()->findOrFail($data['target_pair_id']);
 
-            $affected = $this->canchas->affectedBySwapPairs($jornada, $source, $target);
+            $affected = $this->canchas->affectedBySwapPlayers($jornada, $source, $target);
             if ($guard = $this->maybeConfirm($affected, $data)) return $guard;
 
             DB::transaction(function () use ($affected, $jornada, $source, $target) {
                 foreach ($affected as $c) $this->canchas->resetCanchaScheduleAndResults($c);
-                $this->canchas->swapPairs($jornada, $source, $target);
+                $this->canchas->swapPlayers($jornada, $source, $target);
             });
             app(PublicCacheService::class)->bust($league);
             return response()->json(['ok' => true]);
@@ -173,10 +185,16 @@ class CanchaController extends Controller
         $affected = $this->canchas->affectedBySwapPlayers($jornada, $source, $target);
         if ($guard = $this->maybeConfirm($affected, $data)) return $guard;
 
-        DB::transaction(function () use ($affected, $jornada, $source, $target) {
+        $touched = $this->canchas->touchedBySwapPlayers($jornada, $source, $target);   // ← before
+
+        DB::transaction(function () use ($affected, $jornada, $source, $target, $touched) {
             foreach ($affected as $c) $this->canchas->resetCanchaScheduleAndResults($c);
             $this->canchas->swapPlayers($jornada, $source, $target);
+
+            $scheduler = app(\App\Services\MatchSchedulingService::class);
+            foreach ($touched as $c) $scheduler->rebuildRounds($c->fresh());   // ← after
         });
+
         app(PublicCacheService::class)->bust($league);
         return response()->json(['ok' => true]);
     }

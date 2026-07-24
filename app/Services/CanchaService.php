@@ -473,4 +473,52 @@ class CanchaService
             ? collect([$cancha])
             : collect();
     }
+
+
+    /** All canchas whose player set changes, regardless of schedule state. */
+    public function touchedByAssignPlayer(Cancha $destination, Player $player): \Illuminate\Support\Collection
+    {
+        $jornadaId = $destination->jornada_id;
+
+        $currentCanchaId = DB::table('cancha_player')
+            ->whereIn('cancha_id', function ($q) use ($jornadaId) {
+                $q->select('id')->from('canchas')->where('jornada_id', $jornadaId);
+            })
+            ->where('player_id', $player->id)
+            ->value('cancha_id');
+
+        return collect([$destination->id, $currentCanchaId])
+            ->filter()->unique()
+            ->map(fn($id) => Cancha::find($id))
+            ->filter()
+            ->values();
+    }
+
+    public function touchedBySwapPlayers(Jornada $jornada, Player $source, Player $target): \Illuminate\Support\Collection
+    {
+        $canchaIds = $jornada->canchas()->pluck('id');
+
+        $sourceCanchaId = DB::table('cancha_player')
+            ->whereIn('cancha_id', $canchaIds)->where('player_id', $source->id)->value('cancha_id');
+        $targetCanchaId = DB::table('cancha_player')
+            ->whereIn('cancha_id', $canchaIds)->where('player_id', $target->id)->value('cancha_id');
+
+        return collect([$sourceCanchaId, $targetCanchaId])
+            ->filter()->unique()
+            ->map(fn($id) => Cancha::find($id))
+            ->filter()
+            ->values();
+    }
+
+    public function touchedByUnassignPlayer(Jornada $jornada, Player $player): \Illuminate\Support\Collection
+    {
+        $canchaId = DB::table('cancha_player')
+            ->whereIn('cancha_id', $jornada->canchas()->pluck('id'))
+            ->where('player_id', $player->id)
+            ->value('cancha_id');
+
+        return $canchaId
+            ? collect([Cancha::find($canchaId)])->filter()->values()
+            : collect();
+    }
 }

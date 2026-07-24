@@ -28,6 +28,28 @@ class MatchSchedulingService
         }
     }
 
+    /**
+     * Rebuild a cancha's rounds from its CURRENT player assignment.
+     *
+     * Rounds cache player IDs in team_a/team_b JSON, so a roster change leaves
+     * them stale — the manager view (pivot) and the public standings (rounds)
+     * then disagree. This deletes and recreates them from the pivot.
+     */
+    public function rebuildRounds(Cancha $cancha): void
+    {
+        DB::transaction(function () use ($cancha) {
+            $roundIds = $cancha->rounds()->pluck('id');
+
+            if ($roundIds->isNotEmpty()) {
+                \App\Models\MatchScoreProposal::whereIn('match_id', $roundIds)->delete();
+                GameMatch::whereIn('id', $roundIds)->delete();
+            }
+
+            // With no rounds left, ensureRounds() builds all of them fresh
+            $this->ensureRounds($cancha->fresh());
+        });
+    }
+
     // Backward-compat alias for older code that still calls ensureMatches
     public function ensureMatches(Cancha $cancha): void
     {
@@ -54,13 +76,14 @@ class MatchSchedulingService
 
     private function ensureIndividualRounds(Cancha $cancha, array $existing): void
     {
-        $bySlot = [];
-        foreach ($cancha->players as $p) {
-            $bySlot[$p->pivot->slot] = $p;
-        }
-        if (count(array_filter([1, 2, 3, 4], fn($s) => isset($bySlot[$s]))) < 4) return;
+        // Take players in slot order; don't require slots to be exactly 1,2,3,4.
+        // A swap or partial assignment can leave gaps, and bailing here would
+        // leave the cancha with no rounds at all.
+        $players = $cancha->players->sortBy(fn($p) => $p->pivot->slot)->values();
 
-        [$a, $b, $c, $d] = [$bySlot[1], $bySlot[2], $bySlot[3], $bySlot[4]];
+        if ($players->count() < 4) return;   // genuinely not enough players yet
+
+        [$a, $b, $c, $d] = [$players[0], $players[1], $players[2], $players[3]];
 
         $rotations = [
             1 => [[$a->id, $b->id], [$c->id, $d->id]],

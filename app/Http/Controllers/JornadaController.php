@@ -257,6 +257,12 @@ class JornadaController extends Controller
                 $this->canchas->resetCanchaScheduleAndResults($c);
             }
             $this->canchas->autoFill($jornada);
+
+            // Every cancha's roster changed — rebuild all rounds
+            $scheduler = app(\App\Services\MatchSchedulingService::class);
+            foreach ($jornada->canchas()->get() as $c) {
+                $scheduler->rebuildRounds($c);
+            }
         });
 
         app(\App\Services\PublicCacheService::class)->bust($league);
