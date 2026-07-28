@@ -255,7 +255,7 @@
             <h2>¿Listo para organizar tu próxima liga?</h2>
             <p>Escríbenos y te ayudamos a montar tu primera temporada.</p>
             <div class="landing-cta-row justify-content-center">
-                <a href="https://wa.me/52XXXXXXXXXX" target="_blank" rel="noopener" class="btn btn-lg btn-whatsapp">
+                <a href="https://wa.me/522297450000" target="_blank" rel="noopener" class="btn btn-lg btn-whatsapp">
                     <i class="fa-brands fa-whatsapp me-2"></i> Escríbenos por WhatsApp
                 </a>
                 <a href="mailto:hola@PlayWinners.com" class="btn btn-lg btn-outline-primary">
