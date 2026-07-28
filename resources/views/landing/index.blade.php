@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PlayWinners — Organiza tu liga de pádel sin hojas de cálculo</title>
     <meta name="description" content="Plataforma para clubes de pádel en México: calendario, resultados, ascenso y descenso automático, y una página pública para tus jugadores.">
+    @include("partials.favicons")
+    @include("partials.meta-og")
 
-    <link rel="icon" type="image/png" href="{{ asset('img/icon/favicon-96x96.png') }}" sizes="96x96">
     @include('partials.theme-init')
     @vite(['resources/css/theme.css', 'resources/css/landing.css', 'resources/js/app.js'])
 </head>
@@ -23,6 +24,7 @@
             <div class="landing-nav-links">
                 <a href="#como-funciona">Cómo funciona</a>
                 <a href="#caracteristicas">Características</a>
+                <a href="#quienes-somos">Quiénes Somos</a>
                 <a href="#planes">Planes</a>
                 <a href="#faq">Preguntas</a>
             </div>
@@ -157,6 +159,80 @@
                     </div>
                 </div>
                 @endforeach
+            </div>
+        </div>
+    </section>
+    {{-- ===== QUIÉNES SOMOS ===== --}}
+    <section id="quienes-somos" class="landing-section landing-about">
+        <div class="landing-container">
+            <div class="landing-section-head">
+                <h2>¿Quiénes somos?</h2>
+                <p>Organizar una liga de pádel debería ser tan emocionante como jugarla.</p>
+            </div>
+
+            <div class="row g-4 align-items-start">
+                {{-- Relato principal --}}
+                <div class="col-lg-7">
+                    <p class="landing-about-lead">
+                        En <strong>PlayWinners.pro</strong> somos una plataforma tecnológica
+                        especializada en la gestión y administración de ligas de pádel, diseñada
+                        para simplificar el trabajo de clubes, academias, organizadores y jugadores
+                        con herramientas inteligentes y automatización.
+                    </p>
+                    <p>
+                        Reunimos todo en un solo lugar: creación automática de partidos, Sistema
+                        Americano, tablas de posiciones en tiempo real, rankings individuales y
+                        estadísticas avanzadas. Así transformamos la manera de organizar competencias
+                        y ofrecemos una experiencia moderna, eficiente y profesional.
+                    </p>
+                    <p>
+                        Trabajamos para impulsar el crecimiento del pádel: fortalecer la competencia,
+                        promover el juego limpio y crear una comunidad deportiva más conectada.
+                    </p>
+
+                    {{-- Misión y visión --}}
+                    <div class="row g-4 mt-1">
+                        @foreach ([
+                        ['fa-bullseye', 'Nuestra misión', 'Brindar una plataforma innovadora que facilite la organización de ligas de pádel, optimizando cada etapa de la competencia con tecnología, eficiencia y una excelente experiencia para todos los participantes.'],
+                        ['fa-eye', 'Nuestra visión', 'Ser la plataforma líder en la administración de ligas de pádel en México y Latinoamérica, reconocida por su innovación, confiabilidad y compromiso con el desarrollo del deporte.'],
+                        ] as [$icon, $title, $text])
+                        <div class="col-sm-6">
+                            <div class="landing-about-card">
+                                <span class="landing-feature-icon"><i class="fa-solid {{ $icon }}"></i></span>
+                                <h6>{{ $title }}</h6>
+                                <p>{{ $text }}</p>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Valores --}}
+                <div class="col-lg-5">
+                    <div class="landing-about-values">
+                        <h6 class="landing-about-values-title">Nuestros valores</h6>
+                        <ul>
+                            @foreach ([
+                            ['fa-heart', 'Pasión por el pádel'],
+                            ['fa-lightbulb', 'Innovación constante'],
+                            ['fa-handshake', 'Compromiso con nuestros usuarios'],
+                            ['fa-scale-balanced', 'Transparencia y juego limpio'],
+                            ['fa-rocket', 'Excelencia en el servicio'],
+                            ] as [$icon, $value])
+                            <li>
+                                <i class="fa-solid {{ $icon }}"></i>
+                                <span>{{ $value }}</span>
+                            </li>
+                            @endforeach
+                        </ul>
+
+                        <div class="landing-about-tagline">
+                            <strong>La plataforma inteligente</strong> para organizar, administrar
+                            y hacer crecer tus ligas de pádel.
+                            <span>Organiza. Compite. Gana.</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

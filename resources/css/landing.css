@@ -502,3 +502,111 @@
 [data-bs-theme="dark"] .landing-faq .accordion-button:not(.collapsed)::after {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23edc35f'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
 }
+/* ============================================================
+   QUIÉNES SOMOS
+   ============================================================ */
+
+.landing-about-lead {
+    font-size: 17px;
+    line-height: 1.6;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: var(--space-4);
+}
+.landing-about p {
+    color: var(--text-secondary);
+    margin-bottom: var(--space-4);
+}
+
+/* Misión / visión cards */
+.landing-about-card {
+    background: var(--surface-page);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    height: 100%;
+    transition: all var(--transition-fast);
+}
+.landing-section-alt .landing-about-card { background: var(--surface-card); }
+.landing-about-card:hover { border-color: var(--brand-500); transform: translateY(-2px); }
+.landing-about-card h6 {
+    color: var(--text-primary);
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 15px;
+    font-weight: 700;
+    margin: var(--space-3) 0 6px;
+}
+.landing-about-card p {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Values panel — gold, brand-forward */
+.landing-about-values {
+    background: linear-gradient(150deg, var(--brand-500), var(--brand-700));
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    color: var(--neutral-900);
+    box-shadow: var(--shadow-md);
+}
+.landing-about-values-title {
+    color: var(--neutral-900);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 12px;
+    font-weight: 800;
+    opacity: 0.72;
+    margin-bottom: var(--space-4);
+}
+.landing-about-values ul { list-style: none; padding: 0; margin: 0; }
+.landing-about-values li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+    font-weight: 700;
+    font-size: 14.5px;
+    border-bottom: 1px solid rgba(20, 19, 15, 0.14);
+}
+.landing-about-values li:last-child { border-bottom: 0; }
+.landing-about-values li i {
+    flex: 0 0 auto;
+    width: 22px;
+    text-align: center;
+    font-size: 16px;
+    opacity: 0.85;
+}
+
+.landing-about-tagline {
+    margin-top: var(--space-5);
+    padding-top: var(--space-4);
+    border-top: 1px solid rgba(20, 19, 15, 0.2);
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--neutral-800);
+}
+.landing-about-tagline strong { color: var(--neutral-900); }
+.landing-about-tagline span {
+    display: block;
+    margin-top: var(--space-3);
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--neutral-900);
+}
+
+@media (max-width: 991.98px) {
+    .landing-about-values { margin-top: var(--space-4); }
+}
+
+/* Sticky only on desktop, where the two columns sit side by side */
+@media (min-width: 992px) {
+    .landing-about-values {
+        position: sticky;
+        top: 84px;
+    }
+}

@@ -127,7 +127,7 @@ currentMatchId = btn.dataset.roundId;  // renamed semantically; URL still uses /
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando…';
 
         try {
-            const res = await fetch(`/${slug}/matches/${currentMatchId}/propose`, {
+            const res = await fetch(`/liga/${slug}/matches/${currentMatchId}/propose`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
