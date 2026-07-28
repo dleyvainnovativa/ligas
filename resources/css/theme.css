@@ -3388,7 +3388,8 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     inset: 0;
     background-size: cover;
     background-position: center;
-    opacity: 0.25;
+    filter: brightness(0.4);
+    /* opacity: 0.25; */
 }
 .public-hero-content {
     position: relative;
@@ -4830,3 +4831,6 @@ a.public-standing-card {
     font-size: 16px;
 }
 
+.public-hero-title-row h1, .public-hero-title-row i{
+    color: white !important;
+}

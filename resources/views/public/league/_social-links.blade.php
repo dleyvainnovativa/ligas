@@ -11,7 +11,7 @@ $variant = $variant ?? 'footer'; // 'header' or 'footer'
     @foreach ($socials as $s)
     <a href="{{ $s['url'] }}" target="_blank" rel="noopener noreferrer"
         class="social-link" title="{{ $s['label'] }}" aria-label="{{ $s['label'] }}">
-        <i class="fa-brands {{ $s['icon'] }}"></i>
+        <i class="fa-brands fa-xl {{ $s['icon'] }}"></i>
     </a>
     @endforeach
 </div>

@@ -171,9 +171,10 @@
 
             <div class="row g-4 justify-content-center">
                 @foreach ($tiers as $key => $plan)
+                @if ($key === 'free')
                 <div class="col-md-6 col-lg-4">
-                    <div class="landing-plan @if($key === 'plus') is-featured @endif">
-                        @if ($key === 'plus')
+                    <div class="landing-plan @if($key === 'free') is-featured @endif">
+                        @if ($key === 'free')
                         <span class="landing-plan-ribbon">Más popular</span>
                         @endif
 
@@ -205,6 +206,8 @@
                         </a>
                     </div>
                 </div>
+                @endif
+
                 @endforeach
             </div>
 

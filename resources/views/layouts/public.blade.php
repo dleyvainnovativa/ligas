@@ -32,6 +32,9 @@
         <div class="public-hero-bg" style="background-image: url('{{ Storage::disk('public')->url($league->banner_path) }}');"></div>
         @endif
         <div class="public-hero-content">
+            <a href="{{route('landing')}}" class="">
+                <img src="{{ asset('img/logo.png') }}" alt="Logo" class="public-stat-logo-img">
+            </a>
             <div class="public-hero-title-row">
                 <a href="{{ route('public.league', $league->slug) }}" class="public-hero-title">
                     <h1>{{ $league->name }}</h1>

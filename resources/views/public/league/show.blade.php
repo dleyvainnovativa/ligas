@@ -18,9 +18,13 @@
         <div class="public-stat-value">{{ $payload['stats']['completion_pct'] }}%</div>
         <div class="public-stat-label">Avance</div>
     </div>
-    <a href="#" class="public-stat public-stat-logo">
+    <div class="public-stat">
+        <div class="public-stat-value">{{ $payload['stats']['completed_canchas'] }}/{{ $payload['stats']['total_canchas'] }}</div>
+        <div class="public-stat-label">Partidos</div>
+    </div>
+    <!-- <a href="#" class="public-stat public-stat-logo">
         <img src="{{ asset('img/logo.png') }}" alt="Logo" class="public-stat-logo-img">
-    </a>
+    </a> -->
 </section>
 
 {{-- Current jornada — standings view --}}

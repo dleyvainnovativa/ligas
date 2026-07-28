@@ -139,50 +139,61 @@ Route::middleware('auth')->group(function () {
     Route::get('/plans', [\App\Http\Controllers\PlanController::class, 'index'])->name('plans.index');
 });
 
-// PUBLIC: propose a score (already exists, leave it)
-Route::post('/{slug}/matches/{match}/propose', [\App\Http\Controllers\PublicMatchProposalController::class, 'store'])
-    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
-    ->name('public.match.propose');
+Route::get('/', [\App\Http\Controllers\LandingController::class, 'index'])->name('landing');
 
-// PUBLIC: sub-pages — must come before the catch-all /{slug} below
-Route::get('/{slug}/calendario',         [\App\Http\Controllers\PublicLeagueController::class, 'calendario'])
-    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
-    ->name('public.calendario');
+// ---------- PUBLIC LEAGUE PAGES (now under /liga) ----------
+Route::prefix('liga')->group(function () {
+    // PUBLIC: propose a score (already exists, leave it)
+    Route::post('/{slug}/matches/{match}/propose', [\App\Http\Controllers\PublicMatchProposalController::class, 'store'])
+        ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+        ->name('public.match.propose');
 
-Route::get('/{slug}/jornada/{number}',   [\App\Http\Controllers\PublicLeagueController::class, 'jornada'])
-    ->where(['slug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'number' => '[0-9]+'])
-    ->name('public.jornada');
+    // PUBLIC: sub-pages — must come before the catch-all /{slug} below
+    Route::get('/{slug}/calendario',         [\App\Http\Controllers\PublicLeagueController::class, 'calendario'])
+        ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+        ->name('public.calendario');
 
-Route::get('/{slug}/clasificacion',      [\App\Http\Controllers\PublicLeagueController::class, 'clasificacion'])
-    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
-    ->name('public.clasificacion');
+    Route::get('/{slug}/jornada/{number}',   [\App\Http\Controllers\PublicLeagueController::class, 'jornada'])
+        ->where(['slug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'number' => '[0-9]+'])
+        ->name('public.jornada');
 
-Route::get('/{slug}/jugadores',          [\App\Http\Controllers\PublicLeagueController::class, 'jugadores'])
-    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
-    ->name('public.jugadores');
+    Route::get('/{slug}/clasificacion',      [\App\Http\Controllers\PublicLeagueController::class, 'clasificacion'])
+        ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+        ->name('public.clasificacion');
 
-Route::get(
-    '/{slug}/jugador/{player}',
-    [\App\Http\Controllers\PublicLeagueController::class, 'jugador']
-)
-    ->where(['slug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'player' => '[0-9]+'])
-    ->name('public.jugador');
+    Route::get('/{slug}/jugadores',          [\App\Http\Controllers\PublicLeagueController::class, 'jugadores'])
+        ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+        ->name('public.jugadores');
 
-Route::get('/{slug}/reglas',             [\App\Http\Controllers\PublicLeagueController::class, 'reglas'])
-    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
-    ->name('public.reglas');
+    Route::get(
+        '/{slug}/jugador/{player}',
+        [\App\Http\Controllers\PublicLeagueController::class, 'jugador']
+    )
+        ->where(['slug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'player' => '[0-9]+'])
+        ->name('public.jugador');
 
-// PUBLIC: home — must be LAST among the slug routes
-Route::get('/{slug}', [\App\Http\Controllers\PublicLeagueController::class, 'show'])
-    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
-    ->name('public.league');
+    Route::get('/{slug}/reglas',             [\App\Http\Controllers\PublicLeagueController::class, 'reglas'])
+        ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+        ->name('public.reglas');
 
-Route::get(
-    '/{slug}/jornada/{number}/standings',
-    [\App\Http\Controllers\PublicLeagueController::class, 'jornadaStandings']
-)
-    ->where(['slug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'number' => '[0-9]+'])
-    ->name('public.jornada.standings');
+    // PUBLIC: home — must be LAST among the slug routes
+    Route::get('/{slug}', [\App\Http\Controllers\PublicLeagueController::class, 'show'])
+        ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+        ->name('public.league');
+
+    Route::get(
+        '/{slug}/jornada/{number}/standings',
+        [\App\Http\Controllers\PublicLeagueController::class, 'jornadaStandings']
+    )
+        ->where(['slug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'number' => '[0-9]+'])
+        ->name('public.jornada.standings');
+});
+
+// ---------- LEGACY REDIRECT — keep old shared links alive ----------
+// Must be registered LAST so it doesn't shadow real routes.
+Route::get('/{slug}', function (string $slug) {
+    return redirect()->route('public.league', $slug, 301);
+})->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*');
 
 Route::get('/health', function () {
     $checks = [
