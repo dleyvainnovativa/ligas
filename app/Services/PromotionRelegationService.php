@@ -21,7 +21,7 @@ class PromotionRelegationService
     {
         $chain = $cancha->jornada->group->league->standingsOrder();
         $stats = array_values($this->canchaPlayerStats($cancha));
-        $sorted = $this->sortByChain($stats, $chain);
+        $sorted = $this->sortByChainWithPenaltyGate($stats, $chain);   // ← gated
         return array_map(fn($r) => $r['player_id'], $sorted);
     }
 
@@ -134,7 +134,8 @@ class PromotionRelegationService
 
         foreach ($canchas as $i => $cancha) {
             $stats = array_values($this->canchaPlayerStats($cancha));
-            $ordered = $this->sortByChain($stats, $chain);   // ← was sortByDesc([...])
+            // $ordered = $this->sortByChain($stats, $chain);   // ← was sortByDesc([...])
+            $ordered = $this->sortByChainWithPenaltyGate($stats, $chain);   // ← gated
 
             $size = count($ordered);
             $m = min($movement, intdiv($size, 2));
@@ -475,6 +476,28 @@ class PromotionRelegationService
         //     if ($a['diff'] !== $b['diff']) return $b['diff'] <=> $a['diff'];  // diff first
         //     return $b['won'] <=> $a['won'];                                    // games won as tiebreaker
         // });
+        return $rows;
+    }
+
+    /**
+     * Like comparePlayers, but any penalized player sinks below any clean player
+     * first — regardless of the chain. Used ONLY for per-cancha ranking
+     * (promotion/relegation), so a penalty sends the player toward relegation.
+     * The season standings deliberately do NOT use this.
+     */
+    public function comparePlayersWithPenaltyGate(array $a, array $b, array $chain): int
+    {
+        $aPen = ($a['penalty'] ?? 0) > 0;
+        $bPen = ($b['penalty'] ?? 0) > 0;
+        if ($aPen !== $bPen) {
+            return $aPen <=> $bPen;   // clean (false) before penalized (true)
+        }
+        return $this->comparePlayers($a, $b, $chain);
+    }
+
+    public function sortByChainWithPenaltyGate(array $rows, array $chain): array
+    {
+        usort($rows, fn($a, $b) => $this->comparePlayersWithPenaltyGate($a, $b, $chain));
         return $rows;
     }
 }
