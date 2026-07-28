@@ -125,8 +125,7 @@
         });
 
         async function postSessionToken(idToken) {
-            const res = await fetch('{{ route('
-                auth.session ') }}', {
+            const res = await fetch('{{ route('auth.session') }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
