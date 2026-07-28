@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title') — Padel Leagues</title>
+    <title>@yield('title') — PlayWinners</title>
     @include('partials.theme-init')
     @vite(['resources/css/theme.css'])
 </head>
@@ -13,8 +13,9 @@
     <main class="error-shell">
         <div class="error-content">
             <div class="error-brand">
-                <span class="brand-mark"><i class="fa-solid fa-table-tennis-paddle-ball"></i></span>
-                <span class="brand-name">Padel Leagues</span>
+                <!-- <span class="brand-mark"><i class="fa-solid fa-table-tennis-paddle-ball"></i></span>
+                <span class="brand-name">PlayWinners</span> -->
+                <img src="{{ asset('img/logo.png') }}" alt="Logo" class="public-stat-logo-img">
             </div>
             <div class="error-code">@yield('code')</div>
             <h1>@yield('title')</h1>

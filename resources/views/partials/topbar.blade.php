@@ -3,7 +3,7 @@
         <button type="button" class="menu-toggle" data-action="open-sidebar" aria-label="Abrir menú">
             <i class="fa-solid fa-bars"></i>
         </button>
-        <h5 class="mb-0">@yield('page-title', 'Padel Leagues')</h5>
+        <h5 class="mb-0">@yield('page-title', 'PlayWinners')</h5>
     </div>
 
     <div class="d-flex align-items-center gap-2">

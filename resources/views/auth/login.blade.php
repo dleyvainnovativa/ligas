@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Iniciar sesión — Padel Leagues</title>
+    <title>Iniciar sesión — PlayWinners</title>
     @include('partials.theme-init')
     @vite(['resources/css/theme.css', 'resources/js/app.js'])
 </head>
@@ -21,8 +21,10 @@
 
             <div class="auth-form-card">
                 <div class="auth-brand">
-                    <span class="brand-mark"><i class="fa-solid fa-table-tennis-paddle-ball"></i></span>
-                    <span class="brand-name">Padel Leagues</span>
+                    <!-- <span class="brand-mark"><i class="fa-solid fa-table-tennis-paddle-ball"></i></span>
+                    <span class="brand-name">PlayWinners</span> -->
+                    <img src="{{ asset('img/logo.png') }}" alt="Logo" class="public-stat-logo-img">
+
                 </div>
 
                 <h1>Bienvenido de vuelta</h1>
@@ -75,7 +77,7 @@
             </div>
 
             <small class="text-muted" style="position:relative; z-index:1;">
-                © {{ date('Y') }} Padel Leagues
+                © {{ date('Y') }} PlayWinners
             </small>
         </aside>
     </div>

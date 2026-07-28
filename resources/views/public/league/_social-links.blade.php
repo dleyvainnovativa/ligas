@@ -1,5 +1,5 @@
 @php
-// PadelWinners social accounts — update these URLs
+// PlayWinners social accounts — update these URLs
 $socials = [
 ['icon' => 'fa-instagram', 'url' => 'https://instagram.com/playwinnersligas', 'label' => 'Instagram'],
 ['icon' => 'fa-facebook', 'url' => 'https://www.facebook.com/p/Ligas-Padel-61591702947010/', 'label' => 'Facebook'],

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Ligas — Padel Leagues')
+@section('title', 'Ligas — PlayWinners')
 @section('page-title', 'Ligas')
 
 @section('content')

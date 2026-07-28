@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PadelWinners — Organiza tu liga de pádel sin hojas de cálculo</title>
+    <title>PlayWinners — Organiza tu liga de pádel sin hojas de cálculo</title>
     <meta name="description" content="Plataforma para clubes de pádel en México: calendario, resultados, ascenso y descenso automático, y una página pública para tus jugadores.">
 
     <link rel="icon" type="image/png" href="{{ asset('img/icon/favicon-96x96.png') }}" sizes="96x96">
@@ -18,7 +18,7 @@
     <nav class="landing-nav fixed-top">
         <div class="landing-container landing-nav-inner">
             <a href="{{ route('landing') }}" class="landing-brand">
-                <img src="{{ asset('img/logo.png') }}" alt="PadelWinners" height="34">
+                <img src="{{ asset('img/logo.png') }}" alt="PlayWinners" height="34">
             </a>
             <div class="landing-nav-links">
                 <a href="#como-funciona">Cómo funciona</a>
@@ -258,7 +258,7 @@
                 <a href="https://wa.me/52XXXXXXXXXX" target="_blank" rel="noopener" class="btn btn-lg btn-whatsapp">
                     <i class="fa-brands fa-whatsapp me-2"></i> Escríbenos por WhatsApp
                 </a>
-                <a href="mailto:hola@padelwinners.com" class="btn btn-lg btn-outline-primary">
+                <a href="mailto:hola@PlayWinners.com" class="btn btn-lg btn-outline-primary">
                     <i class="fa-solid fa-envelope me-2"></i> Enviar correo
                 </a>
             </div>
@@ -269,11 +269,11 @@
     <footer class="landing-footer">
         <div class="landing-container">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                <img src="{{ asset('img/logo.png') }}" alt="PadelWinners" height="28">
+                <img src="{{ asset('img/logo.png') }}" alt="PlayWinners" height="28">
                 @include('public.league._social-links', ['variant' => 'footer'])
             </div>
             <hr>
-            <small class="text-secondary">© {{ date('Y') }} PadelWinners. Todos los derechos reservados.</small>
+            <small class="text-secondary">© {{ date('Y') }} PlayWinners. Todos los derechos reservados.</small>
         </div>
     </footer>
 

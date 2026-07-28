@@ -1,4 +1,4 @@
-# Guía del Manager — Padel Leagues
+# Guía del Manager — PlayWinners
 
 ## 1. Tu primera liga en 5 minutos
 

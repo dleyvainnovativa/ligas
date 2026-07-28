@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Padel Leagues')</title>
+    <title>@yield('title', 'PlayWinners')</title>
     <link rel="icon" type="image/png" href="{{asset('img/icon/favicon-96x96.png')}}" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="{{asset('img/icon/favicon.svg')}}" />
     <link rel="shortcut icon" href="{{asset('img/icon/favicon.ico')}}" />
@@ -21,7 +21,7 @@
         <aside class="app-sidebar" id="app-sidebar">
             <div class="brand">
                 <!-- <span class="brand-mark"><i class="fa-solid fa-table-tennis-paddle-ball"></i></span>
-                <span>Padel Leagues</span> -->
+                <span>PlayWinners</span> -->
                 <img src="{{asset('img/logo.png')}}" width="200" alt="">
             </div>
 
