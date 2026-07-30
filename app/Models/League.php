@@ -140,14 +140,14 @@ class League extends Model
      */
     public function standingsOrder(): array
     {
-        $order = $this->standings_order ?: ['diff', 'won'];
+        $order = $this->standings_order ?: ['diff', 'rounds'];
 
         // Sanitize: keep only known metrics, dedupe, ensure non-empty
         $valid = array_values(array_unique(array_filter(
             $order,
-            fn($m) => in_array($m, ['diff', 'won', 'rounds'], true)
+            fn($m) => in_array($m, ['diff', 'rounds', 'won'], true)
         )));
 
-        return $valid ?: ['diff', 'won'];
+        return $valid ?: ['diff', 'rounds'];
     }
 }

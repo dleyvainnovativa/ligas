@@ -64,12 +64,12 @@ $allCompleted = $m['status'] === 'completed';
             </span>
         </div>
         @endif
-        @if (!$showScore && !$hasResult)
+        @if (!$showScore && !$hasResult && !$proposal)
         <button type="button" class="btn btn-sm btn-outline-primary propose-btn mt-1"
             data-round-id="{{ $round['id'] }}"
             data-cancha-id="{{ $m['id'] }}">
             <i class="fa-solid fa-pencil me-1"></i>
-            Proponer marcador S{{ $round['rotation_index'] }}
+            Proponer marcador Set {{ $round['rotation_index'] }}
         </button>
         @endif
     </div>
