@@ -21,10 +21,17 @@ class GroupController extends Controller
         return view('leagues.groups.index', compact('league'));
     }
 
-    public function store(GroupRequest $request, League $league)
+    public function store(Request $request, League $league, \App\Services\LeagueTierService $leagueTiers)
     {
         $this->authorize('update', $league);
-
+        if (! $leagueTiers->canAddGroup($league)) {
+            return response()->json([
+                'error' => 'Esta liga alcanzó su límite de grupos.',
+                'message' => 'Esta liga alcanzó su límite de grupos.',
+                // 'code'  => 'LEAGUE_LIMIT',
+                'code'  => 'Esta liga alcanzó su límite de grupos.',
+            ], 422);
+        }
         $group = $league->groups()->create([
             'name'     => $request->validated()['name'],
             'position' => ($league->groups()->max('position') ?? 0) + 1,

@@ -35,6 +35,12 @@
                     class="nav-link {{ request()->routeIs('leagues.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-trophy"></i> Ligas
                 </a>
+                @if (auth()->user()?->role === 'admin')
+                <a href="{{ route('admin.dashboard') }}"
+                    class="nav-link {{ request()->routeIs('admin.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-shield-halved"></i> Admin
+                </a>
+                @endif
             </nav>
 
             <div class="nav-label">Cuenta</div>

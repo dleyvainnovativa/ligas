@@ -1,6 +1,7 @@
 // Lean: only what the public page actually needs.
 // Bootstrap Tab + Collapse plugins for the group tabs and any disclosures.
 import { Tab, Collapse, Carousel, Modal } from 'bootstrap';
+import { setScoreError, validateSets } from './set-score-rule.js';
 
 // Make them globally accessible for data-bs-toggle to work
 window.bootstrap = { Tab, Collapse, Carousel, Modal };
@@ -78,9 +79,9 @@ currentMatchId = btn.dataset.roundId;  // renamed semantically; URL still uses /
         c.innerHTML = currentSets.map((s, i) => `
             <div class="propose-set-row" data-i="${i}">
                 <span class="set-label">Set</span>
-                <input type="number" min="0" max="99" class="form-control form-control-sm set-a" inputmode="numeric" value="${s[0]}">
+                <input type="number" min="0" max="7" class="form-control form-control-sm set-a" inputmode="numeric" value="${s[0]}">
                 <span class="text-muted">—</span>
-                <input type="number" min="0" max="99" class="form-control form-control-sm set-b" inputmode="numeric" value="${s[1]}">
+                <input type="number" min="0" max="7" class="form-control form-control-sm set-b" inputmode="numeric" value="${s[1]}">
                 <button type="button" class="btn-icon btn-sm remove-set" ${currentSets.length === 1 ? 'disabled' : ''}>
                     <i class="fa-solid fa-xmark"></i>
                 </button>
@@ -119,6 +120,13 @@ currentMatchId = btn.dataset.roundId;  // renamed semantically; URL still uses /
         const sets = currentSets.filter(s => s[0] > 0 || s[1] > 0);
         if (sets.length === 0) {
             alert('Ingresa al menos un set con marcador.');
+            return;
+        }
+
+        // NEW: validate each set against the padel rule
+        const setErrors = validateSets(sets);
+        if (setErrors.length) {
+            alert(setErrors[0].message);
             return;
         }
 

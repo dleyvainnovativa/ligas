@@ -53,7 +53,7 @@
                 </form>
 
                 <p class="auth-meta">
-                    Acceso para managers. Los jugadores ven la liga en su URL pública.
+                    ¿No tienes cuenta? <a href="{{ route('register') }}">Regístrate</a>.
                 </p>
             </div>
         </section>

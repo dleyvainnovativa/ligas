@@ -1,5 +1,5 @@
 <?php
-
+// app/Http/Controllers/Auth/RegisterController.php
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -7,32 +7,25 @@ use App\Models\Manager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Kreait\Firebase\Contract\Auth as FirebaseAuth;
-use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
 
-class AuthController extends Controller
+class RegisterController extends Controller
 {
     public function __construct(private FirebaseAuth $firebaseAuth) {}
 
-    public function showLogin()
+    public function show()
     {
-        if (Auth::check()) {
-            return redirect()->route('dashboard');
-        }
-        return view('auth.login');
+        if (Auth::check()) return redirect()->route('dashboard');
+        return view('auth.register');
     }
 
-    public function sessionLogin(Request $request)
+    public function register(Request $request)
     {
         $request->validate(['id_token' => 'required|string']);
 
         try {
             $verified = $this->firebaseAuth->verifyIdToken($request->id_token, false, 5);
         } catch (\Kreait\Firebase\Exception\Auth\RevokedIdToken $e) {
-            return response()->json([
-                'error' => 'Token recién emitido. Por favor reintenta.',
-                'message' => 'Token recién emitido. Por favor reintenta.',
-                'code'  => 'TOKEN_STALE',
-            ], 401);
+            return response()->json(['error' => 'Token recién emitido. Reintenta.', 'code' => 'TOKEN_STALE'], 401);
         } catch (\Kreait\Firebase\Exception\Auth\FailedToVerifyToken $e) {
             return response()->json(['error' => 'Token inválido.'], 401);
         }
@@ -44,24 +37,13 @@ class AuthController extends Controller
                 'name'          => $verified->claims()->get('name'),
                 'avatar_url'    => $verified->claims()->get('picture'),
                 'last_login_at' => now(),
+                // tier defaults to 'free', role defaults to 'manager'
             ]
         );
 
         Auth::login($manager, remember: true);
         $request->session()->regenerate();
 
-        $redirect = $manager->role === 'admin'
-            ? route('admin.dashboard')
-            : route('dashboard');
-
-        return response()->json(['redirect' => $redirect]);
-    }
-
-    public function logout(Request $request)
-    {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        return redirect()->route('login');
+        return response()->json(['redirect' => route('dashboard')]);
     }
 }

@@ -21,18 +21,27 @@ class PlayerController extends Controller
 
         return view('leagues.players.index', compact('league', 'players'));
     }
-
-    public function store(PlayerRequest $request, League $league, \App\Services\TierService $tiers)
+    public function store(PlayerRequest $request, League $league, \App\Services\LeagueTierService $leagueTiers)
     {
         $this->authorize('update', $league);
-        // dd($league->groups()->first());
-        if (!$tiers->canAddPlayer($league)) {
-            $snapshot = $tiers->leagueSnapshot($league);
-            $limit = $snapshot['players']['limit'];
+
+        if (! $leagueTiers->canAddPlayer($league)) {
             return response()->json([
-                'message' => "Esta liga llegó al límite de {$limit} jugadores. Mejora tu plan para agregar más.",
+                'error' => 'Esta liga llegó al límite de jugadores. Mejora tu plan para agregar más.',
+                'message' => 'Esta liga llegó al límite de jugadores. Mejora tu plan para agregar más.',
+                // 'code'  => 'LEAGUE_LIMIT',
+                'code'  => 'Esta liga llegó al límite de jugadores. Mejora tu plan para agregar más.',
             ], 422);
         }
+
+        // dd($league->groups()->first());
+        // if (!$tiers->canAddPlayer($league)) {
+        //     $snapshot = $tiers->leagueSnapshot($league);
+        //     $limit = $snapshot['players']['limit'];
+        //     return response()->json([
+        //         'message' => "Esta liga llegó al límite de {$limit} jugadores. Mejora tu plan para agregar más.",
+        //     ], 422);
+        // }
         $data = $request->validated();
         $data['paid_amount']    = $data['paid_amount'] ?? 0;
         $data['payment_status'] = $data['payment_status']

@@ -9,6 +9,7 @@ export default defineConfig({
                 'resources/css/landing.css',
                 'resources/js/app.js',
                 'resources/js/public.js',
+                'resources/js/set-score-rule.js',
             ],
             refresh: true,
         }),

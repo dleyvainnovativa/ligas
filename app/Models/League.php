@@ -59,6 +59,9 @@ class League extends Model
         'whatsapp_url',
         'promotion_relegation',
         'standings_order',
+        'max_players',
+        'max_jornadas',
+        'max_groups'
     ];
 
     protected function casts(): array
@@ -77,6 +80,9 @@ class League extends Model
             'points_loss' => 'integer',
             'promotion_relegation'   => 'integer',
             'standings_order' => 'array',
+            'max_players'  => 'integer',
+            'max_jornadas' => 'integer',
+            'max_groups'   => 'integer',
         ];
     }
 

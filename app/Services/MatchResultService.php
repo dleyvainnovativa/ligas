@@ -26,6 +26,10 @@ class MatchResultService
                 if ($a === 0 && $b === 0) return null; // empty pair
                 return [$a, $b];
             }, $sets)));
+            $errors = \App\Support\SetScoreRule::validateSets($sets);
+            if (!empty($errors)) {
+                throw new \DomainException($errors[0]['message']);
+            }
 
             // Player-id flag arrays: only ids that participated in the match
             $participants = array_merge($match->team_a_player_ids ?? [], $match->team_b_player_ids ?? []);

@@ -1,3 +1,4 @@
+import { setScoreError, validateSets } from '../set-score-rule.js';
 export function mountMatchResult() {
     const grid = document.querySelector('.grid-app');
     if (!grid) return;
@@ -200,6 +201,7 @@ export function mountMatchResult() {
             // On blur, an empty field becomes 0 (so a set is never left blank)
             input.addEventListener('blur', () => {
                 if (input.value.trim() === '') input.value = '0';
+                validateSetRow(input.closest('.set-row'));
             });
         });
     }
@@ -284,11 +286,22 @@ export function mountMatchResult() {
 
     document.getElementById('result-save-btn')?.addEventListener('click', async () => {
         if (!currentCanchaId) return;
+
+        // Validate every non-empty set across all rounds first.
+        const payload = collectFormValues();
+        for (const round of payload.rounds) {
+            const errs = validateSets(round.sets);
+            if (errs.length) {
+                window.app.toast.error(errs[0].message);
+                return; // don't save
+            }
+        }
+
         const btn = document.getElementById('result-save-btn');
         window.app.loading.on(btn);
         try {
             const url = buildUrl(currentCanchaId, 'result');
-            await window.app.api.put(url, collectFormValues());
+            await window.app.api.put(url, payload);
             window.app.toast.success('Resultados guardados');
             window.app.modal.close('result-modal');
             window.location.reload();
@@ -323,6 +336,34 @@ export function mountMatchResult() {
             window.app.toast.error(err.message);
         }
     });
+}
+
+function validateSetRow(row) {
+    if (!row) return true;
+    const a = row.querySelector('.set-a').value;
+    const b = row.querySelector('.set-b').value;
+    // Skip the empty placeholder row
+    if ((parseInt(a, 10) || 0) === 0 && (parseInt(b, 10) || 0) === 0) {
+        row.classList.remove('set-row-invalid');
+        const old = row.querySelector('.set-row-error');
+        if (old) old.remove();
+        return true;
+    }
+    const msg = setScoreError(a, b);
+    let err = row.querySelector('.set-row-error');
+    if (msg) {
+        row.classList.add('set-row-invalid');
+        if (!err) {
+            err = document.createElement('div');
+            err.className = 'set-row-error text-danger small mt-1';
+            row.appendChild(err);
+        }
+        err.textContent = msg;
+        return false;
+    }
+    row.classList.remove('set-row-invalid');
+    if (err) err.remove();
+    return true;
 }
 
 function escape(s) {

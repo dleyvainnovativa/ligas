@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use App\Rules\ValidSetScore;
 
 class PublicMatchProposalController extends Controller
 {
@@ -40,9 +41,9 @@ class PublicMatchProposalController extends Controller
         $data = $request->validate([
             'name'   => ['required', 'string', 'min:2', 'max:120'],
             'sets'   => ['required', 'array', 'min:1', 'max:5'],
-            'sets.*' => ['array', 'size:2'],
-            'sets.*.0' => ['integer', 'min:0', 'max:99'],
-            'sets.*.1' => ['integer', 'min:0', 'max:99'],
+            'sets.*' => ['array', 'size:2', new ValidSetScore],
+            'sets.*.0' => ['integer', 'min:0', 'max:7'],
+            'sets.*.1' => ['integer', 'min:0', 'max:7'],
         ]);
 
         $proposal = $this->proposals->propose($match, $data['sets'], $data['name'], $request);

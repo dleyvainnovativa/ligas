@@ -1,7 +1,11 @@
 <?php
 
 use App\Http\Controllers\AdController;
+use App\Http\Controllers\Admin\AdminAdController;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\AdminLeagueController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\CanchaController;
 use App\Http\Controllers\CanchaScheduleController;
 use App\Http\Controllers\DashboardController;
@@ -17,14 +21,30 @@ use App\Http\Controllers\SedeController;
 use App\Http\Controllers\StandingsController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn() => redirect()->route('dashboard'));
+// Landing page at "/" (single definition — was previously duplicated).
+Route::get('/', [LandingController::class, 'index'])->name('landing');
 
 // Auth
-Route::get('/landing', [LandingController::class, 'index'])->name('landing');
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/auth/session', [AuthController::class, 'sessionLogin'])->name('auth.session');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// Public self-registration (free tier)
+Route::get('/registro', [RegisterController::class, 'show'])->name('register');
+Route::post('/auth/register', [RegisterController::class, 'register'])->name('auth.register');
+
+// Admin area
+// Registered before the public /liga routes and the legacy catch-all so
+// /admin and its children are never shadowed by a slug match.
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [AdminController::class, 'index'])->name('dashboard');
+    Route::get('/managers', [AdminController::class, 'managers'])->name('managers');
+    Route::post('/managers', [AdminController::class, 'storeManager'])->name('managers.store');
+    Route::resource('ads', AdminAdController::class)->except(['show']);
+    Route::get('/leagues',               [AdminLeagueController::class, 'index'])->name('leagues.index');
+    Route::get('/leagues/{league}/edit', [AdminLeagueController::class, 'edit'])->name('leagues.edit');
+    Route::put('/leagues/{league}',      [AdminLeagueController::class, 'update'])->name('leagues.update');
+});
 
 // Manager area
 Route::middleware('auth')->group(function () {
@@ -32,7 +52,6 @@ Route::middleware('auth')->group(function () {
     Route::resource('leagues', LeagueController::class);
 
     Route::prefix('leagues/{league}')->name('leagues.')->group(function () {
-
 
         // Sedes
         Route::post('sedes',               [SedeController::class, 'store'])->name('sedes.store');
@@ -85,11 +104,10 @@ Route::middleware('auth')->group(function () {
             'groups/{group}/jornadas/{jornada}/canchas/swap',
             [CanchaController::class, 'swap']
         )->name('canchas.swap');
+
         // Scheduling grid (read-only view)
         Route::get('groups/{group}/jornadas/{jornada}/grid', [GameMatchController::class, 'gridIndex'])
             ->name('matches.grid');
-
-
 
         // Cancha-level scheduling (date + time + pista per cancha)
         Route::put(
@@ -136,14 +154,13 @@ Route::middleware('auth')->group(function () {
         Route::delete('ads/{ad}',      [AdController::class, 'destroy'])->name('ads.destroy');
         Route::post('ads/reorder',     [AdController::class, 'reorder'])->name('ads.reorder');
     });
+
     Route::get('/plans', [\App\Http\Controllers\PlanController::class, 'index'])->name('plans.index');
 });
 
-Route::get('/', [\App\Http\Controllers\LandingController::class, 'index'])->name('landing');
-
-// ---------- PUBLIC LEAGUE PAGES (now under /liga) ----------
+// ---------- PUBLIC LEAGUE PAGES (under /liga) ----------
 Route::prefix('liga')->group(function () {
-    // PUBLIC: propose a score (already exists, leave it)
+    // PUBLIC: propose a score
     Route::post('/{slug}/matches/{match}/propose', [\App\Http\Controllers\PublicMatchProposalController::class, 'store'])
         ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
         ->name('public.match.propose');
@@ -176,24 +193,18 @@ Route::prefix('liga')->group(function () {
         ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
         ->name('public.reglas');
 
-    // PUBLIC: home — must be LAST among the slug routes
-    Route::get('/{slug}', [\App\Http\Controllers\PublicLeagueController::class, 'show'])
-        ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
-        ->name('public.league');
-
     Route::get(
         '/{slug}/jornada/{number}/standings',
         [\App\Http\Controllers\PublicLeagueController::class, 'jornadaStandings']
     )
         ->where(['slug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'number' => '[0-9]+'])
         ->name('public.jornada.standings');
-});
 
-// ---------- LEGACY REDIRECT — keep old shared links alive ----------
-// Must be registered LAST so it doesn't shadow real routes.
-Route::get('/{slug}', function (string $slug) {
-    return redirect()->route('public.league', $slug, 301);
-})->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*');
+    // PUBLIC: home — must be LAST among the slug routes
+    Route::get('/{slug}', [\App\Http\Controllers\PublicLeagueController::class, 'show'])
+        ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+        ->name('public.league');
+});
 
 Route::get('/health', function () {
     $checks = [
@@ -220,3 +231,11 @@ Route::get('/health', function () {
         'time'   => now()->toIso8601String(),
     ], $ok ? 200 : 503);
 });
+
+// ---------- LEGACY REDIRECT — keep old shared links alive ----------
+// Registered LAST so it never shadows real routes. The negative lookahead
+// excludes reserved first-segments (admin, login, etc.) so a league slug
+// matching one of those words can't hijack a real page.
+Route::get('/{slug}', function (string $slug) {
+    return redirect()->route('public.league', $slug, 301);
+})->where('slug', '(?!admin$|login$|registro$|dashboard$|plans$|liga$|health$|landing$)[a-z0-9]+(?:-[a-z0-9]+)*');

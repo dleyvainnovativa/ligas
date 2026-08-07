@@ -11,6 +11,7 @@ use App\Services\MatchSchedulingService;
 use App\Services\PublicCacheService;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Concerns\GuardsFrozenJornadas;
+use App\Rules\ValidSetScore;
 
 class GameMatchController extends Controller
 {
@@ -126,9 +127,9 @@ class GameMatchController extends Controller
             'rounds'                       => ['required', 'array', 'min:1'],
             'rounds.*.round_id'            => ['required', 'integer'],
             'rounds.*.sets'                => ['nullable', 'array', 'max:5'],
-            'rounds.*.sets.*'              => ['array', 'size:2'],
-            'rounds.*.sets.*.0'            => ['integer', 'min:0', 'max:99'],
-            'rounds.*.sets.*.1'            => ['integer', 'min:0', 'max:99'],
+            'rounds.*.sets.*'              => ['array', 'size:2', new ValidSetScore],
+            'rounds.*.sets.*.0'            => ['integer', 'min:0', 'max:7'],
+            'rounds.*.sets.*.1'            => ['integer', 'min:0', 'max:7'],
             'rounds.*.no_show_ids'         => ['nullable', 'array'],
             'rounds.*.no_show_ids.*'       => ['integer'],
             'rounds.*.suplente_ids'        => ['nullable', 'array'],

@@ -20,6 +20,10 @@ class MatchProposalService
         if (empty($sets)) {
             throw new \DomainException('Debes ingresar al menos un set válido.');
         }
+        $errors = \App\Support\SetScoreRule::validateSets($sets);
+        if (!empty($errors)) {
+            throw new \DomainException($errors[0]['message']);
+        }
 
         return DB::transaction(function () use ($match, $sets, $name, $request) {
             // Find token cookie or mint one

@@ -51,7 +51,7 @@ class JornadaController extends Controller
         Request $request,
         League $league,
         Group $group,
-        \App\Services\TierService $tiers,
+        \App\Services\LeagueTierService $leagueTiers,
         \App\Services\PromotionRelegationService $promo,
         \App\Services\CanchaService $canchaService
     ) {
@@ -59,10 +59,18 @@ class JornadaController extends Controller
         abort_unless($group->league_id === $league->id, 404);
 
         // ---- Tier limit on jornadas ----
-        if (!$tiers->canAddJornada($league)) {
-            $snapshot = $tiers->leagueSnapshot($league);
+        // if (!$tiers->canAddJornada($league)) {
+        //     $snapshot = $tiers->leagueSnapshot($league);
+        //     return response()->json([
+        //         'message' => "Esta liga llegó al límite de {$snapshot['jornadas']['limit']} jornadas. Mejora tu plan para agregar más.",
+        //     ], 422);
+        // }
+        if (! $leagueTiers->canAddJornada($league)) {
             return response()->json([
-                'message' => "Esta liga llegó al límite de {$snapshot['jornadas']['limit']} jornadas. Mejora tu plan para agregar más.",
+                'error' => 'Esta liga alcanzó su límite de jornadas.',
+                'code'  =>  'Esta liga alcanzó su límite de jornadas.',
+                'message'  =>  'Esta liga alcanzó su límite de jornadas.',
+                // 'code'  => 'LEAGUE_LIMIT',
             ], 422);
         }
 

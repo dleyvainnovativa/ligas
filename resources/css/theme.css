@@ -4834,3 +4834,27 @@ a.public-standing-card {
 .public-hero-title-row h1, .public-hero-title-row i{
     color: white !important;
 }
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    margin: 4px 0 16px;
+}
+.auth-divider::before,
+.auth-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border-subtle);
+}
+.auth-divider span { padding: 0 12px; }
+.set-row-invalid .set-a,
+.set-row-invalid .set-b {
+    border-color: var(--danger-500);
+}
+.set-row-error {
+    flex-basis: 100%;
+}

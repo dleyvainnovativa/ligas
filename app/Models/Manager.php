@@ -34,4 +34,9 @@ class Manager extends Model implements Authenticatable
     {
         return $this->hasMany(League::class);
     }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
 }

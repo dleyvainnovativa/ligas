@@ -1,7 +1,7 @@
 import 'bootstrap';
 import * as bootstrap from 'bootstrap';
 
-import { auth, signInWithEmailAndPassword, signOut } from './firebase.js';
+import { auth, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup  } from './firebase.js';
 import { toast } from './modules/toast.js';
 import { api } from './modules/api.js';
 import { loading } from './modules/loading.js';
@@ -25,7 +25,7 @@ import { mountCanchaPicker } from './components/cancha-picker.js';
 
 window.bootstrap = bootstrap;
 window.app = { toast, api, loading, modal, serializeForm };
-window.firebase = { auth, signInWithEmailAndPassword, signOut };
+window.firebase = { auth, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup };
 
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();

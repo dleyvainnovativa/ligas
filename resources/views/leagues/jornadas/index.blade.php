@@ -25,6 +25,7 @@
             data-url="{{ route('leagues.jornadas.store', [$league, $group]) }}">
             <i class="fa-solid fa-plus me-1"></i> Nueva jornada
         </button>
+        @include('partials.league-upgrade-button', ['league' => $league, 'resource' => 'jornadas'])
     </div>
 
 </div>
