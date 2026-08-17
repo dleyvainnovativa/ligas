@@ -156,4 +156,12 @@ class League extends Model
 
         return $valid ?: ['diff', 'rounds'];
     }
+    public function movementForJornadaNumber(int $jornadaNumber): int
+    {
+        $value = $jornadaNumber % 2 === 0
+            ? (int) ($this->jornadas_pares ?? 1)
+            : (int) ($this->promotion_relegation ?? 1);
+
+        return max(1, $value);
+    }
 }

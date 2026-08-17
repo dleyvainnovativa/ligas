@@ -39,8 +39,8 @@ class LeagueRequest extends FormRequest
             'time_slots.*'     => ['regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
             'penalty_suplente' => ['required', 'integer', 'min:0', 'max:100'],
             'penalty_no_show'  => ['required', 'integer', 'min:0', 'max:100'],
-            'jornadas_pares'   => ['nullable', 'integer', 'min:1', 'max:10'],
-            'jornadas_nones'   => ['nullable', 'integer', 'min:1', 'max:10'],
+            'jornadas_pares'   => ['nullable', 'integer', 'min:1', 'max:3'],
+            'jornadas_nones'   => ['nullable', 'integer', 'min:1', 'max:3'],
             'status'           => ['nullable', Rule::in([
                 League::STATUS_DRAFT,
                 League::STATUS_ACTIVE,

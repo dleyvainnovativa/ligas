@@ -181,6 +181,14 @@ $isEditing = isset($league) && $league->exists;
                             Cuántos jugadores suben a la cancha de arriba y bajan a la de abajo cada jornada.
                         </small>
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Ascenso / descenso (jornadas pares)</label>
+                        <input type="number" name="jornadas_pares" min="1" max="3" class="form-control"
+                            value="{{ old('jornadas_pares', $league->jornadas_pares ?? 1) }}">
+                        <small class="text-muted">
+                            Cuántos suben/bajan al completar una jornada <strong>par</strong> (2, 4, 6…).
+                        </small>
+                    </div>
                     <!-- <div class="col-md-6">
                         <label class="form-label small">Jornadas pares <small class="text-secondary">(grupos con # par de equipos)</small></label>
                         <input type="number" name="jornadas_pares" min="1" max="10"

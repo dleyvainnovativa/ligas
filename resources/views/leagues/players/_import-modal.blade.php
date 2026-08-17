@@ -6,12 +6,16 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p class="small text-secondary">
-                    Encabezados aceptados: <code>nombre</code>, <code>email</code>, <code>telefono</code>, <code>pagado</code>.
-                    También se aceptan los equivalentes en inglés.
+                <p class="small text-secondary mb-2">
+                    Encabezados aceptados: <code>nombre</code>, <code>email</code>, <code>telefono</code>,
+                    <code>pagado</code>, <code>notas</code>. También se aceptan los equivalentes en inglés.
                 </p>
+                <a href="{{ asset('templates/plantilla-jugadores.xlsx') }}" download
+                    class="btn btn-sm btn-outline-secondary mb-3">
+                    <i class="fa-solid fa-file-arrow-down me-1"></i>
+                    Descargar plantilla de ejemplo (.xlsx)
+                </a>
 
-                <!-- <input type="file" id="csv-file-input" accept=".csv,text/csv" class="form-control mb-3"> -->
                 <input type="file" id="csv-file-input" accept=".csv,.txt,.xlsx,.xls" class="form-control mb-3">
 
                 <div id="csv-preview" class="d-none">
@@ -28,6 +32,7 @@
                                     <th>Email</th>
                                     <th>Teléfono</th>
                                     <th class="text-end">Pagado</th>
+                                    <th>Notas</th>
                                     <th>Errores</th>
                                 </tr>
                             </thead>

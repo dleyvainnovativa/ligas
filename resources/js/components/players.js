@@ -47,12 +47,12 @@ export function mountPlayers() {
             }
             if (e.target.closest('.delete-player')) {
                 const ok = await window.app.modal.confirm({
-    title: 'Eliminar jugador',
-    body: '¿Estás seguro? Esta acción no se puede deshacer.',
-    confirmText: 'Eliminar',
-    danger: true,
-});
-if (!ok) return;
+                    title: 'Eliminar jugador',
+                    body: '¿Estás seguro? Esta acción no se puede deshacer.',
+                    confirmText: 'Eliminar',
+                    danger: true,
+                });
+                if (!ok) return;
                 try {
                     await window.app.api.delete(url.one(pid));
                     // Remove from both layouts
@@ -88,7 +88,7 @@ if (!ok) return;
             }
 
             // Keep both layouts mirrored in case the user resizes mid-edit
-            for (const cls of ['field-name','field-email','field-phone','field-status']) {
+            for (const cls of ['field-name','field-email','field-phone','field-status','field-notes']) {
                 if (e.target.classList.contains(cls)) {
                     mirrorField(pid, row, cls, e.target.value);
                 }
@@ -103,6 +103,7 @@ if (!ok) return;
             phone:          row.querySelector('.field-phone').value.trim() || null,
             paid_amount:    parseFloat(row.querySelector('.field-paid').value || '0'),
             payment_status: row.querySelector('.field-status').value,
+            notes:          row.querySelector('.field-notes')?.value.trim() || null,
         };
         if (!data.full_name) return window.app.toast.warn('Nombre requerido');
         try {
@@ -166,6 +167,7 @@ if (!ok) return;
         fd.append('file', file);
         try {
             const data = await window.app.api.post(url.preview, fd);
+            console.log(data, url, url.preview);
             validEl.textContent = data.valid;
             invalidEl.textContent = data.invalid;
             previewBody.innerHTML = data.rows.map(r => `
@@ -175,6 +177,7 @@ if (!ok) return;
                     <td>${escape(r.data.email || '')}</td>
                     <td>${escape(r.data.phone || '')}</td>
                     <td class="text-end">${r.data.paid_amount || 0}</td>
+                    <td>${escape(r.data.notes || '')}</td>
                     <td class="small">${Object.values(r.errors).join(', ')}</td>
                 </tr>`).join('');
             previewBox.classList.remove('d-none');
@@ -221,6 +224,7 @@ if (!ok) return;
                     <option value="paid"    ${p.payment_status === 'paid'    ? 'selected' : ''}>Pagado</option>
                 </select>
             </td>
+            <td><input type="text" maxlength="100" class="form-control form-control-sm field-notes" value="${escape(p.notes || '')}" placeholder="—"></td>
             <td class="text-end" style="white-space:nowrap;">
                 <button class="btn btn-sm btn-outline-secondary save-player"><i class="fa-solid fa-floppy-disk"></i></button>
                 <button class="btn btn-sm btn-outline-danger delete-player"><i class="fa-solid fa-trash"></i></button>
@@ -269,6 +273,10 @@ if (!ok) return;
                         </div>
                     </div>
                 </div>
+                <div class="player-field mt-2">
+                    <label><i class="fa-solid fa-note-sticky text-secondary"></i> Notas</label>
+                    <input type="text" maxlength="100" class="form-control form-control-sm field-notes" value="${escape(p.notes || '')}" placeholder="—">
+                </div>
             </div>
             <div class="player-card-footer">
                 <button class="btn btn-sm btn-outline-danger delete-player"><i class="fa-solid fa-trash me-1"></i> Eliminar</button>
@@ -293,7 +301,7 @@ if (!ok) return;
         const remaining = document.querySelectorAll('.player-row').length;
         if (remaining > 0) return;
         if (tbodyDesktop && !document.getElementById('players-empty-desktop')) {
-            tbodyDesktop.innerHTML = `<tr id="players-empty-desktop"><td colspan="6" class="text-center py-4 text-secondary">Aún no hay jugadores. Agrega uno o importa un CSV.</td></tr>`;
+            tbodyDesktop.innerHTML = `<tr id="players-empty-desktop"><td colspan="7" class="text-center py-4 text-secondary">Aún no hay jugadores. Agrega uno o importa un CSV.</td></tr>`;
         }
         if (tbodyMobile && !document.getElementById('players-empty-mobile')) {
             tbodyMobile.innerHTML = `<div id="players-empty-mobile" class="text-center py-4 text-secondary">Aún no hay jugadores. Agrega uno o importa un CSV.</div>`;

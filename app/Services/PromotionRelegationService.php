@@ -400,7 +400,11 @@ class PromotionRelegationService
         $agg = []; // player_id => ['won','lost','jornadas','last_jornada','last_position','last_label']
 
         foreach ($group->jornadas->sortBy('number') as $jornada) {
-            $breakdown = $this->jornadaBreakdown($jornada, $movement);
+            // $breakdown = $this->jornadaBreakdown($jornada, $movement);
+            $breakdown = $this->jornadaBreakdown(
+                $jornada,
+                $group->league->movementForJornadaNumber($jornada->number)
+            );
             foreach ($breakdown as $cancha) {
                 foreach ($cancha['players'] as $p) {
                     $pid = $p['player_id'];

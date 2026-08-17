@@ -25,7 +25,7 @@ class PlayerRequest extends FormRequest
                 Player::STATUS_PARTIAL,
                 Player::STATUS_PAID,
             ])],
-            'notes'          => ['nullable', 'string', 'max:500'],
+            'notes'          => ['nullable', 'string', 'max:100'],
         ];
     }
 }

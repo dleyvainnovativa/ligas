@@ -47,6 +47,12 @@
                 </div>
             </div>
         </div>
+
+        <div class="player-field mt-2">
+            <label><i class="fa-solid fa-note-sticky text-secondary"></i> Notas</label>
+            <input type="text" maxlength="100" class="form-control form-control-sm field-notes"
+                value="{{ $player->notes }}" placeholder="—">
+        </div>
     </div>
 
     <div class="player-card-footer">

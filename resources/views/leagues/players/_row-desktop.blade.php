@@ -26,6 +26,10 @@
             <option value="paid" @selected($player->payment_status === 'paid')>Pagado</option>
         </select>
     </td>
+    <td>
+        <input type="text" maxlength="100" class="form-control form-control-sm field-notes"
+            value="{{ $player->notes }}" placeholder="—">
+    </td>
     <td class="text-end" style="white-space:nowrap;">
         <button class="btn btn-sm btn-outline-secondary save-player" title="Guardar">
             <i class="fa-solid fa-floppy-disk"></i>

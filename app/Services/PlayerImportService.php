@@ -54,10 +54,18 @@ class PlayerImportService
 
                 $paid = (float) ($row['data']['paid_amount'] ?? 0);
 
+                // $league->players()->create([
+                //     'full_name'      => $row['data']['full_name'],
+                //     'email'          => $row['data']['email'] ?: null,
+                //     'phone'          => $row['data']['phone'] ?: null,
+                //     'paid_amount'    => $paid,
+                //     'payment_status' => $this->derivePaymentStatus($paid, (float) $league->cost),
+                // ]);
                 $league->players()->create([
                     'full_name'      => $row['data']['full_name'],
                     'email'          => $row['data']['email'] ?: null,
                     'phone'          => $row['data']['phone'] ?: null,
+                    'notes'          => $row['data']['notes'] ?: null,   // ← add
                     'paid_amount'    => $paid,
                     'payment_status' => $this->derivePaymentStatus($paid, (float) $league->cost),
                 ]);
@@ -88,6 +96,10 @@ class PlayerImportService
 
         if (!empty($data['paid_amount']) && !is_numeric($data['paid_amount'])) {
             $errors['paid_amount'] = 'Monto debe ser numérico';
+        }
+
+        if (!empty($data['notes']) && mb_strlen($data['notes']) > 100) {
+            $errors['notes'] = 'Notas máx. 100 caracteres';
         }
 
         return $errors;
@@ -155,6 +167,7 @@ class PlayerImportService
                     'email'       => $assoc['email']       ?? '',
                     'phone'       => $assoc['phone']       ?? '',
                     'paid_amount' => $assoc['paid_amount'] ?? '',
+                    'notes' => $assoc['notes'] ?? '',
                 ],
             ];
         }
@@ -216,6 +229,7 @@ class PlayerImportService
             'email', 'correo', 'correo electronico', 'e mail'           => 'email',
             'phone', 'telefono', 'celular', 'tel', 'whatsapp'           => 'phone',
             'paid amount', 'pagado', 'monto', 'pago', 'abonado'         => 'paid_amount',
+            'notas', 'horarios', 'horario'        => 'notes',
             default => null,
         };
     }

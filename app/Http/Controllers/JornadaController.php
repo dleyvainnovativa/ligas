@@ -101,7 +101,7 @@ class JornadaController extends Controller
             $previous = $group->jornadas()->where('number', $lastNumber)->first();
             $distribution = $promo->computeNextDistribution(
                 $previous,
-                (int) $league->promotion_relegation
+                $league->movementForJornadaNumber($previous->number)   // ← parity-aware
             );
 
             if (!empty($distribution)) {
@@ -301,7 +301,7 @@ class JornadaController extends Controller
             404
         );
 
-        $breakdown = $promo->jornadaBreakdown($jornada, (int) $league->promotion_relegation);
+        $breakdown = $promo->jornadaBreakdown($jornada, $league->movementForJornadaNumber($jornada->number));
         $playerNames = $league->players()->pluck('full_name', 'id');
         $isComplete = $this->isJornadaComplete($jornada);
 
