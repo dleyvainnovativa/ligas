@@ -52,9 +52,9 @@
                     </button>
                 </form>
 
-                <p class="auth-meta">
+                <!-- <p class="auth-meta">
                     ¿No tienes cuenta? <a href="{{ route('register') }}">Regístrate</a>.
-                </p>
+                </p> -->
             </div>
         </section>
 

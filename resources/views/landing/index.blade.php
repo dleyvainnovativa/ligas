@@ -33,7 +33,7 @@
                     <i class="fa-solid fa-sun theme-icon-light"></i>
                     <i class="fa-solid fa-moon theme-icon-dark"></i>
                 </button>
-                <a href="{{ route('login') }}" class="btn btn-sm btn-outline-secondary">Entrar</a>
+                <a href="{{ route('login') }}" class="btn btn-sm btn-outline-secondary">Iniciar Sesión</a>
             </div>
         </div>
     </nav>
