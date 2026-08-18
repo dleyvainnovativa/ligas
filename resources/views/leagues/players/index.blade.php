@@ -45,7 +45,7 @@
                         <th>Teléfono</th>
                         <th class="text-end" style="width:160px;">Pagado</th>
                         <th style="width:140px;">Estado</th>
-                        <th style="width:140px;">Notas127</th>
+                        <th style="width:140px;">Notas</th>
                         <th style="width:110px;"></th>
                     </tr>
                 </thead>
