@@ -4,6 +4,9 @@
 @section('page-title', $league->name)
 
 @php
+function canchaHasPendingProposal($cancha) {
+return $cancha->rounds->contains(fn ($r) => $r->pendingProposal !== null);
+}
 $editable = $jornada->isEditable();
 $scheduler = app(\App\Services\MatchSchedulingService::class);
 $dates = $scheduler->enumerateDates($jornada);
@@ -128,6 +131,7 @@ return $cancha->rounds->where('status', \App\Models\GameMatch::STATUS_COMPLETED)
                         @foreach ($jornada->canchas as $cancha)
                         @php
                         $isScheduled = $cancha->date && $cancha->time_slot && $cancha->pista_id;
+                        $hasProposal = canchaHasPendingProposal($cancha);
                         $players = canchaLabel($cancha, $playerNames);
                         @endphp
                         <div class="cancha-chip @if($isScheduled) is-done @endif"
@@ -142,6 +146,9 @@ return $cancha->rounds->where('status', \App\Models\GameMatch::STATUS_COMPLETED)
                                     Pendiente
                                     @endif
                                 </span>
+                                @if ($hasProposal)
+                                <span class="badge text-bg-warning">Propuesta</span>
+                                @endif
                             </div>
 
                             <div class="cancha-pill @if($isScheduled) is-scheduled @endif"
@@ -176,6 +183,11 @@ return $cancha->rounds->where('status', \App\Models\GameMatch::STATUS_COMPLETED)
         {{-- Grid --}}
         <div class="col-lg-9 h-100 overflow-auto">
             <div class="card-soft p-0">
+                <div class="grid-legend">
+                    <span><i class="legend-swatch legend-neutral"></i> Pendiente</span>
+                    <span><i class="legend-swatch legend-proposal"></i> Propuesta por revisar</span>
+                    <span><i class="legend-swatch legend-done"></i> Jugada</span>
+                </div>
                 <div class="schedule-grid-wrap">
                     <table class="schedule-grid">
                         <thead>
@@ -221,9 +233,12 @@ return $cancha->rounds->where('status', \App\Models\GameMatch::STATUS_COMPLETED)
                                     $players = canchaLabel($cellCancha, $playerNames);
                                     $completedCount = canchaCompletedCount($cellCancha);
                                     $totalRounds = $cellCancha->rounds->count();
+                                    $hasProposal = canchaHasPendingProposal($cellCancha);
                                     $allDone = $totalRounds > 0 && $completedCount === $totalRounds;
+                                    // Rule B: a pending proposal wins over "completed".
+                                    $stateClass = $hasProposal ? 'has-proposal' : ($allDone ? 'is-completed' : '');
                                     @endphp
-                                    <div class="cell-cancha @if($allDone) is-completed @endif"
+                                    <div class="cell-cancha {{ $stateClass }}"
                                         @if($editable) draggable="true" @endif
                                         data-cancha-id="{{ $cellCancha->id }}">
                                         <div class="cell-cancha-label">{{ $cellCancha->label }}</div>
@@ -234,11 +249,16 @@ return $cancha->rounds->where('status', \App\Models\GameMatch::STATUS_COMPLETED)
                                         </div>
                                         <div class="cell-cancha-rounds">
                                             @foreach ($cellCancha->rounds as $round)
-                                            @php $t = $round->status === 'completed' ? $round->tally() : null; @endphp
-                                            <span class="round-pill {{ $round->status }}"
-                                                @if($t) title="S{{ $round->rotation_index }}: {{ $t['games_a'] }}–{{ $t['games_b'] }}" @endif>
+                                            @php
+                                            $t = $round->status === 'completed' ? $round->tally() : null;
+                                            $roundHasProposal = $round->pendingProposal !== null;
+                                            @endphp
+                                            <span class="round-pill {{ $round->status }} @if($roundHasProposal) has-proposal @endif"
+                                                @if($roundHasProposal) title="Propuesta por revisar" @elseif($t) title="S{{ $round->rotation_index }}: {{ $t['games_a'] }}–{{ $t['games_b'] }}" @endif>
                                                 S{{ $round->rotation_index }}
-                                                @if ($t)
+                                                @if ($roundHasProposal)
+                                                <i class="fa-solid fa-clock-rotate-left ms-1"></i>
+                                                @elseif ($t)
                                                 <span class="round-pill-score">{{ $t['sets_a'] }}-{{ $t['sets_b'] }}</span>
                                                 @endif
                                             </span>

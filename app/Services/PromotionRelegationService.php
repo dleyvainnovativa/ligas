@@ -335,7 +335,11 @@ class PromotionRelegationService
 
                 if (!$cancha) continue;
 
-                $breakdown = $this->jornadaBreakdown($jornada, $movement);
+                // $breakdown = $this->jornadaBreakdown($jornada, $movement);
+                $breakdown = $this->jornadaBreakdown(
+                    $jornada,
+                    $jornada->group->league->movementForJornadaNumber($jornada->number)
+                );
 
                 // Find this cancha + this player's row in the breakdown
                 $canchaBreakdown = collect($breakdown)->firstWhere('cancha_id', $cancha->id);

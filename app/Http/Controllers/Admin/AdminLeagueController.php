@@ -17,6 +17,7 @@ class AdminLeagueController extends Controller
 
         $leagues = League::query()
             ->when($search, fn($q) => $q->where('name', 'like', "%{$search}%"))
+            ->with('manager')                          // ← creator (name + email)
             ->withCount(['players', 'groups'])
             ->orderByDesc('created_at')
             ->paginate(25)
@@ -30,6 +31,8 @@ class AdminLeagueController extends Controller
 
     public function edit(League $league)
     {
+        $league->load('manager');                      // ← creator (name + email)
+
         return view('admin.leagues.edit', [
             'league'   => $league,
             'snapshot' => $this->leagueTiers->snapshot($league),
@@ -39,7 +42,6 @@ class AdminLeagueController extends Controller
     public function update(Request $request, League $league)
     {
         // Empty string in a limit field means "unlimited" → stored as null.
-        // This is the admin-facing mirror of the null-means-∞ convention.
         $data = $request->validate([
             'max_players'  => 'nullable|integer|min:1',
             'max_jornadas' => 'nullable|integer|min:1',

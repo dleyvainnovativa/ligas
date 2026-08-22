@@ -27,14 +27,14 @@ class GameMatchController extends Controller
         $jornada->load([
             'canchas.players' => fn($q) => $q->orderBy('cancha_player.slot'),
             'canchas.pairs'   => fn($q) => $q->orderBy('cancha_pair.slot'),
-            'canchas.rounds',
+            'canchas.rounds.pendingProposal',          // ← add relationship
             'canchas.pista.sede',
             'group.league.sedes.pistas',
         ]);
         foreach ($jornada->canchas as $cancha) {
             $this->scheduler->ensureRounds($cancha);
         }
-        $jornada->load(['canchas.rounds']);
+        $jornada->load(['canchas.rounds.pendingProposal']);   // ← here too
 
         return view('leagues.matches.grid', [
             'league'  => $league,

@@ -130,7 +130,8 @@ class PublicLeagueController extends Controller
             $canchas   = collect();
 
             if ($currentJornada) {
-                $raw = $promo->jornadaBreakdown($currentJornada, (int) $league->promotion_relegation);
+                // $raw = $promo->jornadaBreakdown($currentJornada, (int) $league->promotion_relegation);
+                $raw = $promo->jornadaBreakdown($currentJornada, $league->movementForJornadaNumber($currentJornada->number));
 
                 // Load the canchas so we can attach schedule/pista metadata
                 $canchas = $this->loadCanchas($currentJornada->id)->keyBy('id');
@@ -284,7 +285,8 @@ class PublicLeagueController extends Controller
             $canchas = $this->loadCanchas($jornada->id);
 
             // Build ranked breakdown for this jornada, keyed by cancha_id
-            $rawBreakdown = $promo->jornadaBreakdown($jornada, (int) $league->promotion_relegation);
+            // $rawBreakdown = $promo->jornadaBreakdown($jornada, (int) $league->promotion_relegation);
+            $rawBreakdown = $promo->jornadaBreakdown($jornada, $league->movementForJornadaNumber($jornada->number));
             $breakdownByCancha = [];
             foreach ($rawBreakdown as $cb) {
                 // resolve player names
@@ -551,7 +553,8 @@ class PublicLeagueController extends Controller
             $jornada = $group->jornadas->firstWhere('number', $number);
             if (!$jornada) continue;
 
-            $breakdown = $promo->jornadaBreakdown($jornada, (int) $league->promotion_relegation);
+            // $breakdown = $promo->jornadaBreakdown($jornada, (int) $league->promotion_relegation);
+            $breakdown = $promo->jornadaBreakdown($jornada, $league->movementForJornadaNumber($jornada->number));
             $complete = $jornada->canchas()->count() > 0
                 && !$jornada->canchas()->where('status', '!=', \App\Models\Cancha::STATUS_COMPLETED)->exists();
 

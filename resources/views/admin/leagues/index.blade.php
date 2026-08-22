@@ -23,8 +23,8 @@
                     <th>Liga</th>
                     <th class="text-center">Jugadores</th>
                     <th class="text-center">Grupos</th>
-                    <th class="text-center">Máx. jugadores</th>
-                    <th class="text-center">Máx. jornadas</th>
+                    <th class="text-center">Máx. jug.</th>
+                    <th class="text-center">Máx. jorn.</th>
                     <th class="text-center">Máx. grupos</th>
                     <th></th>
                 </tr>
@@ -35,8 +35,15 @@
                     <td>
                         <strong>{{ $league->name }}</strong>
                         @if ($league->status)
-                        <span class="text-muted small d-block">{{ $league->status }}</span>
+                        <span class="badge bg-secondary ms-1 align-middle">{{ $league->status }}</span>
                         @endif
+                        <span class="d-block text-muted small mt-1">
+                            <i class="fa-regular fa-user me-1"></i>
+                            {{ $league->manager?->name ?? 'Sin manager' }}
+                            @if ($league->manager?->email)
+                            · <a href="mailto:{{ $league->manager->email }}" class="text-muted">{{ $league->manager->email }}</a>
+                            @endif
+                        </span>
                     </td>
                     <td class="text-center font-mono">{{ $league->players_count }}</td>
                     <td class="text-center font-mono">{{ $league->groups_count }}</td>
@@ -50,7 +57,9 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="7" class="text-center text-muted py-4">No se encontraron ligas.</td></tr>
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">No se encontraron ligas.</td>
+                </tr>
                 @endforelse
             </tbody>
         </table>
