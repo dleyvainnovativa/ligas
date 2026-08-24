@@ -1,17 +1,5 @@
 <section class="public-ads">
     <div id="public-ads-carousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
-        @if ($ads->count() > 1)
-        <div class="carousel-indicators">
-            @foreach ($ads as $i => $ad)
-            <button type="button"
-                data-bs-target="#public-ads-carousel"
-                data-bs-slide-to="{{ $i }}"
-                @if ($i===0) class="active" aria-current="true" @endif
-                aria-label="Anuncio {{ $i + 1 }}">
-            </button>
-            @endforeach
-        </div>
-        @endif
 
         <div class="carousel-inner">
             @foreach ($ads as $i => $ad)
@@ -36,6 +24,19 @@
             <span class="carousel-control-next-icon" aria-hidden="true"></span>
             <span class="visually-hidden">Siguiente</span>
         </button>
+
+        {{-- Indicators moved BELOW the image so nothing overlays the ad. --}}
+        <div class="carousel-indicators">
+            @foreach ($ads as $i => $ad)
+            <button type="button"
+                data-bs-target="#public-ads-carousel"
+                data-bs-slide-to="{{ $i }}"
+                @if ($i===0) class="active" aria-current="true" @endif
+                aria-label="Anuncio {{ $i + 1 }}">
+            </button>
+            @endforeach
+        </div>
         @endif
+
     </div>
 </section>

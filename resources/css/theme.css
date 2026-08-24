@@ -4921,3 +4921,79 @@ a.public-standing-card {
 .legend-neutral  { background: var(--surface-card); }
 .legend-proposal { background: var(--warning-50); border-color: var(--warning-500); }
 .legend-done     { background: var(--success-50); border-color: var(--success-500); }
+
+/* ---------- PUBLIC ADS ---------- */
+/*
+   REPLACE the existing ".public-ads … carousel-indicators" rules in theme.css
+   (lines ~2060–2105) with this block. The change: the image is no longer
+   clipped by the container, and indicators sit in their own strip BELOW the
+   image instead of overlaying it.
+*/
+
+.public-ads {
+    margin: 0 var(--space-4) var(--space-4);
+    border-radius: var(--radius-md);
+    /* overflow hidden removed from the outer container so the indicator strip
+       below the image isn't clipped; the image itself is rounded instead. */
+    box-shadow: var(--shadow-sm);
+}
+@media (min-width: 768px) { .public-ads { margin: 0 var(--space-8) var(--space-4); } }
+
+/* Round only the image's top corners; the indicator strip carries the bottom. */
+.public-ads .carousel-inner {
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    overflow: hidden;
+}
+
+.public-ad-image {
+    aspect-ratio: 3 / 1;
+    object-fit: cover;
+    background: var(--surface-sunken);
+}
+
+/* Controls still overlay the image (they sit at the vertical center, clear of
+   the ad's bottom edge), so they stay as-is. */
+.public-ads .carousel-control-prev,
+.public-ads .carousel-control-next {
+    width: 40px;
+    opacity: 0;
+    transition: opacity var(--transition-base);
+    /* keep the arrows aligned to the image, not the taller container */
+    bottom: auto;
+    top: 0;
+    height: calc(100% - 28px); /* stop above the indicator strip */
+}
+.public-ads:hover .carousel-control-prev,
+.public-ads:hover .carousel-control-next { opacity: 0.8; }
+
+.public-ads .carousel-control-prev-icon,
+.public-ads .carousel-control-next-icon {
+    background-color: rgba(0,0,0,0.5);
+    border-radius: var(--radius-pill);
+    width: 36px; height: 36px;
+    background-size: 50% 50%;
+}
+
+/* Indicators: pulled out of the overlay and placed in a static strip under
+   the image. */
+.public-ads .carousel-indicators {
+    position: static;         /* was absolute (Bootstrap default) */
+    margin: 0;
+    padding: 10px 0;
+    background: var(--surface-card);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+.public-ads .carousel-indicators [data-bs-target] {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border-strong, rgba(0,0,0,0.25)); /* visible on light strip */
+    border: 0;
+    margin: 0 3px;
+    opacity: 1;
+    transition: width var(--transition-base), background var(--transition-base);
+}
+.public-ads .carousel-indicators [data-bs-target].active {
+    background: var(--brand-500);
+    width: 18px;
+    border-radius: 999px;
+}
