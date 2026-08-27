@@ -40,6 +40,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/', [AdminController::class, 'index'])->name('dashboard');
     Route::get('/managers', [AdminController::class, 'managers'])->name('managers');
     Route::post('/managers', [AdminController::class, 'storeManager'])->name('managers.store');
+    Route::put('/managers/{manager}', [AdminController::class, 'updateManager'])->name('managers.update');
     Route::resource('ads', AdminAdController::class)->except(['show']);
     Route::get('/leagues',               [AdminLeagueController::class, 'index'])->name('leagues.index');
     Route::get('/leagues/{league}/edit', [AdminLeagueController::class, 'edit'])->name('leagues.edit');

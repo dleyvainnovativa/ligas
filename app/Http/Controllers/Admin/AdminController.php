@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Manager;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Kreait\Firebase\Contract\Auth as FirebaseAuth;
 use Kreait\Firebase\Exception\Auth\EmailExists;
 
@@ -32,39 +31,55 @@ class AdminController extends Controller
     public function storeManager(Request $request)
     {
         $data = $request->validate([
-            'email' => 'required|email',
-            'name' => 'nullable|string|max:255',
-            'tier' => 'required|in:free,plus,pro',
+            'email'      => 'required|email',
+            'name'       => 'nullable|string|max:255',
+            'password'   => 'required|string|min:6|max:255',
+            'tier'       => 'required|in:free,plus,pro',
             'tier_until' => 'nullable|date|after:today',
         ]);
 
-        $tempPassword = Str::random(16);
-
         try {
             $fbUser = $this->firebaseAuth->createUser([
-                'email' => $data['email'],
+                'email'         => $data['email'],
                 'emailVerified' => false,
-                'password' => $tempPassword,
-                'displayName' => $data['name'] ?? null,
+                'password'      => $data['password'],
+                'displayName'   => $data['name'] ?? null,
             ]);
         } catch (EmailExists $e) {
             return back()->withErrors(['email' => 'Ya existe un usuario con ese email en Firebase.'])->withInput();
         }
 
-        // Trigger Firebase's password-reset email so the manager sets their own password.
-        $resetLink = $this->firebaseAuth->getPasswordResetLink($data['email']);
-
         Manager::updateOrCreate(
             ['firebase_uid' => $fbUser->uid],
             [
-                'email' => $data['email'],
-                'name' => $data['name'] ?? null,
-                'tier' => $data['tier'],
+                'email'      => $data['email'],
+                'name'       => $data['name'] ?? null,
+                'tier'       => $data['tier'],
                 'tier_until' => $data['tier_until'] ?? null,
-                'role' => 'manager',
+                'role'       => 'manager',
             ]
         );
 
-        return back()->with('status', "Manager creado. Enlace para establecer contraseña: {$resetLink}");
+        // The admin controls the password manually and shares it via WhatsApp.
+        // Surface the credentials once so they can be copied / sent.
+        return back()
+            ->with('new_manager_email', $data['email'])
+            ->with('new_manager_password', $data['password'])
+            ->with('status', 'Manager creado en Firebase. Comparte las credenciales con el manager.');
+    }
+
+    public function updateManager(Request $request, Manager $manager)
+    {
+        $data = $request->validate([
+            'tier'       => 'required|in:free,plus,pro',
+            'tier_until' => 'nullable|date',
+        ]);
+
+        $manager->update([
+            'tier'       => $data['tier'],
+            'tier_until' => $data['tier_until'] ?? null,
+        ]);
+
+        return back()->with('status', "Plan de {$manager->email} actualizado.");
     }
 }
