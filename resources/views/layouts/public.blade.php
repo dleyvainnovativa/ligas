@@ -93,8 +93,8 @@
             </div>
         </nav>
 
-        {{-- Ads — shown on every public page --}}
-        @php $publicAds = $league->cachedActiveAds(); @endphp
+        {{-- Ads — shown on every public page (league-specific + global) --}}
+        @php $publicAds = $league->publicAds(); @endphp
         @if ($publicAds->isNotEmpty())
         <div class="public-ads-wrap">
             <div class="public-ads-inner">

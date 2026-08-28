@@ -140,6 +140,23 @@ class League extends Model
     {
         return $this->activeAds()->get();
     }
+
+    /**
+     * Ads shown on this league's public pages: the league's own active ads,
+     * plus any active global ads (league_id = null), ordered by position.
+     * Global ads act as house/network ads that appear across every league.
+     */
+    public function publicAds()
+    {
+        $leagueAds = $this->activeAds()->get();
+
+        $globalAds = Ad::whereNull('league_id')
+            ->where('is_active', true)
+            ->orderBy('position')
+            ->get();
+
+        return $leagueAds->concat($globalAds)->sortBy('position')->values();
+    }
     /**
      * The tiebreaker chain for standings + promotion/relegation.
      * Defaults to diff → games won, which is the current behavior.
