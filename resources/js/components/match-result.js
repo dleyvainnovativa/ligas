@@ -138,8 +138,13 @@ export function mountMatchResult() {
                     <div class="small mt-1">
                         Sets propuestos: ${round.proposal.sets.map(s => `<span class="font-mono">${s[0]}–${s[1]}</span>`).join(', ')}
                     </div>
+                    ${(round.proposal.no_show && round.proposal.no_show.length) ? `
+                    <div class="small mt-1"><i class="fa-solid fa-user-slash me-1"></i>No show propuesto: ${round.proposal.no_show.map(escape).join(', ')}</div>` : ''}
+                    ${(round.proposal.suplente && round.proposal.suplente.length) ? `
+                    <div class="small mt-1"><i class="fa-solid fa-user-pen me-1"></i>Suplente propuesto: ${round.proposal.suplente.map(escape).join(', ')}</div>` : ''}
                     <div class="small mt-2 text-muted">
-                        Se preseleccionaron los marcadores abajo. Al guardar, la propuesta
+                        Se preseleccionaron los marcadores abajo. Las penalizaciones propuestas
+                        son solo informativas — márcalas manualmente si aplican. Al guardar, la propuesta
                         se marca como <em>aceptada</em> (si coinciden) o <em>modificada</em>.
                     </div>
                 </div>

@@ -44,9 +44,20 @@ class PublicMatchProposalController extends Controller
             'sets.*' => ['array', 'size:2', new ValidSetScore],
             'sets.*.0' => ['integer', 'min:0', 'max:7'],
             'sets.*.1' => ['integer', 'min:0', 'max:7'],
+            'no_show_ids'    => ['nullable', 'array'],
+            'no_show_ids.*'  => ['integer'],
+            'suplente_ids'   => ['nullable', 'array'],
+            'suplente_ids.*' => ['integer'],
         ]);
 
-        $proposal = $this->proposals->propose($match, $data['sets'], $data['name'], $request);
+        $proposal = $this->proposals->propose(
+            $match,
+            $data['sets'],
+            $data['name'],
+            $request,
+            $data['no_show_ids'] ?? [],
+            $data['suplente_ids'] ?? [],
+        );
 
         // Bind a token cookie so we know which browser proposed
         $cookie = Cookie::make(

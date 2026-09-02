@@ -52,6 +52,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/perfil', [ProfileController::class, 'show'])->name('profile');
+    Route::put('/perfil', [ProfileController::class, 'update'])->name('profile.update');
     Route::resource('leagues', LeagueController::class);
 
     Route::prefix('leagues/{league}')->name('leagues.')->group(function () {

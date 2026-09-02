@@ -59,6 +59,12 @@ $allCompleted = $m['status'] === 'completed';
                 @foreach ($proposal['sets'] as $set)
                 <span class="proposal-set">{{ $set[0] }}–{{ $set[1] }}</span>@if (!$loop->last), @endif
                 @endforeach
+                @if (!empty($proposal['no_show']))
+                <br><span class="proposal-pen"><i class="fa-solid fa-user-slash"></i> No show: {{ implode(', ', $proposal['no_show']) }}</span>
+                @endif
+                @if (!empty($proposal['suplente']))
+                <br><span class="proposal-pen"><i class="fa-solid fa-user-pen"></i> Suplente: {{ implode(', ', $proposal['suplente']) }}</span>
+                @endif
             </span>
         </div>
         @endif

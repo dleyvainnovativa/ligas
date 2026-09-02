@@ -14,10 +14,23 @@
         <div class="card-soft p-4 h-100">
             <h6 class="mb-3"><i class="fa-regular fa-circle-user me-1"></i> Tu cuenta</h6>
 
-            <div class="mb-3">
+            <form method="POST" action="{{ route('profile.update') }}" class="mb-3">
+                @csrf
+                @method('PUT')
                 <label class="form-label small text-muted mb-1">Nombre</label>
-                <div class="fw-semibold">{{ $manager->name ?? '—' }}</div>
-            </div>
+                <div class="d-flex gap-2 align-items-start">
+                    <input type="text" name="name" class="form-control @error('name') is-invalid @enderror"
+                        value="{{ old('name', $manager->name) }}" maxlength="255"
+                        placeholder="Tu nombre">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                    </button>
+                </div>
+                @error('name')
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+                @enderror
+            </form>
+
             <div class="mb-3">
                 <label class="form-label small text-muted mb-1">Email</label>
                 <div class="fw-semibold font-mono">{{ $manager->email }}</div>

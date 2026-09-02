@@ -13,7 +13,7 @@ class MatchProposalService
     /**
      * Create a new proposal. Supersedes any existing pending one for this match.
      */
-    public function propose(GameMatch $match, array $sets, string $name, Request $request): MatchScoreProposal
+    public function propose(GameMatch $match, array $sets, string $name, Request $request, array $noShow = [], array $suplente = []): MatchScoreProposal
     {
         // Sanitize sets
         $sets = $this->cleanSets($sets);
@@ -25,7 +25,12 @@ class MatchProposalService
             throw new \DomainException($errors[0]['message']);
         }
 
-        return DB::transaction(function () use ($match, $sets, $name, $request) {
+        // Only keep flags for players that actually belong to this match.
+        $participants = $this->matchParticipantIds($match);
+        $noShow   = array_values(array_intersect($participants, array_map('intval', $noShow)));
+        $suplente = array_values(array_intersect($participants, array_map('intval', $suplente)));
+
+        return DB::transaction(function () use ($match, $sets, $name, $request, $noShow, $suplente) {
             // Find token cookie or mint one
             $token = $request->cookie('pl_proposer') ?: (string) Str::uuid();
 
@@ -36,13 +41,15 @@ class MatchProposalService
                 ->first();
 
             $proposal = MatchScoreProposal::create([
-                'match_id'       => $match->id,
-                'sets'           => $sets,
-                'proposer_name'  => mb_substr(trim($name), 0, 120),
-                'proposer_token' => $token,
-                'ip'             => $request->ip(),
-                'user_agent'     => mb_substr((string) $request->userAgent(), 0, 255),
-                'status'         => MatchScoreProposal::STATUS_PENDING,
+                'match_id'            => $match->id,
+                'sets'                => $sets,
+                'no_show_player_ids'  => $noShow ?: null,
+                'suplente_player_ids' => $suplente ?: null,
+                'proposer_name'       => mb_substr(trim($name), 0, 120),
+                'proposer_token'      => $token,
+                'ip'                  => $request->ip(),
+                'user_agent'          => mb_substr((string) $request->userAgent(), 0, 255),
+                'status'              => MatchScoreProposal::STATUS_PENDING,
             ]);
 
             if ($existing) {
@@ -54,6 +61,30 @@ class MatchProposalService
 
             return $proposal;
         });
+    }
+
+    /**
+     * All player ids in this round's cancha (penalties are proposed at the
+     * cancha level, so a proposer may flag any player in the cancha — not just
+     * the two teams of the specific set being proposed).
+     */
+    private function matchParticipantIds(GameMatch $match): array
+    {
+        $cancha = $match->cancha;
+        if ($cancha) {
+            $ids = $cancha->players->isNotEmpty()
+                ? $cancha->players->pluck('id')->all()
+                : $cancha->pairs->flatMap(fn($p) => [$p->player_a_id, $p->player_b_id])->all();
+            if (!empty($ids)) {
+                return array_values(array_unique(array_map('intval', $ids)));
+            }
+        }
+
+        // Fallback: just this round's two teams.
+        $ids = [];
+        foreach ((array) $match->team_a_player_ids as $id) $ids[] = (int) $id;
+        foreach ((array) $match->team_b_player_ids as $id) $ids[] = (int) $id;
+        return array_values(array_unique($ids));
     }
 
     /** Mark a proposal as accepted (when manager saves matching result). */

@@ -16,6 +16,8 @@ class MatchScoreProposal extends Model
     protected $fillable = [
         'match_id',
         'sets',
+        'no_show_player_ids',
+        'suplente_player_ids',
         'proposer_name',
         'proposer_token',
         'ip',
@@ -28,8 +30,10 @@ class MatchScoreProposal extends Model
     protected function casts(): array
     {
         return [
-            'sets'        => 'array',
-            'reviewed_at' => 'datetime',
+            'sets'                => 'array',
+            'no_show_player_ids'  => 'array',
+            'suplente_player_ids' => 'array',
+            'reviewed_at'         => 'datetime',
         ];
     }
 

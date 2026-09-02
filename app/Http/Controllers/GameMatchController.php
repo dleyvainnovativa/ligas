@@ -93,6 +93,8 @@ class GameMatchController extends Controller
                     'id'             => $proposal->id,
                     'proposer_name'  => $proposal->proposer_name,
                     'sets'           => $proposal->sets,
+                    'no_show'        => collect($proposal->no_show_player_ids ?? [])->map(fn($id) => $playerNames[$id] ?? '?')->values(),
+                    'suplente'       => collect($proposal->suplente_player_ids ?? [])->map(fn($id) => $playerNames[$id] ?? '?')->values(),
                     'created_at'     => $proposal->created_at->diffForHumans(),
                 ] : null,
             ];

@@ -63,7 +63,27 @@ currentMatchId = btn.dataset.roundId;  // renamed semantically; URL still uses /
 
             <label class="form-label">Marcador</label>
             <div id="propose-sets" class="propose-sets"></div>
-            
+
+            ${(m.player_options && m.player_options.length) ? `
+            <div class="propose-penalties mt-3">
+                <label class="form-label d-block mb-1">Penalizaciones <span class="text-muted small">(opcional)</span></label>
+                <div class="text-muted small mb-2">Marca si algún jugador no se presentó o fue suplente.</div>
+                <div class="propose-penalty-list">
+                    <div class="propose-penalty-head">
+                        <span class="pen-player-h"></span>
+                        <span class="pen-flag-h">No show</span>
+                        <span class="pen-flag-h">Suplente</span>
+                    </div>
+                    ${m.player_options.map(p => `
+                        <div class="propose-penalty-row" data-pid="${p.id}">
+                            <span class="pen-player">${escape(p.name)}</span>
+                            <label class="pen-flag"><input type="checkbox" class="form-check-input pen-noshow" data-pid="${p.id}"></label>
+                            <label class="pen-flag"><input type="checkbox" class="form-check-input pen-suplente" data-pid="${p.id}"></label>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            ` : ''}
 
             <small class="text-muted d-block mt-3">
                 <i class="fa-solid fa-circle-info"></i>
@@ -130,6 +150,12 @@ currentMatchId = btn.dataset.roundId;  // renamed semantically; URL still uses /
             return;
         }
 
+        // Collect penalty flags (player ids)
+        const noShowIds = Array.from(document.querySelectorAll('.pen-noshow:checked'))
+            .map(cb => parseInt(cb.dataset.pid, 10));
+        const suplenteIds = Array.from(document.querySelectorAll('.pen-suplente:checked'))
+            .map(cb => parseInt(cb.dataset.pid, 10));
+
         submitBtn.disabled = true;
         const original = submitBtn.innerHTML;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando…';
@@ -143,7 +169,7 @@ currentMatchId = btn.dataset.roundId;  // renamed semantically; URL still uses /
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
                 },
-                body: JSON.stringify({ name, sets }),
+                body: JSON.stringify({ name, sets, no_show_ids: noShowIds, suplente_ids: suplenteIds }),
                 credentials: 'same-origin',
             });
             if (!res.ok) {

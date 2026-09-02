@@ -484,7 +484,16 @@ class PublicLeagueController extends Controller
                 $playerNames[$pair->player_b_id] ?? '?',
             ])->all();
 
-        $rounds = $c->rounds->map(function ($round) use ($playerNames) {
+        // Player options for the cancha (id + name) — used by the public
+        // propose modal to let a proposer flag no-show / suplente per player.
+        $canchaPlayerOptions = $c->players->isNotEmpty()
+            ? $c->players->map(fn($p) => ['id' => $p->id, 'name' => $playerNames[$p->id] ?? '?'])->values()->all()
+            : $c->pairs->flatMap(fn($pair) => [
+                ['id' => $pair->player_a_id, 'name' => $playerNames[$pair->player_a_id] ?? '?'],
+                ['id' => $pair->player_b_id, 'name' => $playerNames[$pair->player_b_id] ?? '?'],
+            ])->values()->all();
+
+        $rounds = $c->rounds->map(function ($round) use ($playerNames, $canchaPlayerOptions) {
             $t = $round->status === 'completed' ? $round->tally() : null;
             $proposal = $round->pendingProposal;
             return [
@@ -497,9 +506,12 @@ class PublicLeagueController extends Controller
                 'sets_a'         => $t['sets_a'] ?? null,
                 'sets_b'         => $t['sets_b'] ?? null,
                 'winner'         => $round->winner,
+                'player_options' => $canchaPlayerOptions,
                 'pending_proposal' => $proposal ? [
                     'proposer_name' => $proposal->proposer_name,
                     'sets'          => $proposal->sets,
+                    'no_show'       => collect($proposal->no_show_player_ids ?? [])->map(fn($id) => $playerNames[$id] ?? '?')->all(),
+                    'suplente'      => collect($proposal->suplente_player_ids ?? [])->map(fn($id) => $playerNames[$id] ?? '?')->all(),
                     'created_at'    => $proposal->created_at->diffForHumans(),
                 ] : null,
             ];
