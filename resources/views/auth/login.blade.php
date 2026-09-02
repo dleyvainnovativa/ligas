@@ -41,7 +41,8 @@
                     <div class="mb-4">
                         <label class="form-label required d-flex justify-content-between align-items-center">
                             <span>Contraseña</span>
-                            <a href="#" class="text-muted small text-decoration-none" tabindex="-1">¿Olvidaste tu contraseña?</a>
+                            <a href="#" class="text-muted small text-decoration-none" tabindex="-1"
+                                data-bs-toggle="modal" data-bs-target="#forgot-password-modal">¿Olvidaste tu contraseña?</a>
                         </label>
                         <input type="password" name="password" class="form-control" autocomplete="current-password" required>
                     </div>
@@ -84,7 +85,74 @@
         </aside>
     </div>
 
+    {{-- Forgot password modal --}}
+    <div class="modal fade" id="forgot-password-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-key me-1"></i> Restablecer contraseña
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <form id="forgot-form" novalidate>
+                    <div class="modal-body">
+                        <p class="small text-muted mb-3">
+                            Escribe tu email y te enviaremos un enlace para restablecer tu contraseña.
+                        </p>
+                        <div class="mb-1">
+                            <label class="form-label required">Email</label>
+                            <input type="email" name="email" class="form-control" autocomplete="email" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button id="forgot-btn" type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Enviar enlace
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Forgot password — sends a Firebase reset email
+        document.getElementById('forgot-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const btn = document.getElementById('forgot-btn');
+            const { email } = window.app.serializeForm(form);
+            if (!email) {
+                window.app.toast.error('Escribe tu email.');
+                return;
+            }
+            window.app.loading.on(btn);
+            try {
+                await window.firebase.sendPasswordResetEmail(window.firebase.auth, email);
+                window.app.toast.success('Te enviamos un enlace para restablecer tu contraseña. Revisa tu correo.');
+                const modalEl = document.getElementById('forgot-password-modal');
+                window.bootstrap.Modal.getInstance(modalEl)?.hide();
+                form.reset();
+            } catch (err) {
+                // Firebase returns auth/user-not-found; we show a neutral message
+                // to avoid revealing whether an email is registered.
+                const code = err.code || err.message || '';
+                if (code.includes('invalid-email')) {
+                    window.app.toast.error('El email no es válido.');
+                } else if (code.includes('too-many-requests')) {
+                    window.app.toast.error('Demasiados intentos. Intenta de nuevo en unos minutos.');
+                } else {
+                    window.app.toast.success('Si ese email está registrado, recibirás un enlace en breve.');
+                    const modalEl = document.getElementById('forgot-password-modal');
+                    window.bootstrap.Modal.getInstance(modalEl)?.hide();
+                    form.reset();
+                }
+            } finally {
+                window.app.loading.off(btn);
+            }
+        });
+
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const form = e.target;

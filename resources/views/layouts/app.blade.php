@@ -45,7 +45,8 @@
 
             <div class="nav-label">Cuenta</div>
             <nav class="nav flex-column">
-                <a href="#" class="nav-link disabled">
+                <a href="{{ route('profile') }}"
+                    class="nav-link {{ request()->routeIs('profile') ? 'active' : '' }}">
                     <i class="fa-regular fa-circle-user"></i> Perfil
                 </a>
             </nav>
@@ -75,6 +76,8 @@
             </div>
         </main>
     </div>
+
+    @stack('scripts')
 </body>
 
 </html>
