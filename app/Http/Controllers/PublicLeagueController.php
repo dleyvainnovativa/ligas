@@ -328,10 +328,31 @@ class PublicLeagueController extends Controller
                 return $serialized;
             })->all();
 
+            // Projection ("what-if"): overlay pending proposals as if accepted.
+            // Only built when this jornada's group actually has pending proposals.
+            $hasProposals = $canchas->contains(fn($c) => $c->rounds->contains(fn($r) => $r->pendingProposal !== null));
+
+            $previewByCancha = [];
+            if ($hasProposals) {
+                $rawPreview = $promo->jornadaBreakdownPreview(
+                    $jornada,
+                    $league->movementForJornadaNumber($jornada->number)
+                );
+                foreach ($rawPreview as $cb) {
+                    $cb['players'] = collect($cb['players'])->map(function ($p) use ($playerNames) {
+                        $p['name'] = $playerNames[$p['player_id']] ?? '—';
+                        return $p;
+                    })->all();
+                    $previewByCancha[$cb['cancha_id']] = $cb;
+                }
+            }
+
             return [
-                'group_name' => $pair['group']->name,
-                'complete'   => $complete,
-                'canchas'    => $canchaList,
+                'group_name'   => $pair['group']->name,
+                'complete'     => $complete,
+                'canchas'      => $canchaList,
+                'has_proposals' => $hasProposals,
+                'preview'      => array_values($previewByCancha),
             ];
         })->all();
 

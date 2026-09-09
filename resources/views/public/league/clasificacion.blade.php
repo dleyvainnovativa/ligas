@@ -12,7 +12,7 @@
             <select id="clasif-jornada" class="form-select form-select-sm"
                 onchange="if (this.value) { window.location = this.value; }">
                 <option value="{{ route('public.clasificacion', $league->slug) }}"
-                    @selected($selected===null)>Resumen</option>
+                    @selected($selected===null)>Tabla General</option>
                 @foreach ($jornada_numbers as $n)
                 <option value="{{ route('public.clasificacion', $league->slug) }}?jornada={{ $n }}"
                     @selected($selected===$n)>Jornada {{ $n }}</option>

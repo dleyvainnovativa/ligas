@@ -2219,6 +2219,38 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     padding: 8px 12px;
 }
 
+/* Jornada projection bottom sheet */
+.projection-sheet {
+    background: var(--surface-page);
+    height: 90% !important;
+    max-height: 85vh;
+    border-top-left-radius: var(--radius-lg, 16px);
+    border-top-right-radius: var(--radius-lg, 16px);
+}
+.projection-sheet .offcanvas-body {
+    background: var(--surface-page);
+    overflow-y: auto;
+}
+.projection-canchas {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5, 24px);
+}
+.projection-cancha-head {
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--surface-border);
+}
+.projection-cancha-label {
+    font-weight: 700;
+    font-size: 15px;
+}
+
 /* ---------- ERROR PAGES ---------- */
 .error-body {
     background: var(--surface-page);
@@ -4353,7 +4385,7 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
 }
 
 .jstand-cancha {
-    background: var(--surface-card);
+    /* background: var(--surface-card); */
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     overflow: hidden;

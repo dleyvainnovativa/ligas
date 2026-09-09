@@ -182,12 +182,111 @@ class PromotionRelegationService
     }
 
     /**
+     * Like jornadaBreakdown, but a "what-if" projection: rounds with no confirmed
+     * result but a pending proposal are counted as if the proposal were accepted.
+     * Nothing is persisted. Each cancha also carries:
+     *   'coverage' => ['total','filled','complete']  (filled = confirmed or proposed)
+     * so the UI can badge partially-projected canchas as "incompleto".
+     */
+    public function jornadaBreakdownPreview(Jornada $jornada, int $movement): array
+    {
+        $jornada->loadMissing(['canchas.rounds.pendingProposal', 'canchas.players', 'group.league']);
+        $chain = $jornada->group->league->standingsOrder();
+
+        $canchas = $jornada->canchas
+            ->sortBy(fn($c) => $c->position ?? $c->id)
+            ->values();
+
+        if ($canchas->isEmpty()) return [];
+
+        $n = $canchas->count();
+        $out = [];
+
+        foreach ($canchas as $i => $cancha) {
+            $stats = array_values($this->canchaPlayerStats($cancha, true));
+            $ordered = $this->sortByChainWithPenaltyGate($stats, $chain);
+
+            $size = count($ordered);
+            $m = min($movement, intdiv($size, 2));
+
+            $players = [];
+            foreach ($ordered as $rankIdx => $s) {
+                $isTop    = $rankIdx < $m;
+                $isBottom = $rankIdx >= ($size - $m);
+
+                $mv = 'stay';
+                if ($isTop && $i > 0) {
+                    $mv = 'up';
+                } elseif ($isBottom && $i < $n - 1) {
+                    $mv = 'down';
+                }
+
+                $players[] = [
+                    'player_id'   => $s['player_id'],
+                    'rank'        => $rankIdx + 1,
+                    'won'         => $s['won'],
+                    'won_raw'     => $s['won_raw'] ?? $s['won'],
+                    'lost'        => $s['lost'],
+                    'diff'        => $s['diff'],
+                    'rounds'      => $s['rounds'],
+                    'rounds_lost' => $s['rounds_lost'] ?? 0,
+                    'penalty'     => $s['penalty']   ?? 0,
+                    'no_shows'    => $s['no_shows']  ?? 0,
+                    'suplentes'   => $s['suplentes'] ?? 0,
+                    'movement'    => $mv,
+                ];
+            }
+
+            // Coverage: how many rounds have a confirmed result or a pending proposal.
+            $total = $cancha->rounds->count();
+            $filled = $cancha->rounds->filter(function ($r) {
+                return !empty($r->sets) || ($r->pendingProposal !== null);
+            })->count();
+
+            $out[] = [
+                'cancha_id' => $cancha->id,
+                'label'     => $cancha->label,
+                'position'  => $cancha->position ?? ($i + 1),
+                'is_top'    => $i === 0,
+                'is_bottom' => $i === $n - 1,
+                'players'   => $players,
+                'coverage'  => [
+                    'total'    => $total,
+                    'filled'   => $filled,
+                    'complete' => $total > 0 && $filled === $total,
+                ],
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
      * Per-player won/lost games for one cancha across all its rounds.
      * Returns playerId => ['player_id','won','lost','diff'].
      */
-    private function canchaPlayerStats(Cancha $cancha): array
+    /**
+     * Tally a raw sets array (same rule as GameMatch::tally) — used so preview
+     * mode can tally a proposal's sets without a GameMatch instance.
+     */
+    private function tallySets($sets): array
+    {
+        $out = ['games_a' => 0, 'games_b' => 0, 'sets_a' => 0, 'sets_b' => 0];
+        foreach ((array) $sets as $set) {
+            if (!is_array($set) || count($set) !== 2) continue;
+            [$a, $b] = [(int) $set[0], (int) $set[1]];
+            $out['games_a'] += $a;
+            $out['games_b'] += $b;
+            if ($a > $b)     $out['sets_a']++;
+            elseif ($b > $a) $out['sets_b']++;
+        }
+        return $out;
+    }
+
+    private function canchaPlayerStats(Cancha $cancha, bool $usePreview = false): array
     {
         $cancha->loadMissing(['rounds', 'jornada.group.league']);
+        if ($usePreview) $cancha->loadMissing(['rounds.pendingProposal']);
         $league = $cancha->jornada->group->league;
 
         $penaltyNoShow   = (int) ($league->penalty_no_show   ?? 0);
@@ -202,9 +301,26 @@ class PromotionRelegationService
         foreach ($cancha->rounds as $round) {
             $teamA = $round->team_a_player_ids ?? [];
             $teamB = $round->team_b_player_ids ?? [];
-            $tally = $round->tally();
-            $gamesA = $tally['games_a'] ?? 0;
-            $gamesB = $tally['games_b'] ?? 0;
+
+            // In preview mode, if a round has no confirmed result but has a
+            // pending proposal, use the proposal's sets/flags as if confirmed.
+            // Confirmed results always take precedence over a proposal.
+            $sets        = $round->sets ?? [];
+            $noShowIds   = $round->no_show_player_ids   ?? [];
+            $suplenteIds = $round->suplente_player_ids ?? [];
+
+            if ($usePreview && empty($sets)) {
+                $proposal = $round->pendingProposal;
+                if ($proposal) {
+                    $sets        = $proposal->sets ?? [];
+                    $noShowIds   = $proposal->no_show_player_ids   ?? [];
+                    $suplenteIds = $proposal->suplente_player_ids ?? [];
+                }
+            }
+
+            $tally = $this->tallySets($sets);
+            $gamesA = $tally['games_a'];
+            $gamesB = $tally['games_b'];
 
             $aWon = $gamesA > $gamesB;
             $bWon = $gamesB > $gamesA;
@@ -222,21 +338,17 @@ class PromotionRelegationService
                 $stats[$pid]['rounds_lost'] = ($stats[$pid]['rounds_lost'] ?? 0) + ($aWon ? 1 : 0);
             }
 
-            // Apply penalties recorded on this round (flags live on one round only)
-            $noShowIds   = $round->no_show_player_ids   ?? [];
-            $suplenteIds = $round->suplente_player_ids ?? [];
-
             foreach ($noShowIds as $pid) {
                 if (!isset($penalized[$pid]['no_show'])) {
                     $stats[$pid]['penalty']  = ($stats[$pid]['penalty']  ?? 0) + $penaltyNoShow;
-                    $stats[$pid]['no_shows'] = ($stats[$pid]['no_shows'] ?? 0) + 1;   // ← add
+                    $stats[$pid]['no_shows'] = ($stats[$pid]['no_shows'] ?? 0) + 1;
                     $penalized[$pid]['no_show'] = true;
                 }
             }
             foreach ($suplenteIds as $pid) {
                 if (!isset($penalized[$pid]['suplente'])) {
                     $stats[$pid]['penalty']   = ($stats[$pid]['penalty']   ?? 0) + $penaltySuplente;
-                    $stats[$pid]['suplentes'] = ($stats[$pid]['suplentes'] ?? 0) + 1;   // ← add
+                    $stats[$pid]['suplentes'] = ($stats[$pid]['suplentes'] ?? 0) + 1;
                     $penalized[$pid]['suplente'] = true;
                 }
             }

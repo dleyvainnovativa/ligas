@@ -1,10 +1,10 @@
 // Lean: only what the public page actually needs.
 // Bootstrap Tab + Collapse plugins for the group tabs and any disclosures.
-import { Tab, Collapse, Carousel, Modal } from 'bootstrap';
+import { Tab, Collapse, Carousel, Modal, Offcanvas } from 'bootstrap';
 import { setScoreError, validateSets } from './set-score-rule.js';
 
 // Make them globally accessible for data-bs-toggle to work
-window.bootstrap = { Tab, Collapse, Carousel, Modal };
+window.bootstrap = { Tab, Collapse, Carousel, Modal, Offcanvas };
 
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';

@@ -32,6 +32,17 @@
         @foreach ($payload['groups'] as $i => $g)
         <div class="tab-pane fade {{ $i === 0 ? 'show active' : '' }}" id="jornada-group-{{ $i }}">
 
+            @if (!empty($g['has_proposals']) && !empty($g['preview']))
+            <div class="mb-3">
+                <button type="button" class="btn btn-outline-primary btn-sm"
+                    data-bs-toggle="offcanvas" data-bs-target="#projection-{{ $i }}">
+                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i>
+                    Ver proyección
+                </button>
+                <span class="text-muted small ms-1">según propuestas pendientes</span>
+            </div>
+            @endif
+
             @if (empty($g['canchas']))
             <div class="public-empty">Aún no hay canchas en esta jornada.</div>
             @else
@@ -114,6 +125,47 @@
         @endif
     </div>
 </section>
+
+{{-- Projection bottom sheets (one per group) --}}
+@foreach ($payload['groups'] as $i => $g)
+@if (!empty($g['has_proposals']) && !empty($g['preview']))
+<div class="offcanvas offcanvas-bottom projection-sheet" tabindex="-1" id="projection-{{ $i }}"
+    aria-labelledby="projection-{{ $i }}-label">
+    <div class="offcanvas-header">
+        <div>
+            <h5 class="offcanvas-title mb-0" id="projection-{{ $i }}-label">
+                <i class="fa-solid fa-wand-magic-sparkles me-1"></i>
+                Proyección — {{ $g['group_name'] }}
+            </h5>
+            <small class="text-muted">
+                Cómo quedaría la jornada si se aprueban las propuestas pendientes. No es oficial.
+            </small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+    </div>
+    <div class="offcanvas-body pb-5">
+        <div class="projection-canchas">
+            @foreach ($g['preview'] as $cancha)
+            <div class="projection-cancha-block">
+                <div class="projection-cancha-head">
+                    <span class="projection-cancha-label">{{ $cancha['label'] }}</span>
+                    @if (empty($cancha['coverage']['complete']))
+                    <span class="badge text-bg-warning">
+                        Incompleto · {{ $cancha['coverage']['filled'] }}/{{ $cancha['coverage']['total'] }}
+                    </span>
+                    @endif
+                </div>
+                @include('public.league._cancha-standings', [
+                'cancha' => $cancha,
+                'complete' => true,
+                ])
+            </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+@endif
+@endforeach
 
 {{-- propose modal + context, as before --}}
 @include('public.league._propose-modal')
