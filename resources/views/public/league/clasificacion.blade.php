@@ -3,8 +3,38 @@
 
 @section('content')
 <section class="public-section">
-    <h2 class="mb-3">Clasificación</h2>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 class="mb-0">Clasificación</h2>
 
+        @if (!empty($jornada_numbers))
+        <div class="clasif-jornada-picker">
+            <label for="clasif-jornada" class="form-label small text-muted mb-1 d-block">Ver</label>
+            <select id="clasif-jornada" class="form-select form-select-sm"
+                onchange="if (this.value) { window.location = this.value; }">
+                <option value="{{ route('public.clasificacion', $league->slug) }}"
+                    @selected($selected===null)>Resumen</option>
+                @foreach ($jornada_numbers as $n)
+                <option value="{{ route('public.clasificacion', $league->slug) }}?jornada={{ $n }}"
+                    @selected($selected===$n)>Jornada {{ $n }}</option>
+                @endforeach
+            </select>
+        </div>
+        @endif
+    </div>
+
+    @if ($payload['mode'] === 'jornada')
+    {{-- Single jornada: one flat leaderboard across all groups --}}
+    <div class="clasif-scope-note mb-3">
+        <i class="fa-solid fa-flag-checkered me-1"></i>
+        Clasificación de la <strong>Jornada {{ $payload['jornada'] }}</strong> (todos los grupos)
+    </div>
+    @if (empty($payload['standings']))
+    <div class="public-empty">Aún no hay datos para esta jornada.</div>
+    @else
+    @include('public.league._standings-table', ['standings' => $payload['standings']])
+    @endif
+    @else
+    {{-- Resumen: per-group season standings (tabbed) --}}
     @if (count($payload['groups']) > 1)
     <ul class="nav nav-pills public-tabs mb-3" role="tablist">
         @foreach ($payload['groups'] as $i => $g)
@@ -31,5 +61,6 @@
         </div>
         @endforeach
     </div>
+    @endif
 </section>
 @endsection

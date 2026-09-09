@@ -49,17 +49,38 @@ class PublicLeagueController extends Controller
         ]);
     }
 
-    public function clasificacion(string $slug)
+    public function clasificacion(Request $request, string $slug)
     {
         $league = $this->loadLeague($slug);
-        $payload = $this->buildClasificacionPayload($league);
 
-        // dd($payload);
+        // Which view: "resumen" (season, all jornadas) or a single jornada number.
+        $selected = $request->query('jornada'); // null = resumen
+        $selected = ($selected !== null && $selected !== '' && ctype_digit((string) $selected))
+            ? (int) $selected
+            : null;
+
+        // All jornada numbers that exist across the league's groups (for the select).
+        $jornadaNumbers = $league->groups
+            ->flatMap->jornadas
+            ->pluck('number')
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        // If a jornada was requested but doesn't exist, fall back to resumen.
+        if ($selected !== null && !in_array($selected, $jornadaNumbers, true)) {
+            $selected = null;
+        }
+
+        $payload = $this->buildClasificacionPayload($league, $selected);
 
         return view('public.league.clasificacion', [
-            'league'      => $league,
-            'payload'     => $payload,
-            'active_page' => 'clasificacion',
+            'league'          => $league,
+            'payload'         => $payload,
+            'jornada_numbers' => $jornadaNumbers,
+            'selected'        => $selected,
+            'active_page'     => 'clasificacion',
         ]);
     }
 
@@ -327,10 +348,21 @@ class PublicLeagueController extends Controller
         ];
     }
 
-    private function buildClasificacionPayload(League $league): array
+    private function buildClasificacionPayload(League $league, ?int $jornadaNumber = null): array
     {
         $promo = app(\App\Services\PromotionRelegationService::class);
         $playerNames = $league->players()->pluck('full_name', 'id');
+
+        // Single jornada → one flat leaderboard across all groups.
+        if ($jornadaNumber !== null) {
+            return [
+                'mode'      => 'jornada',
+                'jornada'   => $jornadaNumber,
+                'standings' => $promo->jornadaSeasonStandings($league, $jornadaNumber, $playerNames),
+            ];
+        }
+
+        // Resumen → per-group season standings (tabbed).
         $groupsPayload = [];
         foreach ($league->groups as $group) {
             $groupsPayload[] = [
@@ -338,7 +370,7 @@ class PublicLeagueController extends Controller
                 'standings' => $promo->groupSeasonStandings($group, (int) $league->promotion_relegation, $playerNames),
             ];
         }
-        return ['groups' => $groupsPayload];
+        return ['mode' => 'resumen', 'groups' => $groupsPayload];
     }
 
     private function buildJugadoresPayload(League $league): array

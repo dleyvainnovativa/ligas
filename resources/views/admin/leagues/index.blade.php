@@ -51,6 +51,12 @@
                     <td class="text-center font-mono">{{ $league->max_jornadas ?? '∞' }}</td>
                     <td class="text-center font-mono">{{ $league->max_groups ?? '∞' }}</td>
                     <td class="text-end">
+                        @if ($league->slug && in_array($league->status, [\App\Models\League::STATUS_ACTIVE, \App\Models\League::STATUS_COMPLETED], true))
+                        <a href="{{ route('public.league', $league->slug) }}" target="_blank" rel="noopener"
+                            class="btn btn-sm btn-outline-primary" title="Ver página pública">
+                            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Ver pública
+                        </a>
+                        @endif
                         <a href="{{ route('admin.leagues.edit', $league) }}" class="btn btn-sm btn-outline-secondary">
                             <i class="fa-solid fa-sliders me-1"></i> Límites
                         </a>

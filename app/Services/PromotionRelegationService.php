@@ -493,6 +493,81 @@ class PromotionRelegationService
      * (promotion/relegation), so a penalty sends the player toward relegation.
      * The season standings deliberately do NOT use this.
      */
+    /**
+     * Standings for a SINGLE jornada number, aggregated across ALL groups of the
+     * league into one flat leaderboard. Same row shape as groupSeasonStandings so
+     * the same table partial renders it. Since it's one jornada, jornadas_played
+     * is always 1 per player. Uses jornadaBreakdown (the single source of truth).
+     */
+    public function jornadaSeasonStandings(\App\Models\League $league, int $number, $playerNames = null): array
+    {
+        $playerNames ??= $league->players()->pluck('full_name', 'id');
+
+        $agg = [];
+
+        foreach ($league->groups as $group) {
+            $jornada = $group->jornadas->firstWhere('number', $number);
+            if (!$jornada) continue;
+
+            $breakdown = $this->jornadaBreakdown(
+                $jornada,
+                $league->movementForJornadaNumber($jornada->number)
+            );
+
+            foreach ($breakdown as $cancha) {
+                foreach ($cancha['players'] as $p) {
+                    $pid = $p['player_id'];
+                    if (!isset($agg[$pid])) {
+                        $agg[$pid] = [
+                            'won' => 0,
+                            'lost' => 0,
+                            'jornadas' => 0,
+                            'last_position' => null,
+                            'last_label' => null,
+                        ];
+                    }
+                    $agg[$pid]['won']         += $p['won'];
+                    $agg[$pid]['lost']        += $p['lost'];
+                    $agg[$pid]['diff']         = ($agg[$pid]['diff'] ?? 0) + ($p['diff'] ?? 0);
+                    $agg[$pid]['jornadas']++;
+                    $agg[$pid]['penalty']      = ($agg[$pid]['penalty'] ?? 0) + ($p['penalty'] ?? 0);
+                    $agg[$pid]['won_raw']      = ($agg[$pid]['won_raw'] ?? 0) + ($p['won_raw'] ?? $p['won']);
+                    $agg[$pid]['no_shows']     = ($agg[$pid]['no_shows'] ?? 0) + ($p['no_shows'] ?? 0);
+                    $agg[$pid]['suplentes']    = ($agg[$pid]['suplentes'] ?? 0) + ($p['suplentes'] ?? 0);
+                    $agg[$pid]['rounds']       = ($agg[$pid]['rounds'] ?? 0) + ($p['rounds'] ?? 0);
+                    $agg[$pid]['rounds_lost']  = ($agg[$pid]['rounds_lost'] ?? 0) + ($p['rounds_lost'] ?? 0);
+                    $agg[$pid]['last_position'] = $cancha['position'];
+                    $agg[$pid]['last_label']    = $cancha['label'];
+                }
+            }
+        }
+
+        $rows = [];
+        foreach ($agg as $pid => $a) {
+            $rows[] = [
+                'player_id'        => $pid,
+                'name'             => $playerNames[$pid] ?? '—',
+                'won'              => $a['won'],
+                'lost'             => $a['lost'],
+                'diff'             => $a['diff'] ?? 0,
+                'jornadas_played'  => $a['jornadas'],
+                'current_position' => $a['last_position'],
+                'current_cancha'   => $a['last_label'],
+                'penalty'          => $a['penalty'] ?? 0,
+                'won_raw'          => $a['won_raw'] ?? $a['won'],
+                'no_shows'         => $a['no_shows'] ?? 0,
+                'suplentes'        => $a['suplentes'] ?? 0,
+                'rounds'           => $a['rounds'] ?? 0,
+                'rounds_lost'      => $a['rounds_lost'] ?? 0,
+            ];
+        }
+
+        $chain = $league->standingsOrder();
+        usort($rows, fn($a, $b) => $this->comparePlayers($a, $b, $chain));
+
+        return $rows;
+    }
+
     public function comparePlayersWithPenaltyGate(array $a, array $b, array $chain): int
     {
         $aPen = ($a['penalty'] ?? 0) > 0;

@@ -2206,6 +2206,19 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     color: var(--text-muted);
 }
 
+/* Clasificación jornada picker */
+.clasif-jornada-picker {
+    min-width: 180px;
+}
+.clasif-scope-note {
+    font-size: 13px;
+    color: var(--text-muted);
+    background: var(--surface-muted, var(--surface-page));
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md, 8px);
+    padding: 8px 12px;
+}
+
 /* ---------- ERROR PAGES ---------- */
 .error-body {
     background: var(--surface-page);

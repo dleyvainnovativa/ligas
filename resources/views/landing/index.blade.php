@@ -80,8 +80,8 @@
 
             <aside class="hero-stats">
                 @foreach ([
-                ['fa-users', '+10,000', 'Jugadores'],
-                ['fa-trophy', '+500', 'Ligas creadas'],
+                ['fa-users', '+100', 'Jugadores'],
+                ['fa-trophy', '+20', 'Ligas creadas'],
                 ['fa-arrow-trend-up', '100%', 'Experiencia premium'],
                 ] as [$icon, $value, $label])
                 <div class="hero-stat">
@@ -306,7 +306,6 @@
                 ['¿Tengo que instalar algo?', 'No. Todo funciona desde el navegador, en computadora y celular.'],
                 ['¿Puedo cambiar de plan después?', 'Sí. Puedes subir o bajar de plan cuando quieras; tus ligas y resultados se conservan.'],
                 ['¿Qué pasa cuando termina la temporada?', 'La liga se marca como completada y su página queda disponible como histórico. Puedes crear una nueva temporada desde cero.'],
-                ['¿Funciona para formato de parejas?', 'Sí. Puedes elegir formato individual (king of the court con ascenso y descenso) o parejas con sistema de puntos clásico.'],
                 ] as $i => [$q, $a])
                 <div class="accordion-item">
                     <h2 class="accordion-header">

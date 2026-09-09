@@ -26,7 +26,7 @@ class LeagueController extends Controller
         return view('leagues.create', [
             'league' => new League([
                 'format'           => League::FORMAT_INDIVIDUAL,
-                'num_jornadas'     => 8,
+                'num_jornadas'     => 3,
                 'cost'             => 0,
                 'days_of_week'     => ['tue', 'thu'],
                 'time_slots'       => ['18:00', '19:00', '20:00'],

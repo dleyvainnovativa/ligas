@@ -56,7 +56,7 @@ $isEditing = isset($league) && $league->exists;
                         <label class="form-label small">Formato</label>
                         <select name="format" class="form-select @error('format') is-invalid @enderror">
                             <option value="individual" @selected(old('format', $league->format) === 'individual')>Individual</option>
-                            <option value="pairs" @selected(old('format', $league->format) === 'pairs')>Parejas</option>
+                            <!-- <option value="pairs" @selected(old('format', $league->format) === 'pairs')>Parejas</option> -->
                         </select>
                         @error('format') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
