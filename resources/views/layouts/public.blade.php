@@ -17,7 +17,7 @@
     @if ($league->banner_path)
     <meta property="og:image" content="{{ Storage::disk('public')->url($league->banner_path) }}">
     @endif
-
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="ffcbc4dd-0b3e-43e8-b4d2-53a2a9bc2224"></script>
     @vite(['resources/css/theme.css', 'resources/js/public.js'])
 </head>
 
