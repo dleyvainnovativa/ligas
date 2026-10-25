@@ -45,13 +45,13 @@
             <div class="hero-content">
                 <h1 class="hero-title text-light">
                     Llevamos<br>
-                    tus ligas de pádel<br>
+                    tus ligas <br>
                     <span class="hero-title-accent">al siguiente nivel</span>
                 </h1>
 
                 <p class="hero-sub">
                     Organiza, administra y vive la mejor experiencia<br class="d-none d-lg-inline">
-                    en ligas de pádel con <strong>PlayWinners.pro</strong>
+                    en ligas con <strong>PlayWinners.pro</strong>
                 </p>
 
                 <ul class="hero-pills">
