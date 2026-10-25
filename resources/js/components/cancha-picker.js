@@ -20,7 +20,7 @@ export function mountCanchaPicker() {
     const mode      = app.dataset.mode;
     const assignUrl = app.dataset.assignUrl;
     const swapUrl   = app.dataset.swapUrl;
-    const max       = mode === 'pairs' ? 2 : 4;
+    const max       = mode === 'pairs' ? 3 : 4;
 
     const picker  = document.getElementById('cancha-picker');
     if (!picker) return;

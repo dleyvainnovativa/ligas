@@ -35,7 +35,9 @@ class PromotionRelegationService
      */
     public function computeNextDistribution(Jornada $jornada, int $movement): array
     {
-        $jornada->loadMissing(['canchas.rounds']);
+        $jornada->loadMissing(['canchas.rounds', 'group.league']);
+
+        $isPairs = $jornada->group->league->format === \App\Models\League::FORMAT_PAIRS;
 
         // Canchas ordered by their position (Cancha 1 = top). We use the
         // cancha's position/label ordering; fall back to id.
@@ -45,32 +47,41 @@ class PromotionRelegationService
 
         if ($canchas->isEmpty()) return [];
 
-        // Rank each cancha's players (best-first)
-        $ranked = $canchas->map(fn($c) => $this->rankCancha($c))->all();
-        $n = count($ranked);
+        // Rank each cancha's competitors (best-first). In doubles the competitor
+        // is the PAIR (both players move together); in singles it's the player.
+        $ranked = $canchas
+            ->map(fn($c) => $isPairs ? $this->rankCanchaPairs($c) : $this->rankCancha($c))
+            ->all();
 
-        // Build the next distribution. Start each next-cancha as an empty list.
+        return $this->distributeFromRanked($ranked, $movement);
+    }
+
+    /**
+     * Shared promotion/relegation distributor. Given per-cancha ranked id lists
+     * (player ids for singles, pair ids for doubles), returns the next jornada's
+     * canchas: the top `movement` move up, the bottom `movement` move down, the
+     * rest stay. Edge canchas keep whoever has nowhere to go. Movement is clamped
+     * so promote/relegate groups never overlap.
+     */
+    private function distributeFromRanked(array $ranked, int $movement): array
+    {
+        $n = count($ranked);
         $next = array_fill(0, $n, []);
 
-        foreach ($ranked as $i => $players) {
-            $size = count($players);
-            // Clamp movement so it can't exceed what's reasonable for this cancha
+        foreach ($ranked as $i => $ids) {
+            $size = count($ids);
             $m = min($movement, intdiv($size, 2));
 
-            foreach ($players as $rank => $pid) {
-                // rank is 0-based: 0 = best in this cancha
+            foreach ($ids as $rank => $id) {
                 $isTop    = $rank < $m;
                 $isBottom = $rank >= ($size - $m);
 
                 if ($isTop && $i > 0) {
-                    // promote up to cancha i-1
-                    $next[$i - 1][] = $pid;
+                    $next[$i - 1][] = $id;
                 } elseif ($isBottom && $i < $n - 1) {
-                    // relegate down to cancha i+1
-                    $next[$i + 1][] = $pid;
+                    $next[$i + 1][] = $id;
                 } else {
-                    // stay (includes edge canchas where there's nowhere to move)
-                    $next[$i][] = $pid;
+                    $next[$i][] = $id;
                 }
             }
         }
@@ -120,6 +131,10 @@ class PromotionRelegationService
      */
     public function jornadaBreakdown(Jornada $jornada, int $movement): array
     {
+        if ($jornada->group->league->format === \App\Models\League::FORMAT_PAIRS) {
+            return $this->jornadaBreakdownPairs($jornada, $movement, false);
+        }
+
         $jornada->loadMissing(['canchas.rounds', 'canchas.players', 'group.league']);
         $chain = $jornada->group->league->standingsOrder();
 
@@ -190,6 +205,10 @@ class PromotionRelegationService
      */
     public function jornadaBreakdownPreview(Jornada $jornada, int $movement): array
     {
+        if ($jornada->group->league->format === \App\Models\League::FORMAT_PAIRS) {
+            return $this->jornadaBreakdownPairs($jornada, $movement, true);
+        }
+
         $jornada->loadMissing(['canchas.rounds.pendingProposal', 'canchas.players', 'group.league']);
         $chain = $jornada->group->league->standingsOrder();
 
@@ -450,7 +469,7 @@ class PromotionRelegationService
                 // $breakdown = $this->jornadaBreakdown($jornada, $movement);
                 $breakdown = $this->jornadaBreakdown(
                     $jornada,
-                    $jornada->group->league->movementForJornadaNumber($jornada->number)
+                    $jornada->group->league->movementForJornada($jornada)
                 );
 
                 // Find this cancha + this player's row in the breakdown
@@ -510,6 +529,10 @@ class PromotionRelegationService
      */
     public function groupSeasonStandings(Group $group, int $movement, $playerNames = null): array
     {
+        if ($group->league->format === \App\Models\League::FORMAT_PAIRS) {
+            return $this->groupSeasonStandingsPairs($group);
+        }
+
         $playerNames ??= $group->league->players()->pluck('full_name', 'id');
 
         // Aggregate each player's games across every jornada in this group
@@ -519,7 +542,7 @@ class PromotionRelegationService
             // $breakdown = $this->jornadaBreakdown($jornada, $movement);
             $breakdown = $this->jornadaBreakdown(
                 $jornada,
-                $group->league->movementForJornadaNumber($jornada->number)
+                $group->league->movementForJornada($jornada)
             );
             foreach ($breakdown as $cancha) {
                 foreach ($cancha['players'] as $p) {
@@ -578,6 +601,11 @@ class PromotionRelegationService
 
             ];
         }
+        // Season-level extra/bonus points. Applied here on the cumulative general
+        // leaderboard ONLY — never inside jornadaBreakdown / computeNextDistribution —
+        // so bonuses are visible in the ranking but can't shift who moves up or down.
+        $rows = $this->applyExtraPoints($rows, $group->league, 'player_id');
+
         $chain = $group->league->standingsOrder();
 
         // usort($rows, function ($a, $b) use ($chain) {
@@ -613,6 +641,10 @@ class PromotionRelegationService
      */
     public function jornadaSeasonStandings(\App\Models\League $league, int $number, $playerNames = null): array
     {
+        if ($league->format === \App\Models\League::FORMAT_PAIRS) {
+            return $this->jornadaSeasonStandingsPairs($league, $number);
+        }
+
         $playerNames ??= $league->players()->pluck('full_name', 'id');
 
         $agg = [];
@@ -623,7 +655,7 @@ class PromotionRelegationService
 
             $breakdown = $this->jornadaBreakdown(
                 $jornada,
-                $league->movementForJornadaNumber($jornada->number)
+                $league->movementForJornada($jornada)
             );
 
             foreach ($breakdown as $cancha) {
@@ -693,6 +725,404 @@ class PromotionRelegationService
     public function sortByChainWithPenaltyGate(array $rows, array $chain): array
     {
         usort($rows, fn($a, $b) => $this->comparePlayersWithPenaltyGate($a, $b, $chain));
+        return $rows;
+    }
+
+    // =====================================================================
+    //  DOUBLES (fixed-pair) king-of-the-court — the pair is the unit that is
+    //  ranked and that promotes/relegates together. Mirrors the player engine
+    //  above but keyed by pair_id. A doubles cancha holds up to 3 pairs playing
+    //  a round-robin; they are ranked by games across their matches, then the
+    //  top pair moves up and the bottom pair moves down (middle stays).
+    // =====================================================================
+
+    /**
+     * Per-pair won/lost games for one cancha across its round(s), keyed by pair id.
+     * Same shape as canchaPlayerStats but with 'pair_id' and pair metadata.
+     * A no-show/suplente flag on either member penalizes the whole pair (once).
+     */
+    private function canchaPairStats(Cancha $cancha, bool $usePreview = false): array
+    {
+        $cancha->loadMissing(['rounds', 'jornada.group.league', 'pairs.playerA', 'pairs.playerB']);
+        if ($usePreview) $cancha->loadMissing(['rounds.pendingProposal']);
+        $league = $cancha->jornada->group->league;
+
+        $penaltyNoShow   = (int) ($league->penalty_no_show   ?? 0);
+        $penaltySuplente = (int) ($league->penalty_suplente ?? 0);
+
+        // Metadata for every pair assigned to the cancha (so a pair with no
+        // played round still shows up, like the singles path).
+        $pairMeta = [];
+        foreach ($cancha->pairs as $pr) {
+            $pairMeta[$pr->id] = [
+                'name'        => $pr->display_name,
+                'player_a_id' => $pr->player_a_id,
+                'player_b_id' => $pr->player_b_id,
+            ];
+        }
+
+        $stats = [];
+        $penalized = []; // pairId => ['no_show'=>bool,'suplente'=>bool]
+
+        foreach ($cancha->rounds as $round) {
+            $pairAId = $round->team_a_pair_id;
+            $pairBId = $round->team_b_pair_id;
+
+            $sets        = $round->sets ?? [];
+            $noShowIds   = $round->no_show_player_ids   ?? [];
+            $suplenteIds = $round->suplente_player_ids ?? [];
+
+            if ($usePreview && empty($sets)) {
+                $proposal = $round->pendingProposal;
+                if ($proposal) {
+                    $sets        = $proposal->sets ?? [];
+                    $noShowIds   = $proposal->no_show_player_ids   ?? [];
+                    $suplenteIds = $proposal->suplente_player_ids ?? [];
+                }
+            }
+
+            $tally  = $this->tallySets($sets);
+            $gamesA = $tally['games_a'];
+            $gamesB = $tally['games_b'];
+            $aWon = $gamesA > $gamesB;
+            $bWon = $gamesB > $gamesA;
+
+            if ($pairAId) {
+                $stats[$pairAId]['won']         = ($stats[$pairAId]['won']         ?? 0) + $gamesA;
+                $stats[$pairAId]['lost']        = ($stats[$pairAId]['lost']        ?? 0) + $gamesB;
+                $stats[$pairAId]['rounds']      = ($stats[$pairAId]['rounds']      ?? 0) + ($aWon ? 1 : 0);
+                $stats[$pairAId]['rounds_lost'] = ($stats[$pairAId]['rounds_lost'] ?? 0) + ($bWon ? 1 : 0);
+            }
+            if ($pairBId) {
+                $stats[$pairBId]['won']         = ($stats[$pairBId]['won']         ?? 0) + $gamesB;
+                $stats[$pairBId]['lost']        = ($stats[$pairBId]['lost']        ?? 0) + $gamesA;
+                $stats[$pairBId]['rounds']      = ($stats[$pairBId]['rounds']      ?? 0) + ($bWon ? 1 : 0);
+                $stats[$pairBId]['rounds_lost'] = ($stats[$pairBId]['rounds_lost'] ?? 0) + ($aWon ? 1 : 0);
+            }
+
+            // Map per-player no-show / suplente flags onto the owning pair.
+            $teams = [
+                [$pairAId, $round->team_a_player_ids ?? []],
+                [$pairBId, $round->team_b_player_ids ?? []],
+            ];
+            foreach ($teams as [$pid, $members]) {
+                if (!$pid) continue;
+                if (array_intersect($members, $noShowIds) && !isset($penalized[$pid]['no_show'])) {
+                    $stats[$pid]['penalty']  = ($stats[$pid]['penalty']  ?? 0) + $penaltyNoShow;
+                    $stats[$pid]['no_shows'] = ($stats[$pid]['no_shows'] ?? 0) + 1;
+                    $penalized[$pid]['no_show'] = true;
+                }
+                if (array_intersect($members, $suplenteIds) && !isset($penalized[$pid]['suplente'])) {
+                    $stats[$pid]['penalty']   = ($stats[$pid]['penalty']   ?? 0) + $penaltySuplente;
+                    $stats[$pid]['suplentes'] = ($stats[$pid]['suplentes'] ?? 0) + 1;
+                    $penalized[$pid]['suplente'] = true;
+                }
+            }
+        }
+
+        $out = [];
+        foreach ($stats as $pid => $s) {
+            $rawWon  = $s['won']     ?? 0;
+            $lost    = $s['lost']    ?? 0;
+            $penalty = $s['penalty'] ?? 0;
+            $diff    = $penalty > 0 ? -$penalty : $rawWon - $lost;
+
+            $out[$pid] = [
+                'pair_id'     => (int) $pid,
+                'name'        => $pairMeta[$pid]['name'] ?? '—',
+                'player_a_id' => $pairMeta[$pid]['player_a_id'] ?? null,
+                'player_b_id' => $pairMeta[$pid]['player_b_id'] ?? null,
+                'won'         => $rawWon,
+                'won_raw'     => $rawWon,
+                'lost'        => $lost,
+                'diff'        => $diff,
+                'rounds'      => $s['rounds']      ?? 0,
+                'rounds_lost' => $s['rounds_lost'] ?? 0,
+                'penalty'     => $penalty,
+                'no_shows'    => $s['no_shows']  ?? 0,
+                'suplentes'   => $s['suplentes'] ?? 0,
+            ];
+        }
+        return $out;
+    }
+
+    /** Rank the pairs within a cancha (best first), returning pair ids. */
+    public function rankCanchaPairs(Cancha $cancha): array
+    {
+        $chain  = $cancha->jornada->group->league->standingsOrder();
+        $stats  = array_values($this->canchaPairStats($cancha));
+        $sorted = $this->sortByChainWithPenaltyGate($stats, $chain);
+        return array_map(fn($r) => $r['pair_id'], $sorted);
+    }
+
+    /**
+     * Pair-keyed version of jornadaBreakdown (+preview). Each cancha's 'players'
+     * list holds pair rows (pair_id + name + stats + movement), so the existing
+     * breakdown views render them unchanged via $p['name'].
+     */
+    private function jornadaBreakdownPairs(Jornada $jornada, int $movement, bool $preview = false): array
+    {
+        $jornada->loadMissing([
+            'canchas.rounds' . ($preview ? '.pendingProposal' : ''),
+            'canchas.pairs.playerA',
+            'canchas.pairs.playerB',
+            'group.league',
+        ]);
+        $chain = $jornada->group->league->standingsOrder();
+
+        $canchas = $jornada->canchas
+            ->sortBy(fn($c) => $c->position ?? $c->id)
+            ->values();
+
+        if ($canchas->isEmpty()) return [];
+
+        $n = $canchas->count();
+        $out = [];
+
+        foreach ($canchas as $i => $cancha) {
+            $stats   = array_values($this->canchaPairStats($cancha, $preview));
+            $ordered = $this->sortByChainWithPenaltyGate($stats, $chain);
+
+            $size = count($ordered);
+            $m = min($movement, intdiv($size, 2));
+
+            $players = [];
+            foreach ($ordered as $rankIdx => $s) {
+                $isTop    = $rankIdx < $m;
+                $isBottom = $rankIdx >= ($size - $m);
+
+                $mv = 'stay';
+                if ($isTop && $i > 0) {
+                    $mv = 'up';
+                } elseif ($isBottom && $i < $n - 1) {
+                    $mv = 'down';
+                }
+
+                $players[] = array_merge($s, [
+                    'rank'     => $rankIdx + 1,
+                    'movement' => $mv,
+                ]);
+            }
+
+            $entry = [
+                'cancha_id' => $cancha->id,
+                'label'     => $cancha->label,
+                'position'  => $cancha->position ?? ($i + 1),
+                'is_top'    => $i === 0,
+                'is_bottom' => $i === $n - 1,
+                'players'   => $players,
+            ];
+
+            if ($preview) {
+                $total  = $cancha->rounds->count();
+                $filled = $cancha->rounds->filter(function ($r) {
+                    return !empty($r->sets) || ($r->pendingProposal !== null);
+                })->count();
+                $entry['coverage'] = [
+                    'total'    => $total,
+                    'filled'   => $filled,
+                    'complete' => $total > 0 && $filled === $total,
+                ];
+            }
+
+            $out[] = $entry;
+        }
+
+        return $out;
+    }
+
+    /** Pair-keyed cumulative season standings for a group (the general leaderboard). */
+    private function groupSeasonStandingsPairs(Group $group): array
+    {
+        $agg = []; // pair_id => aggregate
+
+        foreach ($group->jornadas->sortBy('number') as $jornada) {
+            $breakdown = $this->jornadaBreakdownPairs($jornada, $group->league->movementForJornada($jornada), false);
+
+            foreach ($breakdown as $cancha) {
+                foreach ($cancha['players'] as $p) {
+                    $pid = $p['pair_id'];
+                    if (!isset($agg[$pid])) {
+                        $agg[$pid] = [
+                            'name' => $p['name'], 'won' => 0, 'lost' => 0, 'diff' => 0,
+                            'jornadas' => 0, 'penalty' => 0, 'won_raw' => 0,
+                            'no_shows' => 0, 'suplentes' => 0, 'rounds' => 0, 'rounds_lost' => 0,
+                            'last_jornada' => 0, 'last_position' => null, 'last_label' => null,
+                        ];
+                    }
+                    $agg[$pid]['won']         += $p['won'];
+                    $agg[$pid]['lost']        += $p['lost'];
+                    $agg[$pid]['diff']        += $p['diff'] ?? 0;
+                    $agg[$pid]['jornadas']++;
+                    $agg[$pid]['penalty']     += $p['penalty']   ?? 0;
+                    $agg[$pid]['won_raw']     += $p['won_raw']   ?? $p['won'];
+                    $agg[$pid]['no_shows']    += $p['no_shows']  ?? 0;
+                    $agg[$pid]['suplentes']   += $p['suplentes'] ?? 0;
+                    $agg[$pid]['rounds']      += $p['rounds']      ?? 0;
+                    $agg[$pid]['rounds_lost'] += $p['rounds_lost'] ?? 0;
+
+                    if ($jornada->number >= $agg[$pid]['last_jornada']) {
+                        $agg[$pid]['last_jornada']  = $jornada->number;
+                        $agg[$pid]['last_position'] = $cancha['position'];
+                        $agg[$pid]['last_label']    = $cancha['label'];
+                    }
+                }
+            }
+        }
+
+        $rows = [];
+        foreach ($agg as $pid => $a) {
+            $rows[] = [
+                'pair_id'          => $pid,
+                'name'             => $a['name'],
+                'won'              => $a['won'],
+                'lost'             => $a['lost'],
+                'diff'             => $a['diff'],
+                'jornadas_played'  => $a['jornadas'],
+                'current_position' => $a['last_position'],
+                'current_cancha'   => $a['last_label'],
+                'penalty'          => $a['penalty'],
+                'won_raw'          => $a['won_raw'],
+                'no_shows'         => $a['no_shows'],
+                'suplentes'        => $a['suplentes'],
+                'rounds'           => $a['rounds'],
+                'rounds_lost'      => $a['rounds_lost'],
+            ];
+        }
+
+        $rows = $this->applyExtraPoints($rows, $group->league, 'pair_id');
+
+        $chain = $group->league->standingsOrder();
+        usort($rows, fn($a, $b) => $this->comparePlayers($a, $b, $chain));
+
+        return $rows;
+    }
+
+    /** Pair-keyed single-jornada leaderboard across all groups (no season bonuses). */
+    private function jornadaSeasonStandingsPairs(\App\Models\League $league, int $number): array
+    {
+        $agg = [];
+
+        foreach ($league->groups as $group) {
+            $jornada = $group->jornadas->firstWhere('number', $number);
+            if (!$jornada) continue;
+
+            $breakdown = $this->jornadaBreakdownPairs($jornada, $league->movementForJornada($jornada), false);
+
+            foreach ($breakdown as $cancha) {
+                foreach ($cancha['players'] as $p) {
+                    $pid = $p['pair_id'];
+                    if (!isset($agg[$pid])) {
+                        $agg[$pid] = [
+                            'name' => $p['name'], 'won' => 0, 'lost' => 0, 'diff' => 0,
+                            'jornadas' => 0, 'penalty' => 0, 'won_raw' => 0,
+                            'no_shows' => 0, 'suplentes' => 0, 'rounds' => 0, 'rounds_lost' => 0,
+                            'last_position' => null, 'last_label' => null,
+                        ];
+                    }
+                    $agg[$pid]['won']         += $p['won'];
+                    $agg[$pid]['lost']        += $p['lost'];
+                    $agg[$pid]['diff']        += $p['diff'] ?? 0;
+                    $agg[$pid]['jornadas']++;
+                    $agg[$pid]['penalty']     += $p['penalty']   ?? 0;
+                    $agg[$pid]['won_raw']     += $p['won_raw']   ?? $p['won'];
+                    $agg[$pid]['no_shows']    += $p['no_shows']  ?? 0;
+                    $agg[$pid]['suplentes']   += $p['suplentes'] ?? 0;
+                    $agg[$pid]['rounds']      += $p['rounds']      ?? 0;
+                    $agg[$pid]['rounds_lost'] += $p['rounds_lost'] ?? 0;
+                    $agg[$pid]['last_position'] = $cancha['position'];
+                    $agg[$pid]['last_label']    = $cancha['label'];
+                }
+            }
+        }
+
+        $rows = [];
+        foreach ($agg as $pid => $a) {
+            $rows[] = [
+                'pair_id'          => $pid,
+                'name'             => $a['name'],
+                'won'              => $a['won'],
+                'lost'             => $a['lost'],
+                'diff'             => $a['diff'],
+                'jornadas_played'  => $a['jornadas'],
+                'current_position' => $a['last_position'],
+                'current_cancha'   => $a['last_label'],
+                'penalty'          => $a['penalty'],
+                'won_raw'          => $a['won_raw'],
+                'no_shows'         => $a['no_shows'],
+                'suplentes'        => $a['suplentes'],
+                'rounds'           => $a['rounds'],
+                'rounds_lost'      => $a['rounds_lost'],
+            ];
+        }
+
+        $chain = $league->standingsOrder();
+        usort($rows, fn($a, $b) => $this->comparePlayers($a, $b, $chain));
+
+        return $rows;
+    }
+
+    /**
+     * Merge season-level extra/bonus points into leaderboard rows.
+     *
+     *   'game' unit → adds to games won, shifting `won` and `diff` (the Pts column).
+     *   'set'  unit → adds to round/set wins, shifting `rounds` (the Sets tiebreaker).
+     *
+     * Each row gains signed `extra_games` and `extra_sets` totals so the UI can show
+     * an "Extra" column and explain the bonus, instead of it reading as a miscount.
+     * Call this ONLY on the cumulative season leaderboard — never on a per-cancha or
+     * per-jornada breakdown — so bonuses never affect promotion/relegation.
+     *
+     * @param array  $column  'player_id' (individual) or 'pair_id' (doubles)
+     */
+    public function applyExtraPoints(array $rows, \App\Models\League $league, string $column = 'player_id'): array
+    {
+        $column = $column === 'pair_id' ? 'pair_id' : 'player_id';
+
+        $adjustments = \App\Models\ScoreAdjustment::query()
+            ->where('league_id', $league->id)
+            ->whereNotNull($column)
+            ->get(['id', $column, 'unit', 'amount']);
+
+        if ($adjustments->isEmpty()) {
+            // Still expose the keys (zeroed) so views can rely on them existing.
+            foreach ($rows as &$row) {
+                $row['extra_games'] = 0;
+                $row['extra_sets']  = 0;
+            }
+            unset($row);
+            return $rows;
+        }
+
+        // competitorId => ['game' => signed sum, 'set' => signed sum]
+        $byEntity = [];
+        foreach ($adjustments as $a) {
+            $id = $a->{$column};
+            if ($id === null) continue;
+            $byEntity[$id]['game'] = ($byEntity[$id]['game'] ?? 0)
+                + ($a->unit === \App\Models\ScoreAdjustment::UNIT_GAME ? (int) $a->amount : 0);
+            $byEntity[$id]['set'] = ($byEntity[$id]['set'] ?? 0)
+                + ($a->unit === \App\Models\ScoreAdjustment::UNIT_SET ? (int) $a->amount : 0);
+        }
+
+        foreach ($rows as &$row) {
+            $id = $row[$column] ?? null;
+            $g = $byEntity[$id]['game'] ?? 0;
+            $s = $byEntity[$id]['set']  ?? 0;
+
+            $row['extra_games'] = $g;
+            $row['extra_sets']  = $s;
+
+            if ($g !== 0) {
+                $row['won']  = ($row['won']  ?? 0) + $g;
+                $row['diff'] = ($row['diff'] ?? 0) + $g;
+            }
+            if ($s !== 0) {
+                $row['rounds'] = ($row['rounds'] ?? 0) + $s;
+            }
+        }
+        unset($row);
+
         return $rows;
     }
 }

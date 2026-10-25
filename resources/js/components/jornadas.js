@@ -22,7 +22,7 @@ wForm?.addEventListener('submit', async (e) => {
     const fd = window.app.serializeForm(wForm);
     try {
         await window.app.api.put(wForm.dataset.url, fd);
-        window.app.toast.success('Fechas guardadas');
+        window.app.toast.success('Ajustes guardados');
     } catch (err) {
         window.app.toast.error(err.message);
     }

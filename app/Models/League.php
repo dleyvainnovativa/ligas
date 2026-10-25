@@ -132,6 +132,11 @@ class League extends Model
         return $this->hasMany(Ad::class)->orderBy('position');
     }
 
+    public function scoreAdjustments(): HasMany
+    {
+        return $this->hasMany(ScoreAdjustment::class)->latest('id');
+    }
+
     public function activeAds(): HasMany
     {
         return $this->hasMany(Ad::class)->where('is_active', true)->orderBy('position');
@@ -180,5 +185,20 @@ class League extends Model
             : (int) ($this->promotion_relegation ?? 1);
 
         return max(1, $value);
+    }
+
+    /**
+     * Effective promotion/relegation movement for a specific jornada. A per-jornada
+     * override (Jornada::$movement) wins; otherwise the global parity rule applies.
+     * This is the single source of truth — prefer it over movementForJornadaNumber
+     * wherever a Jornada instance is in hand, so manual overrides are honored.
+     */
+    public function movementForJornada(Jornada $jornada): int
+    {
+        if ($jornada->movement !== null) {
+            return max(1, (int) $jornada->movement);
+        }
+
+        return $this->movementForJornadaNumber($jornada->number);
     }
 }

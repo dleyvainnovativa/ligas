@@ -3,6 +3,8 @@
 // movement is forward-looking, so it's valid as soon as results exist.
 // We gate on completion so arrows reflect final results.
 $showArrows = $isComplete;
+$subjectLabel = collect($breakdown)->contains(fn($c) => collect($c['players'])->contains(fn($p) => isset($p['pair_id'])))
+    ? 'Pareja' : 'Jugador';
 @endphp
 
 <div class="jornada-standings">
@@ -24,7 +26,7 @@ $showArrows = $isComplete;
             <thead>
                 <tr>
                     <th style="width:36px;">#</th>
-                    <th>Jugador</th>
+                    <th>{{ $subjectLabel }}</th>
                     <th class="text-end">Ganados</th>
                     <th class="text-end">Dif.</th>
                     @if ($showArrows)
@@ -36,7 +38,7 @@ $showArrows = $isComplete;
                 @foreach ($cancha['players'] as $p)
                 <tr class="jstand-row movement-{{ $p['movement'] }}">
                     <td class="jstand-rank">{{ $p['rank'] }}</td>
-                    <td class="jstand-name">{{ $playerNames[$p['player_id']] ?? '—' }}</td>
+                    <td class="jstand-name">{{ $p['name'] ?? ($playerNames[$p['player_id']] ?? '—') }}</td>
                     <td class="text-end font-mono">{{ $p['won'] }}</td>
                     <td class="text-end font-mono {{ $p['diff'] > 0 ? 'text-success' : ($p['diff'] < 0 ? 'text-danger' : 'text-muted') }}">
                         {{ $p['diff'] > 0 ? '+' : '' }}{{ $p['diff'] }}

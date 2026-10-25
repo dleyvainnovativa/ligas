@@ -1,3 +1,6 @@
+@php
+$hasExtra = collect($standings)->contains(fn($r) => ($r['extra_games'] ?? 0) != 0 || ($r['extra_sets'] ?? 0) != 0);
+@endphp
 {{-- Desktop: full table --}}
 <div class="table-responsive d-none d-md-block">
     <table class="table public-standings-table">
@@ -11,6 +14,9 @@
                 <th class="text-center">Games</th>
                 <th class="text-center" title="No shows">NS</th>
                 <th class="text-center" title="Suplentes">Sup</th>
+                @if ($hasExtra)
+                <th class="text-center" title="Puntos extra">Extra</th>
+                @endif
                 <th class="text-end">Pts</th>
             </tr>
         </thead>
@@ -19,10 +25,14 @@
             <tr>
                 <td class="rank">{{ $i + 1 }}</td>
                 <td>
+                    @if (!empty($row['player_id']))
                     <a href="{{ route('public.jugador', [$league->slug, $row['player_id']]) }}"
                         class="standings-player-link">
                         {{ $row['name'] }}
                     </a>
+                    @else
+                    {{ $row['name'] }}
+                    @endif
                 </td>
                 <td class="text-center">
                     @if ($row['current_position'])
@@ -47,6 +57,11 @@
                 <td class="text-center font-mono {{ ($row['suplentes'] ?? 0) > 0 ? 'text-warning' : 'text-muted' }}">
                     {{ $row['suplentes'] ?? 0 }}
                 </td>
+                @if ($hasExtra)
+                <td class="text-center">
+                    @include('leagues.standings._extra-badges', ['row' => $row])
+                </td>
+                @endif
                 <td class="text-end font-mono fw-bold {{ $row['diff'] > 0 ? 'text-success' : ($row['diff'] < 0 ? 'text-danger' : '') }}">
                     {{ $row['diff'] > 0 ? '+' : '' }}{{ $row['diff'] }}
                 </td>
@@ -59,7 +74,8 @@
 {{-- Mobile: card list --}}
 <div class="d-md-none d-flex flex-column gap-2">
     @foreach ($standings as $i => $row)
-    <a href="{{ route('public.jugador', [$league->slug, $row['player_id']]) }}"
+    @php $pid = $row['player_id'] ?? null; @endphp
+    <{{ $pid ? 'a' : 'div' }} @if ($pid) href="{{ route('public.jugador', [$league->slug, $pid]) }}" @endif
         class="public-standing-card">
         <div class="public-standing-rank">{{ $i + 1 }}</div>
         <div class="public-standing-info">
@@ -81,6 +97,12 @@
                 @endif
             </small>
             @endif
+            @if (($row['extra_games'] ?? 0) != 0 || ($row['extra_sets'] ?? 0) != 0)
+            <small class="standing-flags">
+                <span class="text-secondary me-1">Extra:</span>
+                @include('leagues.standings._extra-badges', ['row' => $row])
+            </small>
+            @endif
         </div>
         <div class="public-standing-points">
             <strong class="{{ $row['diff'] > 0 ? 'text-success' : ($row['diff'] < 0 ? 'text-danger' : '') }}">
@@ -88,6 +110,6 @@
             </strong>
             <small>pts</small>
         </div>
-    </a>
+    </{{ $pid ? 'a' : 'div' }}>
     @endforeach
 </div>

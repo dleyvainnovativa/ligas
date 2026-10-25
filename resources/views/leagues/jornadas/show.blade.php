@@ -54,24 +54,37 @@ $availablePairs = $isPairs ? $group->pairs()->get()->reject(fn ($pr) => $assigne
         @csrf
         @method('PUT')
         <div class="row g-2 align-items-end">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label small">Inicio de ventana</label>
                 <input type="date" name="window_start" class="form-control form-control-sm"
                     value="{{ $jornada->window_start?->toDateString() }}">
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label small">Fin de ventana</label>
                 <input type="date" name="window_end" class="form-control form-control-sm"
                     value="{{ $jornada->window_end?->toDateString() }}">
             </div>
-            <div class="col-md-4 d-grid">
+            <div class="col-md-3">
+                <label class="form-label small">
+                    Ascenso / descenso
+                    <i class="fa-solid fa-circle-info text-secondary ms-1"
+                        title="Cuántos suben y bajan por cancha en esta jornada. Déjalo vacío para usar la regla general de la liga."></i>
+                </label>
+                <input type="number" name="movement" min="1" max="4" step="1"
+                    class="form-control form-control-sm"
+                    value="{{ $jornada->movement }}"
+                    placeholder="Hereda: {{ $league->movementForJornadaNumber($jornada->number) }}">
+            </div>
+            <div class="col-md-3 d-grid">
                 <button type="submit" class="btn btn-sm btn-outline-primary">
-                    <i class="fa-solid fa-floppy-disk me-1"></i> Guardar fechas
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Guardar ajustes
                 </button>
             </div>
         </div>
         <small class="text-secondary d-block mt-2">
-            Si lo dejas vacío, se usarán los próximos 14 días filtrados por los días de la liga.
+            Ventana vacía = próximos 14 días filtrados por los días de la liga.
+            Ascenso/descenso vacío = regla general de la liga
+            (actualmente {{ $league->movementForJornadaNumber($jornada->number) }} en esta jornada).
         </small>
     </form>
 </div>

@@ -157,6 +157,11 @@ Route::middleware('auth')->group(function () {
         Route::post('ads/{ad}',        [AdController::class, 'update'])->name('ads.update'); // POST because of file upload
         Route::delete('ads/{ad}',      [AdController::class, 'destroy'])->name('ads.destroy');
         Route::post('ads/reorder',     [AdController::class, 'reorder'])->name('ads.reorder');
+
+        // Puntos extra — season-level bonus/correction on the general leaderboard
+        Route::get('adjustments',                 [\App\Http\Controllers\ScoreAdjustmentController::class, 'index'])->name('adjustments.index');
+        Route::post('adjustments',                [\App\Http\Controllers\ScoreAdjustmentController::class, 'store'])->name('adjustments.store');
+        Route::delete('adjustments/{adjustment}', [\App\Http\Controllers\ScoreAdjustmentController::class, 'destroy'])->name('adjustments.destroy');
     });
 
     Route::get('/plans', [\App\Http\Controllers\PlanController::class, 'index'])->name('plans.index');

@@ -58,10 +58,8 @@ class StandingsController extends Controller
      */
     private function rowsFor(Group $group, int $movement, $playerNames): array
     {
-        if ($group->league->format === League::FORMAT_PAIRS) {
-            return $this->standings->forGroup($group);
-        }
-
+        // Both singles and doubles use the king-of-the-court leaderboard
+        // (groupSeasonStandings is format-aware and returns pair rows for doubles).
         $rows = $this->promo->groupSeasonStandings($group, $movement, $playerNames);
 
         // Add a rank field so the view can highlight the top 3

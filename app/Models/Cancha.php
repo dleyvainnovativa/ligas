@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Cancha extends Model
 {
     public const MAX_PLAYERS = 4;
-    public const MAX_PAIRS   = 2;
+    public const MAX_PAIRS   = 3;
 
     public const STATUS_UNSCHEDULED = 'unscheduled';
     public const STATUS_SCHEDULED   = 'scheduled';

@@ -5,6 +5,7 @@ $tabs = [
 ['key' => 'groups', 'route' => route('leagues.jornadas.index', [$league, $league->groups()->first()]), 'label' => 'Jornadas', 'icon' => 'fa-layer-group'],
 ['key' => 'overview', 'route' => route('leagues.show', $league), 'label' => 'Resumen', 'icon' => 'fa-chart-line'],
 ['key' => 'standings', 'route' => route('leagues.standings.index', $league), 'label' => 'Standings', 'icon' => 'fa-ranking-star'],
+['key' => 'adjustments', 'route' => route('leagues.adjustments.index', $league), 'label' => 'Puntos extra', 'icon' => 'fa-star-half-stroke'],
 ['key' => 'ads', 'route' => route('leagues.ads.index', $league), 'label' => 'Anuncios', 'icon' => 'fa-rectangle-ad'],
 ];
 $active = $active ?? 'settings';

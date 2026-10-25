@@ -81,10 +81,17 @@ class CanchaService
 
             $usedSlots = DB::table('cancha_pair')->where('cancha_id', $cancha->id)->pluck('slot')->all();
             if (count($usedSlots) >= Cancha::MAX_PAIRS) {
-                throw new \DomainException('Esta cancha ya está llena (máximo 2 parejas).');
+                throw new \DomainException('Esta cancha ya está llena (máximo ' . Cancha::MAX_PAIRS . ' parejas).');
             }
 
-            $slot = !in_array(1, $usedSlots, true) ? 1 : 2;
+            // First free slot 1..MAX_PAIRS
+            $slot = Cancha::MAX_PAIRS;
+            for ($i = 1; $i <= Cancha::MAX_PAIRS; $i++) {
+                if (!in_array($i, $usedSlots, true)) {
+                    $slot = $i;
+                    break;
+                }
+            }
 
             DB::table('cancha_pair')->insert([
                 'cancha_id'  => $cancha->id,
@@ -109,7 +116,8 @@ class CanchaService
     }
 
     /**
-     * Phase 4 stub: shuffles the unassigned roster into canchas of 4 (or pairs of 2).
+     * Phase 4 stub: shuffles the unassigned roster into canchas (4 players, or
+     * up to MAX_PAIRS pairs per cancha).
      * Real social-golfer / americano-rotation algorithm is Phase 9.
      */
     public function autoFill(Jornada $jornada): void

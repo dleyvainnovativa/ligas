@@ -16,6 +16,7 @@ class Jornada extends Model
         'group_id',
         'number',
         'status',
+        'movement',
         'window_start',
         'window_end',
         'notes',
@@ -25,6 +26,7 @@ class Jornada extends Model
     {
         return [
             'number'       => 'integer',
+            'movement'     => 'integer',
             'window_start' => 'date',
             'window_end'   => 'date',
         ];
@@ -33,6 +35,16 @@ class Jornada extends Model
     public function group(): BelongsTo
     {
         return $this->belongsTo(Group::class);
+    }
+
+    /**
+     * How many competitors move up AND down from each cancha of THIS jornada.
+     * A per-jornada override (the `movement` column) wins; otherwise we fall back
+     * to the league's global parity rule. Always ≥ 1.
+     */
+    public function effectiveMovement(): int
+    {
+        return $this->group->league->movementForJornada($this);
     }
 
     public function canchas(): HasMany

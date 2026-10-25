@@ -12,7 +12,7 @@ export function mountCanchas() {
     const assignUrl     = app.dataset.assignUrl;
     const swapUrl       = app.dataset.swapUrl;
     const canchaUrlBase = app.dataset.canchaUrlTemplate;
-    const max           = mode === 'pairs' ? 2 : 4;
+    const max           = mode === 'pairs' ? 3 : 4;
 
     function mountSortables() {
         document.querySelectorAll('.canchas-app .roster-list').forEach((list) => {

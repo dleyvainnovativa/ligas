@@ -1,4 +1,7 @@
-@php $showArrows = $complete; @endphp
+@php
+$showArrows = $complete;
+$subjectLabel = collect($cancha['players'])->contains(fn($p) => isset($p['pair_id'])) ? 'Pareja' : 'Jugador';
+@endphp
 
 <div class="jstand-cancha tinted-cancha" style="--cancha-hue: {{ $cancha['tint_hue'] ?? 45 }};">
     <div class="jstand-cancha-head tinted-head">
@@ -30,7 +33,7 @@
         <thead>
             <tr>
                 <th style="width:32px;">#</th>
-                <th>Jugador</th>
+                <th>{{ $subjectLabel }}</th>
                 <th class="text-end">Gan.</th>
                 <th class="text-end">Dif.</th>
                 @if ($showArrows)<th class="text-center" style="width:48px;"></th>@endif

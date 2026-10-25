@@ -1,4 +1,7 @@
-@php $showArrows = $complete; @endphp
+@php
+$showArrows = $complete;
+$subjectLabel = collect($cancha['players'])->contains(fn($p) => isset($p['pair_id'])) ? 'Pareja' : 'Jugador';
+@endphp
 
 <div class="jstand-cancha" style="border:0;">
     @if ($cancha['is_top'] || $cancha['is_bottom'])
@@ -17,7 +20,7 @@
             <thead>
                 <tr>
                     <th style="width:32px;">#</th>
-                    <th>Jugador</th>
+                    <th>{{ $subjectLabel }}</th>
                     <th class="text-center">Sets</th>
                     <th class="text-center">Games</th>
                     <th class="text-center" title="No shows">NS</th>

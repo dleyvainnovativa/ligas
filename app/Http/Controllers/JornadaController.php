@@ -101,7 +101,7 @@ class JornadaController extends Controller
             $previous = $group->jornadas()->where('number', $lastNumber)->first();
             $distribution = $promo->computeNextDistribution(
                 $previous,
-                $league->movementForJornadaNumber($previous->number)   // ← parity-aware
+                $league->movementForJornada($previous)   // ← per-jornada override, else parity
             );
 
             if (!empty($distribution)) {
@@ -143,8 +143,12 @@ class JornadaController extends Controller
         array $distribution,
         \App\Services\CanchaService $canchaService
     ): void {
-        foreach ($distribution as $index => $playerIds) {
-            if (empty($playerIds)) continue;
+        // In doubles the distribution carries PAIR ids (both players move together);
+        // in singles it carries player ids. Attach into the right pivot table.
+        $isPairs = $jornada->group->league->format === League::FORMAT_PAIRS;
+
+        foreach ($distribution as $index => $ids) {
+            if (empty($ids)) continue;
 
             $cancha = $jornada->canchas()->create([
                 'label'    => 'Cancha ' . ($index + 1),
@@ -152,10 +156,14 @@ class JornadaController extends Controller
                 'status'   => \App\Models\Cancha::STATUS_UNSCHEDULED,
             ]);
 
-            // Attach players with slot numbers 1..N
+            // Attach competitors with slot numbers 1..N
             $slot = 1;
-            foreach ($playerIds as $pid) {
-                $cancha->players()->attach($pid, ['slot' => $slot]);
+            foreach ($ids as $id) {
+                if ($isPairs) {
+                    $cancha->pairs()->attach($id, ['slot' => $slot]);
+                } else {
+                    $cancha->players()->attach($id, ['slot' => $slot]);
+                }
                 $slot++;
             }
         }
@@ -171,6 +179,10 @@ class JornadaController extends Controller
             'window_end'   => ['nullable', 'date', 'after_or_equal:window_start'],
             'notes'        => ['nullable', 'string', 'max:500'],
             'status'       => ['nullable', 'in:draft,scheduled,completed'],
+            // Per-jornada ascenso/descenso override. Blank = inherit the league's
+            // global parity rule. Symmetric: this many move up and down per cancha.
+            // (ConvertEmptyStringsToNull turns a blank field into null → inherit.)
+            'movement'     => ['nullable', 'integer', 'min:1', 'max:4'],
         ]);
 
         $jornada->update($data);
@@ -301,7 +313,7 @@ class JornadaController extends Controller
             404
         );
 
-        $breakdown = $promo->jornadaBreakdown($jornada, $league->movementForJornadaNumber($jornada->number));
+        $breakdown = $promo->jornadaBreakdown($jornada, $league->movementForJornada($jornada));
         $playerNames = $league->players()->pluck('full_name', 'id');
         $isComplete = $this->isJornadaComplete($jornada);
 

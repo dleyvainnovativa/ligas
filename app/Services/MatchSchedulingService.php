@@ -58,20 +58,33 @@ class MatchSchedulingService
 
     private function ensurePairsRound(Cancha $cancha, array $existing): void
     {
-        if (in_array(1, $existing, true)) return;
-        if ($cancha->pairs->count() < 2) return;
+        $pairs = $cancha->pairs->sortBy(fn($p) => $p->pivot->slot)->values();
+        if ($pairs->count() < 2) return;
 
-        $pairA = $cancha->pairs->firstWhere('pivot.slot', 1) ?? $cancha->pairs[0];
-        $pairB = $cancha->pairs->firstWhere('pivot.slot', 2) ?? $cancha->pairs[1];
-
-        $cancha->rounds()->create([
-            'rotation_index'    => 1,
-            'team_a_player_ids' => [$pairA->player_a_id, $pairA->player_b_id],
-            'team_b_player_ids' => [$pairB->player_a_id, $pairB->player_b_id],
-            'team_a_pair_id'    => $pairA->id,
-            'team_b_pair_id'    => $pairB->id,
-            'status'            => GameMatch::STATUS_PENDING,
-        ]);
+        // Round-robin: every assigned pair plays every other pair once. A doubles
+        // cancha holds up to 3 pairs (6 players), which can't all be on court at
+        // once — so with 3 pairs this yields 3 rounds (1v2, 1v3, 2v3), each a 2v2
+        // match while the third pair rests. With 2 pairs it's a single match.
+        // rotation_index is stable (1-based combination order) so re-runs are
+        // idempotent against already-created rounds.
+        $rotation = 1;
+        for ($i = 0; $i < $pairs->count(); $i++) {
+            for ($j = $i + 1; $j < $pairs->count(); $j++) {
+                if (!in_array($rotation, $existing, true)) {
+                    $pairA = $pairs[$i];
+                    $pairB = $pairs[$j];
+                    $cancha->rounds()->create([
+                        'rotation_index'    => $rotation,
+                        'team_a_player_ids' => [$pairA->player_a_id, $pairA->player_b_id],
+                        'team_b_player_ids' => [$pairB->player_a_id, $pairB->player_b_id],
+                        'team_a_pair_id'    => $pairA->id,
+                        'team_b_pair_id'    => $pairB->id,
+                        'status'            => GameMatch::STATUS_PENDING,
+                    ]);
+                }
+                $rotation++;
+            }
+        }
     }
 
     private function ensureIndividualRounds(Cancha $cancha, array $existing): void

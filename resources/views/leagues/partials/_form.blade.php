@@ -52,12 +52,20 @@ $isEditing = isset($league) && $league->exists;
                             value="{{ old('name', $league->name) }}" required>
                         @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
+                    @php $formatLocked = $league->exists && $league->groups()->exists(); @endphp
                     <div class="col-md-4">
                         <label class="form-label small">Formato</label>
-                        <select name="format" class="form-select @error('format') is-invalid @enderror">
-                            <option value="individual" @selected(old('format', $league->format) === 'individual')>Individual</option>
-                            <!-- <option value="pairs" @selected(old('format', $league->format) === 'pairs')>Parejas</option> -->
+                        <select name="format" class="form-select @error('format') is-invalid @enderror" @disabled($formatLocked)>
+                            <option value="individual" @selected(old('format', $league->format) === 'individual')>Individual (singles)</option>
+                            <option value="pairs" @selected(old('format', $league->format) === 'pairs')>Parejas (dobles)</option>
                         </select>
+                        @if ($formatLocked)
+                        {{-- Disabled selects don't submit; preserve the value and explain why it's locked. --}}
+                        <input type="hidden" name="format" value="{{ $league->format }}">
+                        <small class="text-secondary d-block mt-1">
+                            El formato no se puede cambiar una vez creados los grupos.
+                        </small>
+                        @endif
                         @error('format') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
 

@@ -152,7 +152,7 @@ class PublicLeagueController extends Controller
 
             if ($currentJornada) {
                 // $raw = $promo->jornadaBreakdown($currentJornada, (int) $league->promotion_relegation);
-                $raw = $promo->jornadaBreakdown($currentJornada, $league->movementForJornadaNumber($currentJornada->number));
+                $raw = $promo->jornadaBreakdown($currentJornada, $league->movementForJornada($currentJornada));
 
                 // Load the canchas so we can attach schedule/pista metadata
                 $canchas = $this->loadCanchas($currentJornada->id)->keyBy('id');
@@ -162,7 +162,7 @@ class PublicLeagueController extends Controller
                 $breakdown = collect($raw)->map(function ($cancha, $idx) use ($playerNames, $canchas, $totalCanchas) {
                     // Resolve player names
                     $cancha['players'] = collect($cancha['players'])->map(function ($p) use ($playerNames) {
-                        $p['name'] = $playerNames[$p['player_id']] ?? '—';
+                        $p['name'] = $p['name'] ?? ($playerNames[$p['player_id'] ?? 0] ?? '—');
                         return $p;
                     })->all();
 
@@ -307,12 +307,12 @@ class PublicLeagueController extends Controller
 
             // Build ranked breakdown for this jornada, keyed by cancha_id
             // $rawBreakdown = $promo->jornadaBreakdown($jornada, (int) $league->promotion_relegation);
-            $rawBreakdown = $promo->jornadaBreakdown($jornada, $league->movementForJornadaNumber($jornada->number));
+            $rawBreakdown = $promo->jornadaBreakdown($jornada, $league->movementForJornada($jornada));
             $breakdownByCancha = [];
             foreach ($rawBreakdown as $cb) {
                 // resolve player names
                 $cb['players'] = collect($cb['players'])->map(function ($p) use ($playerNames) {
-                    $p['name'] = $playerNames[$p['player_id']] ?? '—';
+                    $p['name'] = $p['name'] ?? ($playerNames[$p['player_id'] ?? 0] ?? '—');
                     return $p;
                 })->all();
                 $breakdownByCancha[$cb['cancha_id']] = $cb;
@@ -336,11 +336,11 @@ class PublicLeagueController extends Controller
             if ($hasProposals) {
                 $rawPreview = $promo->jornadaBreakdownPreview(
                     $jornada,
-                    $league->movementForJornadaNumber($jornada->number)
+                    $league->movementForJornada($jornada)
                 );
                 foreach ($rawPreview as $cb) {
                     $cb['players'] = collect($cb['players'])->map(function ($p) use ($playerNames) {
-                        $p['name'] = $playerNames[$p['player_id']] ?? '—';
+                        $p['name'] = $p['name'] ?? ($playerNames[$p['player_id'] ?? 0] ?? '—');
                         return $p;
                     })->all();
                     $previewByCancha[$cb['cancha_id']] = $cb;
@@ -404,6 +404,9 @@ class PublicLeagueController extends Controller
         foreach ($league->groups as $group) {
             $standings = $promo->groupSeasonStandings($group, (int) $league->promotion_relegation, $playerNames);
             foreach ($standings as $row) {
+                // Doubles rows are keyed by pair, not player — the per-player
+                // listing only applies to singles leagues.
+                if (empty($row['player_id'])) continue;
                 $statsByPlayer[$row['player_id']] = [
                     'group'  => $group->name,
                     'stats'  => $row,
@@ -619,7 +622,7 @@ class PublicLeagueController extends Controller
             if (!$jornada) continue;
 
             // $breakdown = $promo->jornadaBreakdown($jornada, (int) $league->promotion_relegation);
-            $breakdown = $promo->jornadaBreakdown($jornada, $league->movementForJornadaNumber($jornada->number));
+            $breakdown = $promo->jornadaBreakdown($jornada, $league->movementForJornada($jornada));
             $complete = $jornada->canchas()->count() > 0
                 && !$jornada->canchas()->where('status', '!=', \App\Models\Cancha::STATUS_COMPLETED)->exists();
 
@@ -637,7 +640,7 @@ class PublicLeagueController extends Controller
         $groupsData = $groupsData->map(function ($g) use ($playerNames) {
             $g['breakdown'] = collect($g['breakdown'])->map(function ($cancha) use ($playerNames) {
                 $cancha['players'] = collect($cancha['players'])->map(function ($p) use ($playerNames) {
-                    $p['name'] = $playerNames[$p['player_id']] ?? '—';
+                    $p['name'] = $p['name'] ?? ($playerNames[$p['player_id'] ?? 0] ?? '—');
                     return $p;
                 })->all();
                 return $cancha;
