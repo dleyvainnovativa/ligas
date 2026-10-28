@@ -1,7 +1,7 @@
 @php
 $tabs = [
 ['key' => 'settings', 'route' => route('leagues.edit', $league), 'label' => 'Configuración', 'icon' => 'fa-gear'],
-['key' => 'players', 'route' => route('leagues.players.index', $league), 'label' => 'Jugadores', 'icon' => 'fa-users'],
+['key' => 'players', 'route' => route('leagues.players.index', $league), 'label' => $league->format === 'pairs' ? 'Parejas' : 'Jugadores', 'icon' => 'fa-users'],
 ['key' => 'groups', 'route' => route('leagues.jornadas.index', [$league, $league->groups()->first()]), 'label' => 'Jornadas', 'icon' => 'fa-layer-group'],
 ['key' => 'overview', 'route' => route('leagues.show', $league), 'label' => 'Resumen', 'icon' => 'fa-chart-line'],
 ['key' => 'standings', 'route' => route('leagues.standings.index', $league), 'label' => 'Standings', 'icon' => 'fa-ranking-star'],

@@ -85,7 +85,8 @@ Route::middleware('auth')->group(function () {
         Route::post('groups/{group}/auto-fill',    [GroupController::class, 'autoFill'])->name('groups.auto-fill');
 
         // Pairs
-        Route::post('pairs',          [PairController::class, 'store'])->name('pairs.store');
+        Route::post('pairs',               [PairController::class, 'store'])->name('pairs.store');
+        Route::post('pairs/with-players',  [PairController::class, 'storeWithPlayers'])->name('pairs.store-with-players');
         Route::put('pairs/{pair}',    [PairController::class, 'update'])->name('pairs.update');
         Route::delete('pairs/{pair}', [PairController::class, 'destroy'])->name('pairs.destroy');
 

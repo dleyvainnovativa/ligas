@@ -7,7 +7,7 @@
 @include('leagues.partials._panel-nav', ['active' => 'groups'])
 
 @if ($league->format === \App\Models\League::FORMAT_PAIRS)
-@include('leagues.groups._pairs-section', ['league' => $league])
+{{-- Pairs are registered on the "Parejas" tab; here they're assigned to divisions. --}}
 @include('leagues.groups._groups-section', ['league' => $league, 'mode' => 'pairs'])
 @else
 @include('leagues.groups._groups-section', ['league' => $league, 'mode' => 'individual'])

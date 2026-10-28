@@ -24,7 +24,8 @@ class LeagueReportService
             $jornadas = [];
 
             foreach ($group->jornadas->sortBy('number') as $jornada) {
-                $breakdown = $this->promo->jornadaBreakdown($jornada, $movement);
+                // Honor the per-jornada movement override, same as every other view.
+                $breakdown = $this->promo->jornadaBreakdown($jornada, $league->movementForJornada($jornada));
                 if (empty($breakdown)) continue;
 
                 // Resolve names + attach schedule per cancha

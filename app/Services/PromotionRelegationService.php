@@ -1082,19 +1082,20 @@ class PromotionRelegationService
         $adjustments = \App\Models\ScoreAdjustment::query()
             ->where('league_id', $league->id)
             ->whereNotNull($column)
-            ->get(['id', $column, 'unit', 'amount']);
+            ->get(['id', $column, 'unit', 'amount', 'note']);
 
         if ($adjustments->isEmpty()) {
             // Still expose the keys (zeroed) so views can rely on them existing.
             foreach ($rows as &$row) {
                 $row['extra_games'] = 0;
                 $row['extra_sets']  = 0;
+                $row['extra_notes'] = [];
             }
             unset($row);
             return $rows;
         }
 
-        // competitorId => ['game' => signed sum, 'set' => signed sum]
+        // competitorId => ['game' => signed sum, 'set' => signed sum, 'notes' => [lines]]
         $byEntity = [];
         foreach ($adjustments as $a) {
             $id = $a->{$column};
@@ -1103,6 +1104,17 @@ class PromotionRelegationService
                 + ($a->unit === \App\Models\ScoreAdjustment::UNIT_GAME ? (int) $a->amount : 0);
             $byEntity[$id]['set'] = ($byEntity[$id]['set'] ?? 0)
                 + ($a->unit === \App\Models\ScoreAdjustment::UNIT_SET ? (int) $a->amount : 0);
+
+            // Keep each motive so the leaderboard can explain the bonus.
+            $note = trim((string) ($a->note ?? ''));
+            if ($note !== '') {
+                $sign = (int) $a->amount > 0 ? '+' : '';
+                $unitLabel = $a->unit === \App\Models\ScoreAdjustment::UNIT_SET ? 'sets' : 'games';
+                $byEntity[$id]['notes'][] = [
+                    'label' => "{$sign}" . (int) $a->amount . " {$unitLabel}",
+                    'note'  => $note,
+                ];
+            }
         }
 
         foreach ($rows as &$row) {
@@ -1112,6 +1124,7 @@ class PromotionRelegationService
 
             $row['extra_games'] = $g;
             $row['extra_sets']  = $s;
+            $row['extra_notes'] = $byEntity[$id]['notes'] ?? [];
 
             if ($g !== 0) {
                 $row['won']  = ($row['won']  ?? 0) + $g;

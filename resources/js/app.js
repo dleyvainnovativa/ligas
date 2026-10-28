@@ -13,6 +13,7 @@ import { mountSedes } from './components/sedes.js';
 import { mountPlayers } from './components/players.js';
 import { mountGroups } from './components/groups.js';
 import { mountPairs } from './components/pairs.js';
+import { mountPairsRegistration } from './components/pairs-registration.js';
 import { mountJornadas } from './components/jornadas.js';
 import { mountCanchas } from './components/canchas.js';
 import { mountScheduleGrid } from './components/schedule-grid.js';
@@ -59,6 +60,7 @@ if (flashError?.dataset.message) {
     mountPlayers();
     mountGroups();
     mountPairs();
+    mountPairsRegistration();
     mountJornadas();
     mountCanchas();
     mountScheduleGrid();

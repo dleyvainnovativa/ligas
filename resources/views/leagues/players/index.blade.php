@@ -6,6 +6,9 @@
 @section('content')
 @include('leagues.partials._panel-nav', ['active' => 'players'])
 
+@if ($league->format === \App\Models\League::FORMAT_PAIRS)
+@include('leagues.players._pairs-registration', ['league' => $league])
+@else
 <div class="card-soft p-3 p-md-4" id="players-app"
     data-league-id="{{ $league->id }}"
     data-league-cost="{{ $league->cost }}">
@@ -79,4 +82,5 @@
 </div>
 
 @include('leagues.players._import-modal', ['league' => $league])
+@endif
 @endsection

@@ -19,6 +19,11 @@ class PlayerController extends Controller
         $this->authorize('view', $league);
         $players = $league->players()->orderBy('full_name')->get();
 
+        // Doubles registers whole pairs on this tab, so load them too.
+        if ($league->format === League::FORMAT_PAIRS) {
+            $league->load(['pairs.playerA', 'pairs.playerB']);
+        }
+
         return view('leagues.players.index', compact('league', 'players'));
     }
     public function store(PlayerRequest $request, League $league, \App\Services\LeagueTierService $leagueTiers)
