@@ -61,10 +61,14 @@ $unassignedPairs = $isPairs ? $league->pairs->filter(fn ($pr) => !$pairGroupId->
         {{-- Groups --}}
         <div class="col-lg-8">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="mb-0">Grupos</h6>
+                <h6 class="mb-0">{{ $isPairs ? 'Grupos / Divisiones' : 'Grupo' }}</h6>
+                {{-- Singles leagues always use a single auto-created group ("Principal"),
+                     so the create-group action is only offered in doubles. --}}
+                @if ($isPairs)
                 <button class="btn btn-primary btn-sm" id="add-group-btn">
                     <i class="fa-solid fa-plus me-1"></i> Nuevo grupo
                 </button>
+                @endif
             </div>
 
             <div id="groups-container" class="d-flex flex-column gap-3">

@@ -24,6 +24,17 @@ class GroupController extends Controller
     public function store(Request $request, League $league, \App\Services\LeagueTierService $leagueTiers)
     {
         $this->authorize('update', $league);
+
+        // Singles leagues use a single group ("Principal"); only doubles may add
+        // more divisions. Guard the endpoint so the one-group rule holds even if
+        // the hidden create-group button is bypassed.
+        if ($league->format !== League::FORMAT_PAIRS && $league->groups()->exists()) {
+            return response()->json([
+                'message' => 'Las ligas individuales usan un solo grupo.',
+                'code'    => 'SINGLES_SINGLE_GROUP',
+            ], 422);
+        }
+
         if (! $leagueTiers->canAddGroup($league)) {
             return response()->json([
                 'error' => 'Esta liga alcanzó su límite de grupos.',
@@ -70,6 +81,15 @@ class GroupController extends Controller
     {
         $this->authorize('delete', $group);
         abort_unless($group->league_id === $league->id, 404);
+
+        // Never leave a league with zero groups — jornadas hang off groups, and a
+        // singles league can't recreate one from the UI. Keep at least one.
+        if ($league->groups()->count() <= 1) {
+            return response()->json([
+                'message' => 'La liga necesita al menos un grupo.',
+                'code'    => 'LAST_GROUP',
+            ], 422);
+        }
 
         // Closes all current memberships via the FK cascade (group_player rows go too).
         $group->delete();

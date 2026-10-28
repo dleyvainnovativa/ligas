@@ -18,9 +18,13 @@ $count = $isPairs ? $group->pairs->count() : $group->players->count();
         <button class="btn btn-sm btn-outline-secondary save-group" title="Guardar nombre">
             <i class="fa-solid fa-floppy-disk"></i>
         </button>
+        {{-- Singles uses a single group, so it can't be deleted (there's no way to
+             recreate it from the UI). Doubles can delete extra divisions. --}}
+        @if ($isPairs)
         <button class="btn btn-sm btn-outline-danger delete-group" title="Eliminar grupo">
             <i class="fa-solid fa-trash"></i>
         </button>
+        @endif
     </div>
 
     {{-- Primary action: jornadas, prominent at the top --}}
