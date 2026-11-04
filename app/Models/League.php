@@ -57,6 +57,7 @@ class League extends Model
         'points_draw',
         'points_loss',
         'whatsapp_url',
+        'ads_show_global',
         'promotion_relegation',
         'standings_order',
         'max_players',
@@ -79,6 +80,7 @@ class League extends Model
             'points_draw' => 'integer',
             'points_loss' => 'integer',
             'promotion_relegation'   => 'integer',
+            'ads_show_global' => 'boolean',
             'standings_order' => 'array',
             'max_players'  => 'integer',
             'max_jornadas' => 'integer',
@@ -154,6 +156,11 @@ class League extends Model
     public function publicAds()
     {
         $leagueAds = $this->activeAds()->get();
+
+        // Network-wide (global) ads only show when the manager hasn't opted out.
+        if (($this->ads_show_global ?? true) === false) {
+            return $leagueAds->sortBy('position')->values();
+        }
 
         $globalAds = Ad::whereNull('league_id')
             ->where('is_active', true)

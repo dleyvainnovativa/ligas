@@ -153,11 +153,10 @@ Route::middleware('auth')->group(function () {
         Route::get('groups/{group}/standings', [StandingsController::class, 'group'])->name('standings.group');
 
         // Ads
-        Route::get('ads',              [AdController::class, 'index'])->name('ads.index');
-        Route::post('ads',             [AdController::class, 'store'])->name('ads.store');
-        Route::post('ads/{ad}',        [AdController::class, 'update'])->name('ads.update'); // POST because of file upload
-        Route::delete('ads/{ad}',      [AdController::class, 'destroy'])->name('ads.destroy');
-        Route::post('ads/reorder',     [AdController::class, 'reorder'])->name('ads.reorder');
+        // Managers no longer upload ads — only the admin targets ads to leagues.
+        // The manager can view what's showing and toggle network-wide (global) ads.
+        Route::get('ads',          [AdController::class, 'index'])->name('ads.index');
+        Route::put('ads/settings', [AdController::class, 'updateSettings'])->name('ads.settings');
 
         // Puntos extra — season-level bonus/correction on the general leaderboard
         Route::get('adjustments',                 [\App\Http\Controllers\ScoreAdjustmentController::class, 'index'])->name('adjustments.index');

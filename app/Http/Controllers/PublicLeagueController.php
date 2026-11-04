@@ -87,14 +87,64 @@ class PublicLeagueController extends Controller
     public function jugadores(Request $request, string $slug)
     {
         $league = $this->loadLeague($slug);
-        // Jugadores page is search/filter heavy on the client; we cache the raw list only.
-        $payload = $this->buildJugadoresPayload($league);
+
+        // Doubles lists pairs grouped by division; singles lists individual players.
+        $payload = $league->format === League::FORMAT_PAIRS
+            ? $this->buildParejasPayload($league)
+            : $this->buildJugadoresPayload($league);
 
         return view('public.league.jugadores', [
             'league'      => $league,
             'payload'     => $payload,
             'active_page' => 'jugadores',
         ]);
+    }
+
+    /**
+     * Doubles "Jugadores" page: pairs grouped by division, best-ranked first,
+     * each with both player names and the pair's season stats.
+     */
+    private function buildParejasPayload(League $league): array
+    {
+        $promo = app(\App\Services\PromotionRelegationService::class);
+
+        $groups = [];
+        $total  = 0;
+
+        foreach ($league->groups as $group) {
+            $standings = collect($promo->groupSeasonStandings($group, (int) $league->promotion_relegation))
+                ->keyBy('pair_id');
+
+            $pairs = $group->pairs()->with(['playerA', 'playerB'])->get();
+
+            // Pairs that have played, in standings order; then the rest alphabetically.
+            $ordered = $standings->keys()
+                ->map(fn ($id) => $pairs->firstWhere('id', $id))
+                ->filter()
+                ->concat(
+                    $pairs->reject(fn ($p) => $standings->has($p->id))
+                        ->sortBy(fn ($p) => mb_strtolower($p->display_name))
+                )
+                ->values();
+
+            $rows = $ordered->map(function ($pair) use ($standings) {
+                $s = $standings->get($pair->id);
+                return [
+                    'name'             => $pair->display_name,
+                    'player_a'         => $pair->playerA?->full_name,
+                    'player_b'         => $pair->playerB?->full_name,
+                    'won'              => $s['won'] ?? 0,
+                    'diff'             => $s['diff'] ?? 0,
+                    'jornadas_played'  => $s['jornadas_played'] ?? 0,
+                    'current_position' => $s['current_position'] ?? null,
+                ];
+            })->all();
+
+            $total += count($rows);
+            $groups[] = ['group_name' => $group->name, 'pairs' => $rows];
+        }
+
+        return ['groups' => $groups, 'total' => $total];
     }
 
     public function reglas(string $slug)

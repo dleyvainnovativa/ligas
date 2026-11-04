@@ -23,14 +23,27 @@
 
 <body class="public-body">
 
+    {{-- Fixed topbar: brand + theme toggle (moved out of the hero). The league
+         name fades in once you scroll past the hero. --}}
+    <nav class="public-topbar fixed-top" id="public-topbar">
+        <div class="public-topbar-inner">
+            <a href="{{ route('landing') }}" class="public-topbar-brand" aria-label="PlayWinners">
+                <img src="{{ asset('img/logo.png') }}" alt="PlayWinners" height="30">
+            </a>
+            <a href="{{ route('public.league', $league->slug) }}" class="public-topbar-title">{{ $league->name }}</a>
+            <button type="button" data-theme-toggle class="public-topbar-theme-toggle"
+                title="Cambiar tema" aria-label="Cambiar tema">
+                <i class="fa-solid fa-sun theme-icon-light"></i>
+                <i class="fa-solid fa-moon theme-icon-dark"></i>
+            </button>
+        </div>
+    </nav>
+
     <header class="public-hero">
         @if ($league->banner_path)
         <div class="public-hero-bg" style="background-image: url('{{ Storage::disk('public')->url($league->banner_path) }}');"></div>
         @endif
         <div class="public-hero-content">
-            <a href="{{route('landing')}}" class="">
-                <img src="{{ asset('img/logo.png') }}" alt="Logo" class="public-stat-logo-img">
-            </a>
             <div class="public-hero-title-row">
                 <a href="{{ route('public.league', $league->slug) }}" class="public-hero-title">
                     <h1>{{ $league->name }}</h1>
@@ -46,15 +59,6 @@
                     <span class="d-none d-sm-inline">WhatsApp</span>
                 </a>
                 @endif
-
-                <button type="button"
-                    data-theme-toggle
-                    class="public-hero-theme-toggle"
-                    title="Cambiar tema"
-                    aria-label="Cambiar tema">
-                    <i class="fa-solid fa-sun theme-icon-light"></i>
-                    <i class="fa-solid fa-moon theme-icon-dark"></i>
-                </button>
             </div>
             <div class="public-hero-meta">
                 <span class="badge text-bg-light">
@@ -75,7 +79,7 @@
         ['key' => 'inicio', 'route' => route('public.league', $league->slug), 'label' => 'Inicio', 'icon' => 'fa-house'],
         ['key' => 'calendario', 'route' => route('public.calendario', $league->slug), 'label' => 'Calendario', 'icon' => 'fa-calendar-days'],
         ['key' => 'clasificacion', 'route' => route('public.clasificacion', $league->slug),'label' => 'Clasificación', 'icon' => 'fa-ranking-star'],
-        ['key' => 'jugadores', 'route' => route('public.jugadores', $league->slug), 'label' => 'Jugadores', 'icon' => 'fa-users'],
+        ['key' => 'jugadores', 'route' => route('public.jugadores', $league->slug), 'label' => $league->format === 'pairs' ? 'Parejas' : 'Jugadores', 'icon' => 'fa-users'],
         ['key' => 'reglas', 'route' => route('public.reglas', $league->slug), 'label' => 'Reglas', 'icon' => 'fa-book-open'],
         ];
         $active = $active_page ?? 'inicio';
