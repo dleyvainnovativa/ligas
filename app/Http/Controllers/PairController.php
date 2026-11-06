@@ -6,9 +6,14 @@ use App\Http\Requests\PairRequest;
 use App\Models\League;
 use App\Models\Pair;
 use Illuminate\Http\Request;
+use App\Services\PlayerImportService;
+use App\Services\RosterService;
+use Illuminate\Support\Facades\Log;
 
 class PairController extends Controller
 {
+    public function __construct(private PlayerImportService $importer, private RosterService $roster) {}
+
     public function store(PairRequest $request, League $league)
     {
         $this->authorize('update', $league);
@@ -26,6 +31,11 @@ class PairController extends Controller
         abort_if($existingA || $existingB, 422, 'Uno de los jugadores ya está en una pareja.');
 
         $pair = $league->pairs()->create($data)->load(['playerA', 'playerB']);
+        $group = $league->groups()->first();
+
+        $assigned = $league->format === League::FORMAT_PAIRS
+            ? $this->roster->autoFillPairs($group, 1)
+            : $this->roster->autoFillPlayers($group, 1);
 
         return response()->json(['pair' => $this->serialize($pair)]);
     }
@@ -98,6 +108,15 @@ class PairController extends Controller
                 'label'       => $data['label'] ?? null,
             ])->load(['playerA', 'playerB']);
         });
+
+        $group = $league->groups()->first();
+
+        $assigned = $league->format === League::FORMAT_PAIRS
+            ? $this->roster->autoFillPairs($group, 1)
+            : $this->roster->autoFillPlayers($group, 1);
+
+        Log::info("Auto-filled {$assigned} players/pairs into group {$group->id} of league {$league->id} after creating pair {$pair->id}.");
+
 
         return response()->json([
             'pair'    => $this->serialize($pair),
