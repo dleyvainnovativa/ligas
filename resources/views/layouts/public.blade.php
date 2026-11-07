@@ -38,7 +38,6 @@
                 <a href="{{ $league->whatsapp_url }}" target="_blank" rel="noopener noreferrer"
                     class="social-link" title="Unirse al grupo de WhatsApp" aria-label="WhatsApp">
                     <i class="fa-brands fa-whatsapp fa-xl"></i>
-                    <span class="d-none d-sm-inline">WhatsApp</span>
                 </a>
                 @endif
                 @include('public.league._social-links', ['variant' => 'header'])
