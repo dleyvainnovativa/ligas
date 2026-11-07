@@ -5194,7 +5194,7 @@ a.public-standing-card {
 
 @media (max-width: 768px) { 
 .public-ad-image {
-    aspect-ratio: 16/9;
+    /* aspect-ratio: 16/9; */
 }
 }
 
