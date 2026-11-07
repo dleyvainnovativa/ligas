@@ -25,54 +25,70 @@
 
     {{-- Fixed topbar: brand + theme toggle (moved out of the hero). The league
          name fades in once you scroll past the hero. --}}
+    {{-- Fixed topbar: brand (left), social icons + theme toggle (right). The league
+         name fades in once you scroll past the hero image. --}}
     <nav class="public-topbar fixed-top" id="public-topbar">
         <div class="public-topbar-inner">
             <a href="{{ route('landing') }}" class="public-topbar-brand" aria-label="PlayWinners">
                 <img src="{{ asset('img/logo.png') }}" alt="PlayWinners" height="30">
             </a>
             <a href="{{ route('public.league', $league->slug) }}" class="public-topbar-title">{{ $league->name }}</a>
-            <button type="button" data-theme-toggle class="public-topbar-theme-toggle"
-                title="Cambiar tema" aria-label="Cambiar tema">
-                <i class="fa-solid fa-sun theme-icon-light"></i>
-                <i class="fa-solid fa-moon theme-icon-dark"></i>
-            </button>
-        </div>
-    </nav>
-
-    <header class="public-hero">
-        @if ($league->banner_path)
-        <div class="public-hero-bg" style="background-image: url('{{ Storage::disk('public')->url($league->banner_path) }}');"></div>
-        @endif
-        <div class="public-hero-content">
-            <div class="public-hero-title-row">
-                <a href="{{ route('public.league', $league->slug) }}" class="public-hero-title">
-                    <h1>{{ $league->name }}</h1>
-                </a>
-
-                @include('public.league._social-links', ['variant' => 'header'])
-
-
+            <div class="public-topbar-actions">
                 @if ($league->whatsapp_url)
                 <a href="{{ $league->whatsapp_url }}" target="_blank" rel="noopener noreferrer"
-                    class="public-hero-whatsapp" title="Unirse al grupo de WhatsApp" aria-label="WhatsApp">
-                    <i class="fa-brands fa-whatsapp"></i>
+                    class="social-link" title="Unirse al grupo de WhatsApp" aria-label="WhatsApp">
+                    <i class="fa-brands fa-whatsapp fa-xl"></i>
                     <span class="d-none d-sm-inline">WhatsApp</span>
                 </a>
                 @endif
-            </div>
-            <div class="public-hero-meta">
-                <span class="badge text-bg-light">
-                    <i class="fa-solid fa-{{ $league->format === 'pairs' ? 'people-arrows' : 'user' }} me-1"></i>
-                    {{ $league->format === 'pairs' ? 'Parejas' : 'Individual' }}
-                </span>
-                @if ($league->status === 'completed')
-                <span class="badge text-bg-light">Temporada cerrada</span>
-                @endif
+                @include('public.league._social-links', ['variant' => 'header'])
+                <button type="button" data-theme-toggle class="public-topbar-theme-toggle"
+                    title="Cambiar tema" aria-label="Cambiar tema">
+                    <i class="fa-solid fa-sun theme-icon-light"></i>
+                    <i class="fa-solid fa-moon theme-icon-dark"></i>
+                </button>
             </div>
         </div>
-    </header>
+    </nav>
 
     <div class="public-shell">
+
+        @php
+        $statusMap = [
+        'active' => ['EN CURSO', 'is-live'],
+        'completed' => ['Temporada cerrada', 'is-closed'],
+        'archived' => ['Archivada', 'is-closed'],
+        'draft' => ['Próximamente', 'is-draft'],
+        ];
+        [$statusLabel, $statusTone] = $statusMap[$league->status] ?? [null, 'is-draft'];
+        @endphp
+
+        {{-- Hero lives in the same capped container as the rest of the page.
+             No banner → no image block (no placeholder). --}}
+        <div class="public-hero-wrap">
+            @if ($league->banner_path)
+            <header class="public-hero-media">
+                <img src="{{ Storage::disk('public')->url($league->banner_path) }}"
+                    alt="{{ $league->name }}" class="public-hero-img" loading="eager">
+            </header>
+            @endif
+
+            <div class="public-hero-info">
+                @if ($statusLabel)
+                <div class="public-hero-status {{ $statusTone }}">
+                    <span class="status-dot"></span> {{ $statusLabel }}
+                </div>
+                @endif
+                <h1 class="public-hero-title">{{ $league->name }}</h1>
+                <div class="public-hero-meta">
+                    <span class="badge text-bg-secondary">
+                        <i class="fa-solid fa-{{ $league->format === 'pairs' ? 'people-arrows' : 'user' }} me-1"></i>
+                        {{ $league->format === 'pairs' ? 'Parejas' : 'Individual' }}
+                    </span>
+
+                </div>
+            </div>
+        </div>
 
         @php
         $pages = [

@@ -139,9 +139,12 @@ class League extends Model
         return $this->hasMany(ScoreAdjustment::class)->latest('id');
     }
 
-    public function activeAds(): HasMany
+    /** Active ads targeted to this league (via the ad_league pivot). */
+    public function activeAds(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->hasMany(Ad::class)->where('is_active', true)->orderBy('position');
+        return $this->belongsToMany(Ad::class, 'ad_league')
+            ->where('ads.is_active', true)
+            ->orderBy('ads.position');
     }
     public function cachedActiveAds()
     {
@@ -149,9 +152,9 @@ class League extends Model
     }
 
     /**
-     * Ads shown on this league's public pages: the league's own active ads,
-     * plus any active global ads (league_id = null), ordered by position.
-     * Global ads act as house/network ads that appear across every league.
+     * Ads shown on this league's public pages: the ads targeted to this league
+     * (ad_league pivot), plus any active global ads (is_global), ordered by
+     * position. Global ads are hidden when the manager opts out (ads_show_global).
      */
     public function publicAds()
     {
@@ -162,12 +165,12 @@ class League extends Model
             return $leagueAds->sortBy('position')->values();
         }
 
-        $globalAds = Ad::whereNull('league_id')
+        $globalAds = Ad::where('is_global', true)
             ->where('is_active', true)
             ->orderBy('position')
             ->get();
 
-        return $leagueAds->concat($globalAds)->sortBy('position')->values();
+        return $leagueAds->concat($globalAds)->unique('id')->sortBy('position')->values();
     }
     /**
      * The tiebreaker chain for standings + promotion/relegation.

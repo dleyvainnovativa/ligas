@@ -16,7 +16,15 @@
         <strong>{{ $ad->title ?? 'Sin título' }}</strong>
 
         @if ($showLeague)
-        <small class="text-muted">{{ $ad->league?->name ?? '—' }}</small>
+        <small class="text-muted">
+            <i class="fa-solid fa-location-dot me-1"></i>
+            @php $names = $ad->leagues->pluck('name'); @endphp
+            @if ($names->isEmpty())
+                Sin ligas asignadas
+            @else
+                {{ $names->take(3)->implode(', ') }}@if ($names->count() > 3) +{{ $names->count() - 3 }} más @endif
+            @endif
+        </small>
         @endif
 
         @if ($ad->link_url)

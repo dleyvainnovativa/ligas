@@ -12,8 +12,8 @@ class AdminAdController extends Controller
     public function index()
     {
         return view('admin.ads.index', [
-            'globalAds' => Ad::whereNull('league_id')->orderBy('position')->get(),
-            'leagueAds' => Ad::whereNotNull('league_id')->with('league')->orderBy('league_id')->get(),
+            'globalAds' => Ad::where('is_global', true)->orderBy('position')->get(),
+            'leagueAds' => Ad::where('is_global', false)->with('leagues')->orderBy('position')->get(),
         ]);
     }
 
@@ -24,55 +24,53 @@ class AdminAdController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'scope'     => 'required|in:global,league',
-            'league_id' => 'required_if:scope,league|nullable|exists:leagues,id',
-            'title'     => 'nullable|string|max:255',
-            'link_url'  => 'nullable|url|max:255',
-            'image'     => 'required|image|max:2048',
-            'position'  => 'nullable|integer|min:0',
-            'is_active' => 'boolean',
-        ]);
+        $data = $this->validateAd($request, true);
 
         $path = $request->file('image')->store('ads', 'public');
+        $isGlobal = $data['scope'] === 'global';
 
-        Ad::create([
-            'league_id' => $data['scope'] === 'global' ? null : $data['league_id'],
+        $ad = Ad::create([
+            'league_id'  => null,
+            'is_global'  => $isGlobal,
             'image_path' => $path,
-            'title'     => $data['title'] ?? null,
-            'link_url'  => $data['link_url'] ?? null,
-            'position'  => $data['position'] ?? 0,
-            'is_active' => $request->boolean('is_active', true),
+            'title'      => $data['title'] ?? null,
+            'link_url'   => $data['link_url'] ?? null,
+            'position'   => $data['position'] ?? 0,
+            'is_active'  => $request->boolean('is_active', true),
         ]);
+
+        $ad->leagues()->sync($isGlobal ? [] : ($data['league_ids'] ?? []));
 
         return redirect()->route('admin.ads.index')->with('status', 'Anuncio creado.');
     }
 
     public function edit(Ad $ad)
     {
+        $ad->load('leagues');
         return view('admin.ads.edit', ['ad' => $ad, 'leagues' => League::orderBy('name')->get()]);
     }
 
     public function update(Request $request, Ad $ad)
     {
-        $data = $request->validate([
-            'scope'     => 'required|in:global,league',
-            'league_id' => 'required_if:scope,league|nullable|exists:leagues,id',
-            'title'     => 'nullable|string|max:255',
-            'link_url'  => 'nullable|url|max:255',
-            'image'     => 'nullable|image|max:2048',
-            'position'  => 'nullable|integer|min:0',
-            'is_active' => 'boolean',
-        ]);
+        $data = $this->validateAd($request, false);
 
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('ads', 'public');
+            $ad->image_path = $request->file('image')->store('ads', 'public');
         }
-        $data['league_id'] = $data['scope'] === 'global' ? null : $data['league_id'];
-        $data['is_active'] = $request->boolean('is_active', true);
-        unset($data['scope'], $data['image']);
 
-        $ad->update($data);
+        $isGlobal = $data['scope'] === 'global';
+
+        $ad->fill([
+            'is_global' => $isGlobal,
+            'league_id' => null,
+            'title'     => $data['title'] ?? null,
+            'link_url'  => $data['link_url'] ?? null,
+            'position'  => $data['position'] ?? 0,
+            'is_active' => $request->boolean('is_active', true),
+        ])->save();
+
+        $ad->leagues()->sync($isGlobal ? [] : ($data['league_ids'] ?? []));
+
         return redirect()->route('admin.ads.index')->with('status', 'Anuncio actualizado.');
     }
 
@@ -80,5 +78,21 @@ class AdminAdController extends Controller
     {
         $ad->delete();
         return back()->with('status', 'Anuncio eliminado.');
+    }
+
+    private function validateAd(Request $request, bool $imageRequired): array
+    {
+        return $request->validate([
+            'scope'       => 'required|in:global,league',
+            'league_ids'  => 'required_if:scope,league|array',
+            'league_ids.*'=> 'integer|exists:leagues,id',
+            'title'       => 'nullable|string|max:255',
+            'link_url'    => 'nullable|url|max:255',
+            'image'       => ($imageRequired ? 'required' : 'nullable') . '|image|max:2048',
+            'position'    => 'nullable|integer|min:0',
+            'is_active'   => 'boolean',
+        ], [
+            'league_ids.required_if' => 'Selecciona al menos una liga.',
+        ]);
     }
 }

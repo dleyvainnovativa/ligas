@@ -11,14 +11,14 @@
 
     <div class="mb-3">
         <h6 class="mb-1">Anuncios</h6>
-        <!-- <small class="text-secondary">
+        <small class="text-secondary">
             Los anuncios los sube y asigna el administrador de PlayWinners. Aquí puedes ver
             los que aparecen en tu liga y decidir si quieres mostrar los anuncios de la red.
-        </small> -->
+        </small>
     </div>
 
     {{-- Global ads toggle --}}
-    <!-- <div class="d-flex align-items-center justify-content-between p-3 rounded border mb-4">
+    <div class="d-flex align-items-center justify-content-between p-3 rounded border mb-4">
         <div class="me-3">
             <strong class="d-block">Mostrar anuncios globales</strong>
             <small class="text-secondary">
@@ -30,7 +30,7 @@
             <input class="form-check-input" type="checkbox" role="switch" id="ads-global-toggle"
                 style="width:3rem;height:1.5rem;" @checked($league->ads_show_global)>
         </div>
-    </div> -->
+    </div>
 
     {{-- League-exclusive ads --}}
     <div class="mb-4">
@@ -63,7 +63,7 @@
 </div>
 
 <script>
-    (function() {
+    (function () {
         const app = document.getElementById('ads-settings-app');
         const toggle = document.getElementById('ads-global-toggle');
         if (!app || !toggle) return;
@@ -74,11 +74,7 @@
         toggle.addEventListener('change', async () => {
             const on = toggle.checked;
             try {
-                const {
-                    message
-                } = await window.app.api.put(app.dataset.url, {
-                    ads_show_global: on
-                });
+                const { message } = await window.app.api.put(app.dataset.url, { ads_show_global: on });
                 window.app.toast.success(message || 'Guardado');
                 block.classList.toggle('opacity-50', !on);
                 state.textContent = on ? 'Visibles' : 'Ocultos';

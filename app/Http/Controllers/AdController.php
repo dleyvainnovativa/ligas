@@ -17,7 +17,7 @@ class AdController extends Controller
         $this->authorize('view', $league);
 
         $leagueAds = $league->activeAds()->get();
-        $globalAds = \App\Models\Ad::whereNull('league_id')
+        $globalAds = \App\Models\Ad::where('is_global', true)
             ->where('is_active', true)
             ->orderBy('position')
             ->get();

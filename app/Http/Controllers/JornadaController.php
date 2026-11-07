@@ -185,6 +185,42 @@ class JornadaController extends Controller
             'movement'     => ['nullable', 'integer', 'min:1', 'max:4'],
         ]);
 
+        // Warn if already-scheduled matches would fall outside the new date window.
+        // Only when the window actually changed, and the manager can still save
+        // (the UI asks for confirmation first).
+        $winStart = $data['window_start'] ?? null;
+        $winEnd   = $data['window_end'] ?? null;
+
+        $windowChanged =
+            $jornada->window_start?->toDateString() !== ($winStart ? \Illuminate\Support\Carbon::parse($winStart)->toDateString() : null)
+            || $jornada->window_end?->toDateString() !== ($winEnd ? \Illuminate\Support\Carbon::parse($winEnd)->toDateString() : null);
+
+        if ($windowChanged && ($winStart || $winEnd) && ! $request->boolean('confirm_window')) {
+            $start = $winStart ? \Illuminate\Support\Carbon::parse($winStart)->startOfDay() : null;
+            $end   = $winEnd   ? \Illuminate\Support\Carbon::parse($winEnd)->endOfDay()     : null;
+
+            $outside = $jornada->canchas()
+                ->whereNotNull('date')
+                ->orderBy('date')
+                ->get(['id', 'label', 'date'])
+                ->filter(function ($c) use ($start, $end) {
+                    return ($start && $c->date->lt($start)) || ($end && $c->date->gt($end));
+                })
+                ->map(fn ($c) => [
+                    'label' => $c->label,
+                    'date'  => $c->date->format('Y-m-d'),
+                ])
+                ->values();
+
+            if ($outside->isNotEmpty()) {
+                return response()->json([
+                    'code'    => 'WINDOW_OUT_OF_RANGE',
+                    'message' => 'Hay partidos programados fuera del nuevo rango de fechas.',
+                    'matches' => $outside,
+                ], 422);
+            }
+        }
+
         $jornada->update($data);
         return response()->json(['jornada' => $this->serialize($jornada->fresh())]);
     }

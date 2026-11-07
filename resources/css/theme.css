@@ -98,8 +98,6 @@
     --neutral-700: #3a3835;
     --neutral-800: #232220;
     --neutral-900: #14130f;
-    --dark-800: #232220;
-    --dark-900: #14130f;
 
     /* Surfaces */
     --surface-page:    var(--neutral-50);
@@ -3493,7 +3491,7 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     font-family: var(--font-display);
     font-weight: 700;
     font-size: 16px;
-    color: var(--text-primary) !important;
+    color: var(--text-primary);
     text-decoration: none;
     text-align: center;
     white-space: nowrap;
@@ -3548,7 +3546,7 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
 
 .public-hero {
     position: relative;
-    background: linear-gradient(135deg, var(--dark-900), var(--dark-900));
+    /* background: linear-gradient(135deg, var(--brand-500), var(--brand-700)); */
     color: var(--neutral-900);
     padding: var(--space-8) var(--space-6);
     overflow: hidden;
@@ -3568,7 +3566,7 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
 }
 .public-hero-title {
     text-decoration: none;
-    color: var(--text-primary) !important;
+    color: inherit;
 }
 .public-hero-title h1 {
     font-family: var(--font-display);
@@ -3582,6 +3580,79 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
+}
+
+/* ---- New public hero: 16:9 media block + info below (no overlay) ---- */
+.public-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+.public-topbar-actions .social-links { display: flex; gap: 2px; margin: 0; }
+.public-topbar-actions .social-link {
+    color: var(--text-secondary);
+    padding: 4px 6px;
+    display: inline-flex;
+}
+.public-topbar-actions .social-link:hover { color: var(--text-primary); }
+.public-topbar-actions .social-link .fa-xl { font-size: 1.05rem !important; }
+
+/* Hero shares the page's capped, padded container so it lines up with the
+   content below and never runs full-bleed. */
+.public-hero-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--space-4);
+}
+@media (min-width: 768px) {
+    .public-hero-wrap { padding: 0 var(--space-8); }
+}
+
+.public-hero-media { margin: var(--space-4) 0 var(--space-3); }
+.public-hero-img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-height: 420px;          /* keep it a banner on desktop, not a wall */
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    background: var(--surface-page);
+}
+.public-hero-info { margin-bottom: var(--space-4); }
+.public-hero-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+.public-hero-status .status-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--text-muted);
+}
+.public-hero-status.is-live { color: #16a34a; }
+.public-hero-status.is-live .status-dot {
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+.public-hero-info .public-hero-title {
+    font-family: var(--font-display);
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin: 0 0 8px;
+    color: var(--text-primary);
+    text-shadow: none;
+}
+.public-hero-info .public-hero-meta { align-items: center; gap: 8px; }
+@media (max-width: 600px) {
+    .public-hero-info .public-hero-title { font-size: 24px; }
 }
 
 .public-nav {
@@ -5119,6 +5190,12 @@ a.public-standing-card {
     aspect-ratio: 3 / 1;
     object-fit: cover;
     background: var(--surface-sunken);
+}
+
+@media (max-width: 768px) { 
+.public-ad-image {
+    aspect-ratio: 16/9;
+}
 }
 
 /* Controls still overlay the image (they sit at the vertical center, clear of

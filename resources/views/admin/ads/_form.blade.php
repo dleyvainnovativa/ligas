@@ -1,6 +1,8 @@
 @php
-    $currentScope = old('scope', $ad && $ad->league_id ? 'league' : 'global');
-    $currentLeague = old('league_id', $ad->league_id ?? null);
+    $isGlobal = $ad ? $ad->is_global : false;
+    $currentScope = old('scope', $isGlobal || ! $ad ? 'global' : 'league');
+    $selectedLeagues = collect(old('league_ids', $ad ? $ad->leagues->pluck('id')->all() : []))
+        ->map(fn ($id) => (string) $id)->all();
 @endphp
 
 <div class="mb-3">
@@ -12,21 +14,32 @@
         </label>
         <label class="d-flex align-items-center gap-2">
             <input type="radio" name="scope" value="league" data-scope-toggle
-                @checked($currentScope === 'league')> Liga específica
+                @checked($currentScope === 'league')> Ligas específicas
         </label>
     </div>
 </div>
 
 <div class="mb-3" id="league-select-wrap" style="{{ $currentScope === 'league' ? '' : 'display:none;' }}">
-    <label class="form-label">Liga</label>
-    <select name="league_id" class="form-select">
-        <option value="">Selecciona una liga…</option>
-        @foreach ($leagues as $league)
-        <option value="{{ $league->id }}" @selected((string) $currentLeague === (string) $league->id)>
-            {{ $league->name }}
-        </option>
-        @endforeach
-    </select>
+    <label class="form-label">Ligas</label>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <small class="text-muted">Selecciona una o varias ligas donde se mostrará el anuncio.</small>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-link p-0" data-league-all>Todas</button>
+            <button type="button" class="btn btn-sm btn-link p-0 text-muted" data-league-none>Ninguna</button>
+        </div>
+    </div>
+    <div class="border rounded-3 p-2" style="max-height:260px;overflow-y:auto;">
+        @forelse ($leagues as $league)
+        <label class="d-flex align-items-center gap-2 py-1 px-1 rounded league-check-row">
+            <input type="checkbox" name="league_ids[]" value="{{ $league->id }}"
+                @checked(in_array((string) $league->id, $selectedLeagues, true))>
+            <span>{{ $league->name }}</span>
+        </label>
+        @empty
+        <small class="text-muted">No hay ligas.</small>
+        @endforelse
+    </div>
+    @error('league_ids') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
 </div>
 
 <div class="mb-3">
@@ -73,6 +86,13 @@
             radio.addEventListener('change', function () {
                 wrap.style.display = this.value === 'league' ? '' : 'none';
             });
+        });
+        const boxes = () => wrap.querySelectorAll('input[name="league_ids[]"]');
+        wrap.querySelector('[data-league-all]')?.addEventListener('click', function () {
+            boxes().forEach(b => b.checked = true);
+        });
+        wrap.querySelector('[data-league-none]')?.addEventListener('click', function () {
+            boxes().forEach(b => b.checked = false);
         });
     })();
 </script>
