@@ -34,6 +34,12 @@
             </a>
             <a href="{{ route('public.league', $league->slug) }}" class="public-topbar-title">{{ $league->name }}</a>
             <div class="public-topbar-actions">
+                @if ($league->whatsapp_url)
+                <a href="{{ $league->whatsapp_url }}" target="_blank" rel="noopener noreferrer"
+                    class="social-link" title="Unirse al grupo de WhatsApp" aria-label="WhatsApp">
+                    <i class="fa-brands fa-whatsapp fa-xl"></i>
+                </a>
+                @endif
                 @include('public.league._social-links', ['variant' => 'header'])
                 <button type="button" data-theme-toggle class="public-topbar-theme-toggle"
                     title="Cambiar tema" aria-label="Cambiar tema">
@@ -48,10 +54,10 @@
 
         @php
         $statusMap = [
-            'active'    => ['EN CURSO', 'is-live'],
-            'completed' => ['Temporada cerrada', 'is-closed'],
-            'archived'  => ['Archivada', 'is-closed'],
-            'draft'     => ['Próximamente', 'is-draft'],
+        'active' => ['EN CURSO', 'is-live'],
+        'completed' => ['Temporada cerrada', 'is-closed'],
+        'archived' => ['Archivada', 'is-closed'],
+        'draft' => ['Próximamente', 'is-draft'],
         ];
         [$statusLabel, $statusTone] = $statusMap[$league->status] ?? [null, 'is-draft'];
         @endphp
@@ -78,13 +84,6 @@
                         <i class="fa-solid fa-{{ $league->format === 'pairs' ? 'people-arrows' : 'user' }} me-1"></i>
                         {{ $league->format === 'pairs' ? 'Parejas' : 'Individual' }}
                     </span>
-                    @if ($league->whatsapp_url)
-                    <a href="{{ $league->whatsapp_url }}" target="_blank" rel="noopener noreferrer"
-                        class="public-hero-whatsapp" title="Unirse al grupo de WhatsApp" aria-label="WhatsApp">
-                        <i class="fa-brands fa-whatsapp"></i>
-                        <span class="d-none d-sm-inline">WhatsApp</span>
-                    </a>
-                    @endif
                 </div>
             </div>
         </div>
