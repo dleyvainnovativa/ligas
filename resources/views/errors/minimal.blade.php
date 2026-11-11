@@ -17,7 +17,7 @@
             <div class="error-brand">
                 <!-- <span class="brand-mark"><i class="fa-solid fa-table-tennis-paddle-ball"></i></span>
                 <span class="brand-name">PlayWinners</span> -->
-                <img src="{{ asset('img/logo.png') }}" alt="Logo" class="public-stat-logo-img">
+                @include('partials._brand-logo', ['class' => 'public-stat-logo-img', 'alt' => 'Logo'])
             </div>
             <div class="error-code">@yield('code')</div>
             <h1>@yield('title')</h1>

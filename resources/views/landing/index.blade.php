@@ -19,7 +19,7 @@
     <nav class="landing-nav fixed-top">
         <div class="landing-container landing-nav-inner">
             <a href="{{ route('landing') }}" class="landing-brand">
-                <img src="{{ asset('img/logo.png') }}" alt="PlayWinners" height="34">
+                @include('partials._brand-logo', ['height' => 34, 'alt' => 'PlayWinners'])
             </a>
             <div class="landing-nav-links">
                 <a href="#como-funciona">Cómo funciona</a>
@@ -344,7 +344,7 @@
     <footer class="landing-footer">
         <div class="landing-container">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                <img src="{{ asset('img/logo.png') }}" alt="PlayWinners" height="28">
+                @include('partials._brand-logo', ['height' => 28, 'alt' => 'PlayWinners'])
                 @include('public.league._social-links', ['variant' => 'footer'])
             </div>
             <hr>

@@ -23,7 +23,7 @@
         <div class="public-stat-label">Partidos</div>
     </div>
     <!-- <a href="#" class="public-stat public-stat-logo">
-        <img src="{{ asset('img/logo.png') }}" alt="Logo" class="public-stat-logo-img">
+        @include('partials._brand-logo', ['class' => 'public-stat-logo-img', 'alt' => 'Logo'])
     </a> -->
 </section>
 

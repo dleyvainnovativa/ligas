@@ -22,7 +22,7 @@
             <div class="brand">
                 <!-- <span class="brand-mark"><i class="fa-solid fa-table-tennis-paddle-ball"></i></span>
                 <span>PlayWinners</span> -->
-                <img src="{{asset('img/logo.png')}}" width="200" alt="">
+                @include('partials._brand-logo', ['width' => 200, 'alt' => 'PlayWinners'])
             </div>
 
             <div class="nav-label">General</div>

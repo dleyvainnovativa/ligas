@@ -195,7 +195,7 @@ currentMatchId = btn.dataset.roundId;  // renamed semantically; URL still uses /
 // ---- Public topbar: reveal the league name after scrolling past the hero ----
 (function () {
     const bar = document.getElementById('public-topbar');
-    const hero = document.querySelector('.public-hero-media');
+    const hero = document.querySelector('.public-hero-wrap');
     if (!bar || !hero) return;
     const onScroll = () => {
         const threshold = Math.max(40, hero.offsetHeight - bar.offsetHeight - 8);

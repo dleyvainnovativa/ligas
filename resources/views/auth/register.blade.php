@@ -22,7 +22,7 @@
 
             <div class="auth-form-card">
                 <div class="auth-brand">
-                    <img src="{{ asset('img/logo.png') }}" alt="Logo" class="public-stat-logo-img">
+                    @include('partials._brand-logo', ['class' => 'public-stat-logo-img', 'alt' => 'Logo'])
                 </div>
 
                 <h1>Crea tu cuenta</h1>

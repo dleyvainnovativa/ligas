@@ -3484,7 +3484,7 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     align-items: center;
     flex-shrink: 0;
 }
-.public-topbar-brand img { display: block; }
+/* .public-topbar-brand img { display: block; } */
 .public-topbar-title {
     flex-grow: 1;
     min-width: 0;
@@ -3581,6 +3581,12 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     gap: 6px;
     flex-wrap: wrap;
 }
+
+/* ---- Theme-aware brand logo: gold/white on dark, black on light ---- */
+.brand-logo--light { display: none; }
+.brand-logo--dark  { display: inline-block; }
+[data-bs-theme="light"] .brand-logo--dark  { display: none; }
+[data-bs-theme="light"] .brand-logo--light { display: inline-block; }
 
 /* ---- New public hero: 16:9 media block + info below (no overlay) ---- */
 .public-topbar-actions {
@@ -5190,12 +5196,6 @@ a.public-standing-card {
     aspect-ratio: 3 / 1;
     object-fit: cover;
     background: var(--surface-sunken);
-}
-
-@media (max-width: 768px) { 
-.public-ad-image {
-    /* aspect-ratio: 16/9; */
-}
 }
 
 /* Controls still overlay the image (they sit at the vertical center, clear of

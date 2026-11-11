@@ -15,7 +15,7 @@
     <div class="app-shell">
         <aside class="app-sidebar" id="app-sidebar">
             <div class="brand">
-                <img src="{{ asset('img/logo.png') }}" width="200" alt="PlayWinners">
+                @include('partials._brand-logo', ['width' => 200, 'alt' => 'PlayWinners'])
             </div>
 
             <div class="nav-label">Administración</div>
