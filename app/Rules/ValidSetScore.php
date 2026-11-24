@@ -19,6 +19,10 @@ use Illuminate\Contracts\Validation\ValidationRule;
  */
 class ValidSetScore implements ValidationRule
 {
+    public function __construct(private ?string $sport = null)
+    {
+    }
+
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (!is_array($value) || count($value) !== 2) {
@@ -34,7 +38,7 @@ class ValidSetScore implements ValidationRule
             return;
         }
 
-        $msg = SetScoreRule::error($a, $b);
+        $msg = SetScoreRule::error($a, $b, $this->sport);
         if ($msg !== null) {
             $fail($msg);
         }

@@ -46,14 +46,24 @@ $isEditing = isset($league) && $league->exists;
         <div class="tab-pane fade {{ $isEditing == true ? '':'show active'}}" id="tab-basics">
             <div class="card-soft p-4 mb-3">
                 <div class="row g-3">
-                    <div class="col-md-8">
+                    <div class="col-md-6">
                         <label class="form-label small">Nombre de la liga</label>
                         <input type="text" name="name" class="form-control @error('name') is-invalid @enderror"
                             value="{{ old('name', $league->name) }}" required>
                         @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Deporte</label>
+                        <select name="sport" class="form-select @error('sport') is-invalid @enderror">
+                            @foreach (\App\Models\League::SPORT_LABELS as $val => $label)
+                            <option value="{{ $val }}" @selected(old('sport', $league->sport ?? 'padel') === $val)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('sport') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <small class="text-secondary d-block mt-1">Pickleball: marcadores a 11 (gana por 2).</small>
+                    </div>
                     @php $formatLocked = $league->exists && $league->groups()->exists(); @endphp
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label small">Formato</label>
                         <select name="format" class="form-select @error('format') is-invalid @enderror" @disabled($formatLocked)>
                             <option value="individual" @selected(old('format', $league->format) === 'individual')>Individual (singles)</option>

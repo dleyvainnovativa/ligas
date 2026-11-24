@@ -3484,7 +3484,7 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     align-items: center;
     flex-shrink: 0;
 }
-/* .public-topbar-brand img { display: block; } */
+.public-topbar-brand img { display: block; }
 .public-topbar-title {
     flex-grow: 1;
     min-width: 0;
@@ -3580,6 +3580,21 @@ button:focus-visible, a:focus-visible, .form-control:focus-visible { outline: no
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
+}
+
+/* ---- Propose modal: highlight the score + penalties block ---- */
+.propose-highlight {
+    background: color-mix(in srgb, var(--brand-500) 8%, var(--surface-card));
+    border: 1px solid color-mix(in srgb, var(--brand-500) 22%, transparent);
+    border-left: 3px solid var(--brand-500);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-top: 6px;
+}
+.propose-highlight .propose-penalties {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border-subtle);
 }
 
 /* ---- Theme-aware brand logo: gold/white on dark, black on light ---- */

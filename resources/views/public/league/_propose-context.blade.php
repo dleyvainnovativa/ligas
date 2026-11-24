@@ -6,4 +6,6 @@
 <script>
     window.__publicLeagueSlug = @json($league->slug);
     window.__publicMatches    = @json(collect($proposeRounds ?? [])->keyBy('id'));
+    window.__sport            = @json($league->sport);
+    window.__scoreMax         = @json($league->scoreMax());
 </script>

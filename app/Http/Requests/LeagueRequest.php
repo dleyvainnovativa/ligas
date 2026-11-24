@@ -31,6 +31,7 @@ class LeagueRequest extends FormRequest
             'description'      => ['nullable', 'string', 'max:2000'],
             'banner'           => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'format'           => ['required', Rule::in([League::FORMAT_INDIVIDUAL, League::FORMAT_PAIRS])],
+            'sport'            => ['required', Rule::in(League::SPORTS)],
             'num_jornadas'     => ['required', 'integer', 'min:1', 'max:52'],
             'cost'             => ['required', 'numeric', 'min:0', 'max:999999'],
             'days_of_week'     => ['required', 'array', 'min:1'],

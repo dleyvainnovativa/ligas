@@ -3,78 +3,95 @@
 namespace App\Support;
 
 /**
- * Canonical padel/tennis set-score rule. Single source of truth for the
- * server side; the JS mirror in resources/js/set-score-rule.js must stay
- * in sync with this logic.
+ * Canonical set/game-score rule. Single source of truth for the server side;
+ * the JS mirror in resources/js/set-score-rule.js must stay in sync.
  *
- * A valid FINAL set score is exactly one of (order-independent):
- *   6-0, 6-1, 6-2, 6-3, 6-4      (won at 6, loser 0..4)
- *   7-5, 7-6                     (won at 7, loser 5 or 6)
- *
- * Everything else is invalid as a final set:
- *   6-5  → not final (goes to 7-5 or 6-6→7-6)
- *   6-6  → not final (tiebreak resolves to 7-6)
- *   7-7, 7-0..7-4, 8+ anything, and any sub-6 result like 4-2
+ * Sport-aware:
+ *   padel / tennis — a valid FINAL set is 6-0..6-4, 7-5, 7-6 (max 7).
+ *   pickleball     — a valid FINAL game is to 11, win by 2 (11-0..11-9, then
+ *                    12-10, 13-11, … in deuce), capped at 21.
  */
 class SetScoreRule
 {
-    /** Returns true if [a, b] is a valid final set score, in either order. */
-    public static function isValid(int $a, int $b): bool
+    public const SPORT_PADEL      = 'padel';
+    public const SPORT_TENNIS     = 'tennis';
+    public const SPORT_PICKLEBALL = 'pickleball';
+
+    /** Highest score a single set/game input should allow, by sport. */
+    public static function maxScore(?string $sport = null): int
     {
-        return self::error($a, $b) === null;
+        return $sport === self::SPORT_PICKLEBALL ? 21 : 7;
+    }
+
+    public static function isValid(int $a, int $b, ?string $sport = null): bool
+    {
+        return self::error($a, $b, $sport) === null;
     }
 
     /**
-     * Returns null when valid, or a Spanish error message describing why the
-     * score is not a valid final set. Message is order-independent.
+     * Returns null when valid, or a Spanish error message. Order-independent.
      */
-    public static function error(int $a, int $b): ?string
+    public static function error(int $a, int $b, ?string $sport = null): ?string
     {
         if ($a < 0 || $b < 0) {
             return 'Los marcadores no pueden ser negativos.';
         }
 
+        return $sport === self::SPORT_PICKLEBALL
+            ? self::errorPickleball($a, $b)
+            : self::errorTennis($a, $b);
+    }
+
+    /** Padel / tennis: 6-0..6-4, 7-5, 7-6. */
+    private static function errorTennis(int $a, int $b): ?string
+    {
         $hi = max($a, $b);
         $lo = min($a, $b);
 
-        // No winner recorded.
         if ($hi === $lo) {
             return 'Un set no puede terminar empatado.';
         }
-
-        // Winner scored 6: loser must be 0..4 (6-5 is not a final set).
         if ($hi === 6) {
-            if ($lo <= 4) {
-                return null;
-            }
-            // lo === 5
-            return 'Un set 6-5 no es final: debe terminar 7-5 o 7-6.';
+            return $lo <= 4 ? null : 'Un set 6-5 no es final: debe terminar 7-5 o 7-6.';
         }
-
-        // Winner scored 7: loser must be 5 or 6.
         if ($hi === 7) {
-            if ($lo === 5 || $lo === 6) {
-                return null;
-            }
-            return 'Un 7 solo es válido como 7-5 o 7-6.';
+            return ($lo === 5 || $lo === 6) ? null : 'Un 7 solo es válido como 7-5 o 7-6.';
         }
-
-        // Anything under 6 as the top score is an unfinished set.
         if ($hi < 6) {
             return 'Un set debe llegar a 6 (o 7 en desempate).';
         }
-
-        // hi > 7
         return 'Marcador inválido: el máximo por set es 7.';
     }
 
+    /** Pickleball: game to 11, win by 2, capped at 21. */
+    private static function errorPickleball(int $a, int $b): ?string
+    {
+        $hi = max($a, $b);
+        $lo = min($a, $b);
+
+        if ($hi === $lo) {
+            return 'Un juego no puede terminar empatado.';
+        }
+        if ($hi < 11) {
+            return 'Un juego debe llegar a 11.';
+        }
+        if ($hi > 21) {
+            return 'Marcador inválido: el máximo por juego es 21.';
+        }
+        if ($hi === 11) {
+            return $lo <= 9 ? null : 'Un juego 11-10 no es final: se gana por 2 (12-10).';
+        }
+        // 12..21 → must be won by exactly 2 (deuce).
+        return ($hi - $lo === 2)
+            ? null
+            : 'Con 12 o más, el juego se gana por exactamente 2 (ej. 12-10, 13-11).';
+    }
+
     /**
-     * Validate a list of sets (each [a, b]). Returns an array of
-     * ['index' => int, 'message' => string] for every invalid set; empty
-     * array means all sets are valid. Empty [0,0] pairs are treated as
-     * "not entered" and skipped by the caller before this point.
+     * Validate a list of sets (each [a, b]). Returns ['index','message'] for
+     * every invalid set; empty [0,0] pairs should be filtered by the caller.
      */
-    public static function validateSets(array $sets): array
+    public static function validateSets(array $sets, ?string $sport = null): array
     {
         $errors = [];
         foreach ($sets as $i => $s) {
@@ -82,7 +99,7 @@ class SetScoreRule
                 $errors[] = ['index' => $i, 'message' => 'Set con formato inválido.'];
                 continue;
             }
-            $msg = self::error((int) $s[0], (int) $s[1]);
+            $msg = self::error((int) $s[0], (int) $s[1], $sport);
             if ($msg !== null) {
                 $errors[] = ['index' => $i, 'message' => $msg];
             }

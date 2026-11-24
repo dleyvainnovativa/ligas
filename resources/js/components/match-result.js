@@ -1,4 +1,9 @@
 import { setScoreError, validateSets } from '../set-score-rule.js';
+
+// Sport + per-set max come from the grid element, so the score rules follow
+// the league's sport (padel/tennis → 7, pickleball → 11 win-by-2, max 21).
+function gridSport() { return document.querySelector('.grid-app')?.dataset.sport || null; }
+function gridScoreMax() { return parseInt(document.querySelector('.grid-app')?.dataset.scoreMax, 10) || 7; }
 export function mountMatchResult() {
     const grid = document.querySelector('.grid-app');
     if (!grid) return;
@@ -179,9 +184,9 @@ export function mountMatchResult() {
     function setRow(roundId, idx, a, b) {
         return `
         <div class="set-row d-flex align-items-center gap-2 mb-2" data-round-id="${roundId}" data-i="${idx}">
-            <input type="number" min="0" max="7" class="form-control form-control-sm set-a" inputmode="numeric" value="${a}">
+            <input type="number" min="0" max="${gridScoreMax()}" class="form-control form-control-sm set-a" inputmode="numeric" value="${a}">
             <span class="text-secondary">—</span>
-            <input type="number" min="0" max="7" class="form-control form-control-sm set-b" inputmode="numeric" value="${b}">
+            <input type="number" min="0" max="${gridScoreMax()}" class="form-control form-control-sm set-b" inputmode="numeric" value="${b}">
         </div>`;
     }
 
@@ -198,7 +203,8 @@ export function mountMatchResult() {
                 let v = input.value.replace(/[^\d]/g, '');     // digits only
                 if (v === '') { input.value = ''; return; }     // allow empty mid-edit
                 let n = parseInt(v, 10);
-                if (n > 7) n = 7;
+                const mx = gridScoreMax();
+                if (n > mx) n = mx;
                 if (n < 0) n = 0;
                 input.value = String(n);
             });
@@ -295,7 +301,7 @@ export function mountMatchResult() {
         // Validate every non-empty set across all rounds first.
         const payload = collectFormValues();
         for (const round of payload.rounds) {
-            const errs = validateSets(round.sets);
+            const errs = validateSets(round.sets, gridSport());
             if (errs.length) {
                 window.app.toast.error(errs[0].message);
                 return; // don't save
@@ -354,7 +360,7 @@ function validateSetRow(row) {
         if (old) old.remove();
         return true;
     }
-    const msg = setScoreError(a, b);
+    const msg = setScoreError(a, b, gridSport());
     let err = row.querySelector('.set-row-error');
     if (msg) {
         row.classList.add('set-row-invalid');

@@ -15,6 +15,16 @@ class League extends Model
     public const FORMAT_INDIVIDUAL = 'individual';
     public const FORMAT_PAIRS      = 'pairs';
 
+    public const SPORT_TENNIS     = 'tennis';
+    public const SPORT_PADEL      = 'padel';
+    public const SPORT_PICKLEBALL = 'pickleball';
+    public const SPORTS = [self::SPORT_TENNIS, self::SPORT_PADEL, self::SPORT_PICKLEBALL];
+    public const SPORT_LABELS = [
+        self::SPORT_TENNIS     => 'Tenis',
+        self::SPORT_PADEL      => 'Pádel',
+        self::SPORT_PICKLEBALL => 'Pickleball',
+    ];
+
     public const STATUS_DRAFT     = 'draft';
     public const STATUS_ACTIVE    = 'active';
     public const STATUS_COMPLETED = 'completed';
@@ -44,6 +54,7 @@ class League extends Model
         'description',
         'banner_path',
         'format',
+        'sport',
         'num_jornadas',
         'cost',
         'days_of_week',
@@ -210,5 +221,17 @@ class League extends Model
         }
 
         return $this->movementForJornadaNumber($jornada->number);
+    }
+
+    /** Human label for the league's sport. */
+    public function sportLabel(): string
+    {
+        return self::SPORT_LABELS[$this->sport] ?? 'Pádel';
+    }
+
+    /** Highest valid score per set/game for this league's sport. */
+    public function scoreMax(): int
+    {
+        return \App\Support\SetScoreRule::maxScore($this->sport);
     }
 }

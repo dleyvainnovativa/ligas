@@ -17,11 +17,11 @@ class PromotionRelegationService
      * Ranking: total games won across all rounds, ties broken by games
      * difference (games won − games lost).
      */
-    public function rankCancha(Cancha $cancha): array
+    public function rankCancha(Cancha $cancha, array $order = []): array
     {
         $chain = $cancha->jornada->group->league->standingsOrder();
         $stats = array_values($this->canchaPlayerStats($cancha));
-        $sorted = $this->sortByChainWithPenaltyGate($stats, $chain);   // ← gated
+        $sorted = $this->sortByChainWithPenaltyGate($stats, $chain, $order);   // ← gated + leaderboard tiebreak
         return array_map(fn($r) => $r['player_id'], $sorted);
     }
 
@@ -33,7 +33,7 @@ class PromotionRelegationService
      *   [ [p1,p2,p3,p4], [p5,p6,p7,p8], ... ]
      * Index 0 = Cancha 1 (top court).
      */
-    public function computeNextDistribution(Jornada $jornada, int $movement): array
+    public function computeNextDistribution(Jornada $jornada, int $movement, array $order = []): array
     {
         $jornada->loadMissing(['canchas.rounds', 'group.league']);
 
@@ -49,8 +49,9 @@ class PromotionRelegationService
 
         // Rank each cancha's competitors (best-first). In doubles the competitor
         // is the PAIR (both players move together); in singles it's the player.
+        // $order breaks full ties by the general leaderboard.
         $ranked = $canchas
-            ->map(fn($c) => $isPairs ? $this->rankCanchaPairs($c) : $this->rankCancha($c))
+            ->map(fn($c) => $isPairs ? $this->rankCanchaPairs($c, $order) : $this->rankCancha($c, $order))
             ->all();
 
         return $this->distributeFromRanked($ranked, $movement);
@@ -129,10 +130,10 @@ class PromotionRelegationService
      *   ...
      * ]
      */
-    public function jornadaBreakdown(Jornada $jornada, int $movement): array
+    public function jornadaBreakdown(Jornada $jornada, int $movement, array $order = []): array
     {
         if ($jornada->group->league->format === \App\Models\League::FORMAT_PAIRS) {
-            return $this->jornadaBreakdownPairs($jornada, $movement, false);
+            return $this->jornadaBreakdownPairs($jornada, $movement, false, $order);
         }
 
         $jornada->loadMissing(['canchas.rounds', 'canchas.players', 'group.league']);
@@ -150,7 +151,7 @@ class PromotionRelegationService
         foreach ($canchas as $i => $cancha) {
             $stats = array_values($this->canchaPlayerStats($cancha));
             // $ordered = $this->sortByChain($stats, $chain);   // ← was sortByDesc([...])
-            $ordered = $this->sortByChainWithPenaltyGate($stats, $chain);   // ← gated
+            $ordered = $this->sortByChainWithPenaltyGate($stats, $chain, $order);   // ← gated + leaderboard tiebreak
 
             $size = count($ordered);
             $m = min($movement, intdiv($size, 2));
@@ -203,10 +204,10 @@ class PromotionRelegationService
      *   'coverage' => ['total','filled','complete']  (filled = confirmed or proposed)
      * so the UI can badge partially-projected canchas as "incompleto".
      */
-    public function jornadaBreakdownPreview(Jornada $jornada, int $movement): array
+    public function jornadaBreakdownPreview(Jornada $jornada, int $movement, array $order = []): array
     {
         if ($jornada->group->league->format === \App\Models\League::FORMAT_PAIRS) {
-            return $this->jornadaBreakdownPairs($jornada, $movement, true);
+            return $this->jornadaBreakdownPairs($jornada, $movement, true, $order);
         }
 
         $jornada->loadMissing(['canchas.rounds.pendingProposal', 'canchas.players', 'group.league']);
@@ -223,7 +224,7 @@ class PromotionRelegationService
 
         foreach ($canchas as $i => $cancha) {
             $stats = array_values($this->canchaPlayerStats($cancha, true));
-            $ordered = $this->sortByChainWithPenaltyGate($stats, $chain);
+            $ordered = $this->sortByChainWithPenaltyGate($stats, $chain, $order);
 
             $size = count($ordered);
             $m = min($movement, intdiv($size, 2));
@@ -712,20 +713,59 @@ class PromotionRelegationService
         return $rows;
     }
 
-    public function comparePlayersWithPenaltyGate(array $a, array $b, array $chain): int
+    public function comparePlayersWithPenaltyGate(array $a, array $b, array $chain, array $order = []): int
     {
         $aPen = ($a['penalty'] ?? 0) > 0;
         $bPen = ($b['penalty'] ?? 0) > 0;
         if ($aPen !== $bPen) {
             return $aPen <=> $bPen;   // clean (false) before penalized (true)
         }
-        return $this->comparePlayers($a, $b, $chain);
+        $cmp = $this->comparePlayers($a, $b, $chain);
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+
+        // Final tiebreak: the general-leaderboard order. When two competitors tie
+        // on the whole chain, the one ranked higher on the season leaderboard wins
+        // the cancha tie (so the better of a tie promotes, and a bottom tie relegates
+        // the worse). $order maps competitor id → leaderboard position (1 = best).
+        if (!empty($order)) {
+            $idA = $a['player_id'] ?? $a['pair_id'] ?? null;
+            $idB = $b['player_id'] ?? $b['pair_id'] ?? null;
+            $posA = $order[$idA] ?? PHP_INT_MAX;
+            $posB = $order[$idB] ?? PHP_INT_MAX;
+            if ($posA !== $posB) {
+                return $posA <=> $posB;   // lower position = better = ranks first
+            }
+        }
+
+        return 0;
     }
 
-    public function sortByChainWithPenaltyGate(array $rows, array $chain): array
+    public function sortByChainWithPenaltyGate(array $rows, array $chain, array $order = []): array
     {
-        usort($rows, fn($a, $b) => $this->comparePlayersWithPenaltyGate($a, $b, $chain));
+        usort($rows, fn($a, $b) => $this->comparePlayersWithPenaltyGate($a, $b, $chain, $order));
         return $rows;
+    }
+
+    /**
+     * Competitor id → general-leaderboard position (1 = best), for a group.
+     * Used only as a tiebreak when ranking canchas. It is computed from the
+     * cumulative standings, whose ORDER does not depend on cancha tie-breaking,
+     * so there is no circularity (groupSeasonStandings ranks canchas without an
+     * order, this just reads the resulting positions).
+     */
+    public function seasonLeaderboardOrder(Group $group): array
+    {
+        $rows = $this->groupSeasonStandings($group, 0);
+        $order = [];
+        foreach ($rows as $i => $row) {
+            $id = $row['player_id'] ?? $row['pair_id'] ?? null;
+            if ($id !== null) {
+                $order[$id] = $i + 1;
+            }
+        }
+        return $order;
     }
 
     // =====================================================================
@@ -847,11 +887,11 @@ class PromotionRelegationService
     }
 
     /** Rank the pairs within a cancha (best first), returning pair ids. */
-    public function rankCanchaPairs(Cancha $cancha): array
+    public function rankCanchaPairs(Cancha $cancha, array $order = []): array
     {
         $chain  = $cancha->jornada->group->league->standingsOrder();
         $stats  = array_values($this->canchaPairStats($cancha));
-        $sorted = $this->sortByChainWithPenaltyGate($stats, $chain);
+        $sorted = $this->sortByChainWithPenaltyGate($stats, $chain, $order);
         return array_map(fn($r) => $r['pair_id'], $sorted);
     }
 
@@ -860,7 +900,7 @@ class PromotionRelegationService
      * list holds pair rows (pair_id + name + stats + movement), so the existing
      * breakdown views render them unchanged via $p['name'].
      */
-    private function jornadaBreakdownPairs(Jornada $jornada, int $movement, bool $preview = false): array
+    private function jornadaBreakdownPairs(Jornada $jornada, int $movement, bool $preview = false, array $order = []): array
     {
         $jornada->loadMissing([
             'canchas.rounds' . ($preview ? '.pendingProposal' : ''),
@@ -881,7 +921,7 @@ class PromotionRelegationService
 
         foreach ($canchas as $i => $cancha) {
             $stats   = array_values($this->canchaPairStats($cancha, $preview));
-            $ordered = $this->sortByChainWithPenaltyGate($stats, $chain);
+            $ordered = $this->sortByChainWithPenaltyGate($stats, $chain, $order);
 
             $size = count($ordered);
             $m = min($movement, intdiv($size, 2));

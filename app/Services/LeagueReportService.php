@@ -22,10 +22,12 @@ class LeagueReportService
 
         foreach ($league->groups as $group) {
             $jornadas = [];
+            // Leaderboard order breaks cancha ties; computed once per group.
+            $leaderboardOrder = $this->promo->seasonLeaderboardOrder($group);
 
             foreach ($group->jornadas->sortBy('number') as $jornada) {
                 // Honor the per-jornada movement override, same as every other view.
-                $breakdown = $this->promo->jornadaBreakdown($jornada, $league->movementForJornada($jornada));
+                $breakdown = $this->promo->jornadaBreakdown($jornada, $league->movementForJornada($jornada), $leaderboardOrder);
                 if (empty($breakdown)) continue;
 
                 // Resolve names + attach schedule per cancha

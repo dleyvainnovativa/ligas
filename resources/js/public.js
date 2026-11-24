@@ -61,7 +61,8 @@ currentMatchId = btn.dataset.roundId;  // renamed semantically; URL still uses /
                        value="${escape(lastName)}" placeholder="Para que el manager sepa quién propuso">
             </div>
 
-            <label class="form-label">Marcador</label>
+            <div class="propose-highlight">
+            <label class="form-label fw-semibold mb-1">Marcador</label>
             <div id="propose-sets" class="propose-sets"></div>
 
             ${(m.player_options && m.player_options.length) ? `
@@ -84,6 +85,7 @@ currentMatchId = btn.dataset.roundId;  // renamed semantically; URL still uses /
                 </div>
             </div>
             ` : ''}
+            </div>
 
             <small class="text-muted d-block mt-3">
                 <i class="fa-solid fa-circle-info"></i>
@@ -99,9 +101,9 @@ currentMatchId = btn.dataset.roundId;  // renamed semantically; URL still uses /
         c.innerHTML = currentSets.map((s, i) => `
             <div class="propose-set-row" data-i="${i}">
                 <span class="set-label">Set</span>
-                <input type="number" min="0" max="7" class="form-control form-control-sm set-a" inputmode="numeric" value="${s[0]}">
+                <input type="number" min="0" max="${window.__scoreMax || 7}" class="form-control form-control-sm set-a" inputmode="numeric" value="${s[0]}">
                 <span class="text-muted">—</span>
-                <input type="number" min="0" max="7" class="form-control form-control-sm set-b" inputmode="numeric" value="${s[1]}">
+                <input type="number" min="0" max="${window.__scoreMax || 7}" class="form-control form-control-sm set-b" inputmode="numeric" value="${s[1]}">
                 <button type="button" class="btn-icon btn-sm remove-set" ${currentSets.length === 1 ? 'disabled' : ''}>
                     <i class="fa-solid fa-xmark"></i>
                 </button>
@@ -144,7 +146,7 @@ currentMatchId = btn.dataset.roundId;  // renamed semantically; URL still uses /
         }
 
         // NEW: validate each set against the padel rule
-        const setErrors = validateSets(sets);
+        const setErrors = validateSets(sets, window.__sport);
         if (setErrors.length) {
             alert(setErrors[0].message);
             return;

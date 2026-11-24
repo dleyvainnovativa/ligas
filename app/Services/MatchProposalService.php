@@ -20,7 +20,8 @@ class MatchProposalService
         if (empty($sets)) {
             throw new \DomainException('Debes ingresar al menos un set válido.');
         }
-        $errors = \App\Support\SetScoreRule::validateSets($sets);
+        $sport = $match->cancha?->jornada?->group?->league?->sport;
+        $errors = \App\Support\SetScoreRule::validateSets($sets, $sport);
         if (!empty($errors)) {
             throw new \DomainException($errors[0]['message']);
         }

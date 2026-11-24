@@ -26,7 +26,8 @@ class MatchResultService
                 if ($a === 0 && $b === 0) return null; // empty pair
                 return [$a, $b];
             }, $sets)));
-            $errors = \App\Support\SetScoreRule::validateSets($sets);
+            $sport = $match->cancha?->jornada?->group?->league?->sport;
+            $errors = \App\Support\SetScoreRule::validateSets($sets, $sport);
             if (!empty($errors)) {
                 throw new \DomainException($errors[0]['message']);
             }

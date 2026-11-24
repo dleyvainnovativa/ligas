@@ -125,13 +125,17 @@ class GameMatchController extends Controller
         $this->authorize('update', $cancha);
         abort_unless($cancha->jornada_id === $jornada->id, 404);
         $this->ensureJornadaEditable($jornada);   // ← add
+
+        $sport    = $jornada->group->league->sport ?? null;
+        $maxScore = \App\Support\SetScoreRule::maxScore($sport);
+
         $data = $request->validate([
             'rounds'                       => ['required', 'array', 'min:1'],
             'rounds.*.round_id'            => ['required', 'integer'],
             'rounds.*.sets'                => ['nullable', 'array', 'max:5'],
-            'rounds.*.sets.*'              => ['array', 'size:2', new ValidSetScore],
-            'rounds.*.sets.*.0'            => ['integer', 'min:0', 'max:7'],
-            'rounds.*.sets.*.1'            => ['integer', 'min:0', 'max:7'],
+            'rounds.*.sets.*'              => ['array', 'size:2', new ValidSetScore($sport)],
+            'rounds.*.sets.*.0'            => ['integer', 'min:0', 'max:' . $maxScore],
+            'rounds.*.sets.*.1'            => ['integer', 'min:0', 'max:' . $maxScore],
             'rounds.*.no_show_ids'         => ['nullable', 'array'],
             'rounds.*.no_show_ids.*'       => ['integer'],
             'rounds.*.suplente_ids'        => ['nullable', 'array'],

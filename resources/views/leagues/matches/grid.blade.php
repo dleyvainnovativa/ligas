@@ -101,6 +101,8 @@ return $cancha->rounds->where('status', \App\Models\GameMatch::STATUS_COMPLETED)
     data-group-id="{{ $group->id }}"
     data-jornada-id="{{ $jornada->id }}"
     data-mode="{{ $league->format }}"
+    data-sport="{{ $league->sport }}"
+    data-score-max="{{ $league->scoreMax() }}"
     data-schedule-url-template="{{ url("/leagues/{$league->id}/groups/{$group->id}/jornadas/{$jornada->id}/canchas/__ID__/schedule") }}"
     data-autofit-url-template="{{ url("/leagues/{$league->id}/groups/{$group->id}/jornadas/{$jornada->id}/canchas/__ID__/auto-fit") }}">
 

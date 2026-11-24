@@ -38,12 +38,15 @@ class PublicMatchProposalController extends Controller
         }
         RateLimiter::hit($key, 3600);
 
+        $sport    = $league->sport ?? null;
+        $maxScore = \App\Support\SetScoreRule::maxScore($sport);
+
         $data = $request->validate([
             'name'   => ['required', 'string', 'min:2', 'max:120'],
             'sets'   => ['required', 'array', 'min:1', 'max:5'],
-            'sets.*' => ['array', 'size:2', new ValidSetScore],
-            'sets.*.0' => ['integer', 'min:0', 'max:7'],
-            'sets.*.1' => ['integer', 'min:0', 'max:7'],
+            'sets.*' => ['array', 'size:2', new ValidSetScore($sport)],
+            'sets.*.0' => ['integer', 'min:0', 'max:' . $maxScore],
+            'sets.*.1' => ['integer', 'min:0', 'max:' . $maxScore],
             'no_show_ids'    => ['nullable', 'array'],
             'no_show_ids.*'  => ['integer'],
             'suplente_ids'   => ['nullable', 'array'],
